@@ -1,0 +1,10 @@
+/build
+/dist
+/plugin.so
+/plugin.dylib
+/plugin.dll
+res/scales.json
+res/addsynth.json
+res/genrscale.js
+.DS_Store
+.idea
