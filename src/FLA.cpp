@@ -40,8 +40,8 @@ struct FLA : Module {
 	void process(const ProcessArgs& args) override {
     float fn = clamp(inputs[N_INPUT].getVoltage(),0.f,10.f)*0.1f;
     float fm = clamp(inputs[M_INPUT].getVoltage(),0.f,10.f)*0.1f;
-    ulong n = ulong(floor(float(DEPTH)*fn));
-    ulong m = ulong(floor(float(DEPTH)*fm));
+    unsigned long n = (unsigned long)floor(float(DEPTH)*fn);
+    unsigned long m = (unsigned long)floor(float(DEPTH)*fm);
     outputs[DIV_OUTPUT].setVoltage(m==0?0:(n/m)/(float(DEPTH)/10.f));
     outputs[MOD_OUTPUT].setVoltage(m==0?0:(n%m)/(float(DEPTH)/10.f));
     outputs[MULT_OUTPUT].setVoltage(((n*m)&(DEPTH-1))/(float(DEPTH)/10.f));
@@ -110,12 +110,12 @@ struct FLL : Module {
   void process(const ProcessArgs& args) override {
     float fn = clamp(inputs[N_INPUT].getVoltage(),0.f,10.f)*0.1f;
     float fm = clamp(inputs[M_INPUT].getVoltage(),0.f,10.f)*0.1f;
-    ulong n = ulong(floor((float(DEPTH))*fn));
-    ulong m = ulong(floor((float(DEPTH))*fm));
+    unsigned long n = (unsigned long)floor((float(DEPTH))*fn);
+    unsigned long m = (unsigned long)floor((float(DEPTH))*fm);
     outputs[AND_OUTPUT].setVoltage((n&m)/(float(DEPTH)/10.f));
     outputs[OR_OUTPUT].setVoltage((n|m)/(float(DEPTH)/10.f));
     outputs[XOR_OUTPUT].setVoltage(((n^m)&(DEPTH-1))/(float(DEPTH)/10.f));
-    ulong s = ulong(round(fm*(rack::math::log2(DEPTH)-1)));
+    unsigned long s = (unsigned long)round(fm*(rack::math::log2(DEPTH)-1));
     outputs[SR_OUTPUT].setVoltage((n>>s)/(float(DEPTH)/10.f));
     outputs[SL_OUTPUT].setVoltage(((n<<s)&(DEPTH-1))/(float(DEPTH)/10.f));
     outputs[NOTN_OUTPUT].setVoltage(((~n)&(DEPTH-1))/(float(DEPTH)/10.f));

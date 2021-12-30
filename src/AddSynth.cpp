@@ -6,13 +6,13 @@
 static float getNumber(json_t *value) {
   float ret;
   if(json_is_array(value)) {
-    uint vLen=json_array_size(value);
+    unsigned int vLen=json_array_size(value);
     if(vLen!=2) {
       WARN("array but length = %d\n",vLen);
       return 0.f;
     }
-    uint n=json_integer_value(json_array_get(value,0));
-    uint p=json_integer_value(json_array_get(value,1));
+    unsigned int n=json_integer_value(json_array_get(value,0));
+    unsigned int p=json_integer_value(json_array_get(value,1));
     ret=float(n)/float(p);
   } else {
     ret=(float)json_number_value(value);
@@ -21,7 +21,7 @@ static float getNumber(json_t *value) {
   return ret;
 }
 
-template<uint S>
+template<unsigned int S>
 struct Table {
   float data[S]={};
   std::string name;
@@ -32,12 +32,12 @@ struct Table {
     size_t pLen=json_array_size(list);
     printf("parsing %s len=%zu\n",name.c_str(),pLen);
     float partl[128];
-    for(uint k=0;k<pLen;k++) {
+    for(unsigned int k=0;k<pLen;k++) {
       partl[k]=getNumber(json_array_get(list,k));
     }
-    for(uint i=0;i<S;i++) {
+    for(unsigned int i=0;i<S;i++) {
       float val=0.f;
-      for(uint k=0;k<pLen;k++) {
+      for(unsigned int k=0;k<pLen;k++) {
         float elem=partl[k];
         val+=(float)(elem*sin((k+1)*2*M_PI*i/65536.0));
       }
@@ -58,8 +58,8 @@ struct SinLookup {
   const float mpih=M_PI/2;
 
   void initTables(json_t *jWaves) {
-    uint wLen=json_array_size(jWaves);
-    for(uint k=0;k<wLen;k++) {
+    unsigned int wLen=json_array_size(jWaves);
+    for(unsigned int k=0;k<wLen;k++) {
       tables.emplace_back(json_array_get(jWaves,k));
     }
   }
@@ -90,12 +90,12 @@ struct SinLookup {
     return ret;
   }
 
-  uint getSize() {
+  unsigned int getSize() {
     return tables.size();
   }
 };
 
-template<uint S>
+template<unsigned int S>
 struct Ratio {
   float values[S];
   std::string name;
@@ -140,7 +140,7 @@ struct AddSynth : Module {
     json_t *ratios=json_object_get(rootJ,"ratios");
     sinLookup.initTables(waves);
     size_t len=json_array_size(ratios);
-    for(uint i=0;i<len;i++) {
+    for(unsigned int i=0;i<len;i++) {
       json_t *ratioObj=json_array_get(ratios,i);
       ratioVector.emplace_back(ratioObj);
     }

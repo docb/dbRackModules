@@ -14,7 +14,7 @@ struct ReverbParam {
   float delayTime;
   float rndDerivation;
   float rndVariationFreq;
-  uint rndSeed;
+  unsigned int rndSeed;
 };
 
 template<size_t S>
@@ -49,7 +49,7 @@ struct DelayLine {
 
   }
   void init(float sampleRate, float pitchMod) {
-    bufferSize = uint((rvParam.delayTime + rvParam.rndDerivation * pitchMod * 1.125f)*sampleRate+16.5f);
+    bufferSize = (unsigned int)((rvParam.delayTime + rvParam.rndDerivation * pitchMod * 1.125f)*sampleRate+16.5f);
     writePos = 0;
     rndVal = rvParam.rndSeed;
     double _readPos = rndVal * rvParam.rndDerivation / 32768.0;
@@ -187,7 +187,7 @@ struct RSC : Module {
 
       if(cf!=prvLPFreq) {
         prvLPFreq = cf;
-        dmp = 2.0f - cosf(prvLPFreq * 2*M_PI_2f32 / args.sampleRate);
+        dmp = 2.0f - cosf(prvLPFreq * 2*M_PI / args.sampleRate);
         dmp = dmp - sqrtf(dmp * dmp - 1.0);
       }
       float inL = 0.f;

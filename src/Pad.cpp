@@ -35,7 +35,7 @@ struct PadTable {
     memset(input,0,LENGTH*2*sizeof(float));
     input[0]=0.f;
     input[1]=0.f;
-    for(uint k=1;k<partials.size();k++) {
+    for(unsigned int k=1;k<partials.size();k++) {
       if(partials[k]>0.f) {
         float partialHz=fundFreq*(k);
         float freqIdx=partialHz/((float)sampleRate);
@@ -97,7 +97,7 @@ struct Pad : Module {
     partials.push_back(1.f);
     float seed=params[SEED_PARAM].getValue();
     int method=params[MTH_PARAM].getValue();
-    uint is=uint(seed*UINT_MAX);
+    unsigned int is=(unsigned int)(seed*UINT_MAX);
     rnd.reset(is);
     switch(method) {
       case EVEN_MIN:

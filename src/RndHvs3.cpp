@@ -63,7 +63,7 @@ struct RndHvs3 : Module {
   void fillCube(int dist,float dens,float seed) {
     if(dens==0.0f)
       return;
-    unsigned int is=int(seed*UINT_MAX);
+    unsigned int is=(unsigned int)(seed*UINT_MAX);
     rnd.reset(is);
     switch(dist) {
       case WEIBULL: {

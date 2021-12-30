@@ -52,8 +52,8 @@ struct SelectParam : ParamWidget {
   void init(std::vector<std::string> labels) {
     const float margin = 0;
     float height = box.size.y - 2 * margin;
-    uint len = labels.size();
-    for (uint i = 0; i < len; i++) {
+    unsigned int len = labels.size();
+    for (unsigned int i = 0; i < len; i++) {
       auto selectButton = new SelectButton(i,labels[i]);
       selectButton->box.pos = Vec(0,height/len*i+margin);
       selectButton->box.size = Vec(box.size.x,height/len);
@@ -198,8 +198,8 @@ struct Scale {
       size_t elen=json_array_size(entry);
       if(elen!=2)
         throw Exception(string::f("Scale entry must be an array of length 2"));
-      uint n=json_integer_value(json_array_get(entry,0));
-      uint p=json_integer_value(json_array_get(entry,1));
+      unsigned int n=json_integer_value(json_array_get(entry,0));
+      unsigned int p=json_integer_value(json_array_get(entry,1));
       labels[k]=std::to_string(n) + "/" + std::to_string(p);
       values[k]=float(n)/float(p);
     }

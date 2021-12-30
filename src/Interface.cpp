@@ -108,7 +108,7 @@ struct LabelField : TextField {
     bool act=e.action==GLFW_PRESS||e.action==GLFW_REPEAT;
     if(act&&e.key==GLFW_KEY_V&&(e.mods&RACK_MOD_MASK)==RACK_MOD_CTRL) {
       // prevent pasting too long text
-      uint pasteLength=maxTextLength-TextField::text.size()+abs(selection-cursor);
+      unsigned int pasteLength=maxTextLength-TextField::text.size()+abs(selection-cursor);
       if(pasteLength>0) {
         std::string newText(glfwGetClipboardString(APP->window->win));
         if(newText.size()>pasteLength)

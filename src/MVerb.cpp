@@ -14,13 +14,13 @@ struct Data {
   std::vector<std::string> getERPresetLabels() {
     INFO("getERPresetLabels");
     std::vector<std::string> ret;
-    for(uint k=0;k<ERPresets.size();k++) {
+    for(unsigned int k=0;k<ERPresets.size();k++) {
       ret.push_back(ERPresets[k].name);
     }
     return ret;
   }
 
-  uint getERPresetSize() {
+  unsigned int getERPresetSize() {
     return ERPresets.size();
   }
 
@@ -40,7 +40,7 @@ struct Multitaps {
   gam::Delay<> delay;
   std::vector<float> times;
   std::vector<float> gains;
-  uint tapCount;
+  unsigned int tapCount;
   bool isInitializing=false;
 
   void initialize(const std::vector<float> &parameters) {
@@ -49,7 +49,7 @@ struct Multitaps {
     gains.resize(0);
     float maxDelay=0;
     tapCount=0;
-    for(uint i=0,n=parameters.size();i<n;) {
+    for(unsigned int i=0,n=parameters.size();i<n;) {
       if(maxDelay<parameters[i]) {
         maxDelay=parameters[i];
       }
@@ -66,7 +66,7 @@ struct Multitaps {
     if(!isInitializing) {
       if(tapCount>0) {
         delay.write(input);
-        for(uint tap=0;tap<tapCount;tap++) {
+        for(unsigned int tap=0;tap<tapCount;tap++) {
           output+=(delay.read(times[tap])*gains[tap]*amp);
         }
       }

@@ -20,7 +20,7 @@ struct ScaleUtils {
   void fromJson(json_t *rootJ) {
     json_t *data=json_object_get(rootJ,"scales");
     size_t len=json_array_size(data);
-    for(uint i=0;i<len;i++) {
+    for(unsigned int i=0;i<len;i++) {
       json_t *scaleObj=json_array_get(data,i);
       scaleVector.emplace_back(scaleObj);
     }
@@ -126,7 +126,7 @@ struct ScaleDisplay : TransparentWidget {
     nvgTextAlign(args.vg, NVG_ALIGN_CENTER);
     nvgFillColor(args.vg, textColor);
     float x = box.size.x/2.f;
-    for(uint k=0; k<12;k++) {
+    for(unsigned int k=0; k<12;k++) {
       nvgText(args.vg, x, 9+k*12, s.labels[k].c_str(), nullptr);
     }
 

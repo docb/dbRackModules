@@ -69,7 +69,7 @@ struct HexSeqP : Module {
 
   void next() {
     for(int k=0;k<NUMSEQ;k++) {
-      uint len=hexs[currentPattern][k].length();
+      unsigned int len=hexs[currentPattern][k].length();
       if(len>0) {
         unsigned spos=pos[currentPattern][k]%(len*4);
         unsigned charPos=spos/4;
