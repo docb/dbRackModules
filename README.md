@@ -11,7 +11,8 @@ It is basically a port of my csound web instrument https://docb.io/geneticterrai
 
 The 25 provided base terrains can be combined 4 times so each terrain is a "genetic" sequence
 with length 4 (sums up to 390625 possible terrains but don't worry many of them are similar).
-There are 10 different curves available and each of it has a curve parameter.
+There are 10 different curves available and each of it has a curve parameter. The curves can be moved on terrain
+via dragging the blue circle or the X/Y Knobs. The view of the terrains can be moved by dragging not on the blue circle.
 
 On the left side you can select the terrains, in v2 simple right-click on the knob and select.
 The polyphonic GATE input is mainly for the display of the curve for each voice and has no
@@ -33,7 +34,7 @@ so maximal about 16% when using 16 Voices also depending on how many and which T
 Geneticsuperterrain is the same as Geneticterrain but with curves produced by the superformula.
 (https://en.wikipedia.org/wiki/Superformula#Generalization)
 
-Don't use it. 
+Don't use it ;-)
 
 And if you use it beware of the following issues:
 
@@ -121,11 +122,11 @@ If the seed input is not connected or 0 the system time is used as seed on every
 Otherwise, the seed is built from the provided value 0<x<=10. In this case for each seed 
 you will get exactly the same sequence on every RST Trigger. 
 
-The samplesPerFrame of output channels can be adjusted with the Chn Knob.
+The number of output channels can be adjusted with the Chn Knob.
 
 When no clock is connected RndH outputs the noise as audio stream.  
 
-*RndC* is similar to RndH but outputs a (very) smooth signal using cubic interpolation. 
+*RndC* is similar to RndH but outputs a (very) smooth polyphonic signal using cubic interpolation. 
 Because of this RndC may produce lower/higher voltages as 
 0V/10V in unipolar mode and -5V/5V in bipolar mode. I have foregone to scale it as it is done better
 outside (and potentially different for each usecase). 
