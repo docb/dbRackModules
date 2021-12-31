@@ -20,8 +20,6 @@ extern Model* modelInterface;
 extern Model* modelHexSeqP;
 extern Model* modelMVerb;
 extern Model* modelPShift;
-extern Model* modelInt;
-extern Model* modelIntA;
 extern Model* modelFLA;
 extern Model* modelFLL;
 extern Model* modelGendy;

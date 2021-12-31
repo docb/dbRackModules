@@ -86,6 +86,12 @@ struct PShift : Module {
   PShift() {
     config(PARAMS_LEN,INPUTS_LEN,OUTPUTS_LEN,LIGHTS_LEN);
     configParam(P_SHIFT,0.0f,4.f,0.f,"Shift");
+    configOutput(L_OUTPUT,"Left");
+    configOutput(R_OUTPUT,"Right");
+    configInput(L_INPUT,"Left");
+    configInput(R_INPUT,"Right");
+    configBypass(R_INPUT,R_OUTPUT);
+    configBypass(L_INPUT,L_OUTPUT);
   }
 
   void process(const ProcessArgs &args) override {
