@@ -33,58 +33,86 @@ struct RndH : Module {
     configOutput(MIN_OUTPUT,"Min Distribution");
     configOutput(WB_OUTPUT,"Weibull Distribution");
     configOutput(TRI_OUTPUT,"Triangular Distribution");
-    getParamQuantity(CHANNELS_PARAM)->snapEnabled = true;
+    getParamQuantity(CHANNELS_PARAM)->snapEnabled=true;
   }
 
   void onAdd(const AddEvent &e) override {
     Module::onAdd(e);
-    float seedParam = 0;
-    if(inputs[SEED_INPUT].isConnected()) seedParam=inputs[SEED_INPUT].getVoltage()/10.f;
+    float seedParam=0;
+    if(inputs[SEED_INPUT].isConnected())
+      seedParam=inputs[SEED_INPUT].getVoltage()/10.f;
     rnd.reset((unsigned long long)(floor((double)seedParam*(double)ULONG_MAX)));
+  }
+
+  void nextMin(float strength,bool bi,int chn) {
+    if(strength==1.f) {
+      auto out=float(rnd.nextDouble()*10-(bi?5:0));
+      outputs[MIN_OUTPUT].setVoltage(out,chn);
+    } else {
+      double outm=rnd.nextMin((int)strength);
+      if(bi) {
+        float out=rnd.nextCoin()?(float)outm*5.f:(float)-outm*5.f;
+        outputs[MIN_OUTPUT].setVoltage(out,chn);
+      } else {
+        outputs[MIN_OUTPUT].setVoltage((float)outm*10.f,chn);
+      }
+    }
+  }
+
+  void nextWB(float strength,bool bi,int chn) {
+    if(strength==1.f) {
+      auto out=float(rnd.nextDouble()*10-(bi?5:0));
+      outputs[WB_OUTPUT].setVoltage(out,chn);
+    } else {
+      double outw=rnd.nextWeibull(strength);
+      if(bi) {
+        auto out=rnd.nextCoin()?(float)outw*5.f:(float)-outw*5.f;
+        outputs[WB_OUTPUT].setVoltage(out,chn);
+      } else {
+        outputs[WB_OUTPUT].setVoltage((float)outw*10.f,chn);
+      }
+    }
+  }
+
+  void nextTri(float strength,bool bi,int chn) {
+    if(strength==1.f) {
+      auto out=float(rnd.nextDouble()*10-(bi?5:0));
+      outputs[TRI_OUTPUT].setVoltage(out,chn);
+    } else {
+      double outt=rnd.nextTri((int)strength);
+      auto out=(float)outt*10.f-(bi?5.f:0.f);
+      outputs[TRI_OUTPUT].setVoltage(out,chn);
+    }
   }
 
   void next(bool bi=false) {
     float strength=params[STRENGTH_PARAM].getValue();
     int channels=(int)params[CHANNELS_PARAM].getValue();
     for(int k=0;k<channels;k++) {
-      strength = clamp(inputs[STRENGTH_INPUT].getNormalPolyVoltage(strength*.5f,k)*2.f,1.f,20.f);
-      if(strength==1.f) {
-        auto out=float(rnd.nextDouble()*10-(bi?5:0));
-        outputs[MIN_OUTPUT].setVoltage(out,k);
-        out=float(rnd.nextDouble()*10-(bi?5:0));
-        outputs[WB_OUTPUT].setVoltage(out,k);
-        out=float(rnd.nextDouble()*10-(bi?5:0));
-        outputs[TRI_OUTPUT].setVoltage(out,k);
-
-      } else {
-        double outm=rnd.nextMin((int)strength);
-        double outw=rnd.nextWeibull(strength);
-        if(bi) {
-          float out=rnd.nextCoin()?(float)outm*5.f:(float)-outm*5.f;
-          outputs[MIN_OUTPUT].setVoltage(out,k);
-          out=rnd.nextCoin()?(float)outw*5.f:(float)-outw*5.f;
-          outputs[WB_OUTPUT].setVoltage(out,k);
-        } else {
-          outputs[MIN_OUTPUT].setVoltage((float)outm*10.f,k);
-          outputs[WB_OUTPUT].setVoltage((float)outw*10.f,k);
-        }
-
-        double outt=rnd.nextTri((int)strength);
-        auto out=(float)outt*10.f-(bi?5.f:0.f);
-        outputs[TRI_OUTPUT].setVoltage(out,k);
-      }
+      strength=clamp(inputs[STRENGTH_INPUT].getNormalPolyVoltage(strength*.5f,k)*2.f,1.f,20.f);
+      if(outputs[MIN_OUTPUT].isConnected())
+        nextMin(strength,bi,k);
+      if(outputs[WB_OUTPUT].isConnected())
+        nextWB(strength,bi,k);
+      if(outputs[TRI_OUTPUT].isConnected())
+        nextTri(strength,bi,k);
     }
-    outputs[MIN_OUTPUT].setChannels(channels);
-    outputs[WB_OUTPUT].setChannels(channels);
-    outputs[TRI_OUTPUT].setChannels(channels);
+
+    if(outputs[MIN_OUTPUT].isConnected())
+      outputs[MIN_OUTPUT].setChannels(channels);
+    if(outputs[WB_OUTPUT].isConnected())
+      outputs[WB_OUTPUT].setChannels(channels);
+    if(outputs[TRI_OUTPUT].isConnected())
+      outputs[TRI_OUTPUT].setChannels(channels);
   }
 
   void process(const ProcessArgs &args) override {
     float bi=params[BI_PARAM].getValue();
 
     if(rstTrigger.process(inputs[RST_INPUT].getVoltage())) {
-      float seedParam = 0;
-      if(inputs[SEED_INPUT].isConnected()) seedParam=inputs[SEED_INPUT].getVoltage()/10.f;
+      float seedParam=0;
+      if(inputs[SEED_INPUT].isConnected())
+        seedParam=inputs[SEED_INPUT].getVoltage()/10.f;
       rnd.reset((unsigned long long)(floor((double)seedParam*(double)ULONG_MAX)));
       next(bi>0.f);
     }
