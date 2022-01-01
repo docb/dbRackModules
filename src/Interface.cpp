@@ -67,7 +67,7 @@ struct Interface : Module {
 struct LabelField : TextField {
   unsigned maxTextLength=16;
   bool isFocused=false;
-  std::shared_ptr <Font> font;
+  std::string _fontPath;
   float font_size;
   float letter_spacing;
   Vec textOffset;
@@ -77,7 +77,8 @@ struct LabelField : TextField {
   Interface *module;
 
   LabelField() : TextField() {
-    font=APP->window->loadFont(asset::plugin(pluginInstance,"res/FreeMonoBold.ttf"));
+    _fontPath = asset::plugin(pluginInstance,"res/FreeMonoBold.ttf");
+
     defaultTextColor=nvgRGB(0x20,0x44,0x20);
     textColor=defaultTextColor;
     backgroundColor=nvgRGB(0xcc,0xcc,0xcc);
@@ -172,6 +173,7 @@ struct LabelField : TextField {
   }
 
   void draw(const DrawArgs &args) override {
+    std::shared_ptr <Font> font= APP->window->loadFont(_fontPath);
     if(module && module->dirty[nr]) {
       text = module->labels[nr];
       module->dirty[nr] = false;
