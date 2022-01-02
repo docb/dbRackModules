@@ -1,7 +1,7 @@
 {
-  "plugin": "docB-VCV",
+  "plugin": "dbRackModules",
   "model": "MVerb",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "params": [
     {
       "value": 8,

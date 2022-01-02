@@ -61,7 +61,7 @@ struct Interface : Module {
 };
 
 /***
- * An editable Textfield which only accepts hex strings
+ * An editable Textfield
  * some stuff i learned from https://github.com/mgunyho/Little-Utils
  */
 struct LabelField : TextField {
