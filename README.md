@@ -192,6 +192,8 @@ The sequence is always looped according to length*4 of the input.
 So the input '8' makes a trigger per beat if clocked with 1/16,
 '2' makes the typical hihat, '08' makes the typical snare.
 
+If the hex sequence is edited or changed it appers as red. You must press enter to activate it (makes it green).
+
 As usual due to the one sample delay per cable, it is recommended always to feed the clock delayed by 2-10 samples
 so that the rst is triggered for sure before the clock.
 
