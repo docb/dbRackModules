@@ -1,6 +1,7 @@
 #include "dcb.h"
 #include "hexfield.h"
 #include "rnd.h"
+
 #define NUMSEQ 12
 
 struct HexSeq : Module {
@@ -26,17 +27,18 @@ struct HexSeq : Module {
 
   bool state[NUMSEQ];
 
-  bool dirty[NUMSEQ] = {};
+  bool dirty[NUMSEQ]={};
 
-  void setDirty(int nr, bool _dirty) {
-    dirty[nr] = _dirty;
+  void setDirty(int nr,bool _dirty) {
+    dirty[nr]=_dirty;
   }
-  bool isDirty(int nr, int pattern = 0) {
+
+  bool isDirty(int nr,int pattern=0) {
     return dirty[nr];
   }
 
 
-  void setHex(int nr,const std::string& hexStr) {
+  void setHex(int nr,const std::string &hexStr) {
     printf("SET %d %s\n",nr,hexStr.c_str());
     hexs[nr]=hexStr;
   }
@@ -113,28 +115,31 @@ struct HexSeq : Module {
     for(int k=0;k<NUMSEQ;k++) {
       json_t *hexStr=json_array_get(data,k);
       hexs[k]=json_string_value(hexStr);
-      dirty[k] = true;
+      dirty[k]=true;
     }
 
   }
 
-  void onRandomize(const RandomizeEvent& e) override {
+  void randomizeField(int k) {
+    std::stringstream stream;
+    stream<<std::uppercase<<std::setfill('0')<<std::setw(8)<<std::hex<<(rnd.next()&0xFFFFFFFF);
+    hexs[k]=stream.str();
+    dirty[k]=true;
+  }
+
+  void onRandomize(const RandomizeEvent &e) override {
     for(int k=0;k<NUMSEQ;k++) {
-      std::stringstream stream;
-      stream << std::uppercase << std::setfill ('0') << std::setw(4)  << std::hex << (rnd.next()&0xFFFFFFFF);
-      hexs[k] = stream.str();
-      dirty[k] = true;
+      randomizeField(k);
     }
   }
 
-  void onReset(const ResetEvent& e) override {
+  void onReset(const ResetEvent &e) override {
     for(int k=0;k<NUMSEQ;k++) {
       hexs[k]="";
       dirty[k]=true;
     }
   }
 };
-
 
 
 struct HexSeqWidget : ModuleWidget {

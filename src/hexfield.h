@@ -4,6 +4,8 @@
 
 #ifndef DOCB_VCV_HEXFIELD_H
 #define DOCB_VCV_HEXFIELD_H
+#include "rnd.h"
+
 /***
  * An editable Textfield which only accepts hex strings
  * some stuff i learned from https://github.com/mgunyho/Little-Utils
@@ -23,6 +25,8 @@ struct HexField : TextField {
   NVGcolor dirtyColor;
   T *module;
   bool dirty=false;
+  bool rndInit = false;
+  RND rnd;
 
   HexField() : TextField() {
     fontPath = asset::plugin(pluginInstance,"res/FreeMonoBold.ttf");
@@ -87,7 +91,14 @@ struct HexField : TextField {
           dirty=true;
         }
       }
-
+    } else if(act&&(e.key==GLFW_KEY_R)) {
+      if(!rndInit) {
+        rnd.reset(0);
+        rndInit = true;
+      }
+      std::stringstream stream;
+      stream<<std::uppercase<<std::setfill('0')<<std::setw(8)<<std::hex<<(rnd.next()&0xFFFFFFFF);
+      setText(stream.str());
     } else if(act&&(e.mods&RACK_MOD_MASK)==GLFW_MOD_SHIFT&&e.key==GLFW_KEY_HOME) {
       cursor=0;
     } else if(act&&(e.mods&RACK_MOD_MASK)==GLFW_MOD_SHIFT&&e.key==GLFW_KEY_END) {
