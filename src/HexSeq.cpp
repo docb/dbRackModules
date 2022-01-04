@@ -1,10 +1,11 @@
 #include "dcb.h"
 #include "hexfield.h"
+#include "rnd.h"
 #define NUMSEQ 12
 
 struct HexSeq : Module {
   enum ParamIds {
-    NUM_PARAMS
+    /*MODE_PARAM,*/NUM_PARAMS
   };
   enum InputIds {
     CLK_INPUT,RST_INPUT,NUM_INPUTS
@@ -20,6 +21,10 @@ struct HexSeq : Module {
   dsp::PulseGenerator gatePulseGenerators[NUMSEQ];
   dsp::SchmittTrigger clockTrigger;
   dsp::SchmittTrigger rstTrigger;
+
+  RND rnd;
+
+  bool state[NUMSEQ];
 
   bool dirty[NUMSEQ] = {};
 
@@ -47,7 +52,7 @@ struct HexSeq : Module {
     }
     configInput(CLK_INPUT,"Clock");
     configInput(RST_INPUT,"Reset");
-
+    //configSwitch(MODE_PARAM, 0.0, 2.0, 0, "Mode", {"T", "G", "L"});
   }
 
   static unsigned int hexToInt(const std::string &hex) {
@@ -112,6 +117,22 @@ struct HexSeq : Module {
     }
 
   }
+
+  void onRandomize(const RandomizeEvent& e) override {
+    for(int k=0;k<NUMSEQ;k++) {
+      std::stringstream stream;
+      stream << std::uppercase << std::setfill ('0') << std::setw(4)  << std::hex << (rnd.next()&0xFFFFFFFF);
+      hexs[k] = stream.str();
+      dirty[k] = true;
+    }
+  }
+
+  void onReset(const ResetEvent& e) override {
+    for(int k=0;k<NUMSEQ;k++) {
+      hexs[k]="";
+      dirty[k]=true;
+    }
+  }
 };
 
 
@@ -128,6 +149,7 @@ struct HexSeqWidget : ModuleWidget {
 
     addInput(createInput<SmallPort>(mm2px(Vec(5.f,MHEIGHT-115.5f)),module,HexSeq::CLK_INPUT));
     addInput(createInput<SmallPort>(mm2px(Vec(15.f,MHEIGHT-115.5f)),module,HexSeq::RST_INPUT));
+    //addParam(createParamCentered<CKSSThreeHorizontal>(mm2px(Vec(30, MHEIGHT-115.5f)), module, HexSeq::MODE_PARAM));
 
     for(int k=0;k<NUMSEQ;k++) {
       auto *textField=createWidget<HexField<HexSeq>>(mm2px(Vec(3,MHEIGHT-(105.f-((float)k*8.3f)))));
