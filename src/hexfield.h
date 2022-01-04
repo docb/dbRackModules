@@ -31,7 +31,7 @@ struct HexField : TextField {
   HexField() : TextField() {
     fontPath = asset::plugin(pluginInstance,"res/FreeMonoBold.ttf");
     defaultTextColor=nvgRGB(0x20,0x44,0x20);
-    dirtyColor=nvgRGB(0x66,0x20,0x20);
+    dirtyColor=nvgRGB(0xAA,0x20,0x20);
     textColor=defaultTextColor;
     backgroundColor=nvgRGB(0xcc,0xcc,0xcc);
     box.size=mm2px(Vec(45.5,6.f));
@@ -107,6 +107,7 @@ struct HexField : TextField {
       event::Deselect eDeselect;
       onDeselect(eDeselect);
       APP->event->selectedWidget=NULL;
+      setText(module->getHex(nr));
       dirty=false;
     } else {
       TextField::onSelectKey(e);
