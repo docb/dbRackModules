@@ -17,7 +17,7 @@ public:
 
   void reset(unsigned long long rseed) {
     if(rseed==0) {
-      state=seed=(unsigned long long)time(nullptr);
+      state=seed=(unsigned long long)time(nullptr)*1234567;
     } else {
       state=seed=rseed*1234567;
     }
