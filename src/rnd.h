@@ -15,13 +15,7 @@ public:
     state=seed;
   }
 
-  void reset(unsigned long long rseed) {
-    if(rseed==0) {
-      state=seed=(unsigned long long)time(nullptr)*1234567;
-    } else {
-      state=seed=rseed*1234567;
-    }
-  }
+  void reset(unsigned long long rseed);
 
   unsigned long next() {
     state=(a*state+c)%m;
@@ -113,7 +107,6 @@ private:
   unsigned long long a=25214903917;
   unsigned long long c=11;
   unsigned long long m=0x0001000000000000ULL;
-
 };
 
 #endif // RND_H
