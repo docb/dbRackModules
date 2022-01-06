@@ -6,11 +6,13 @@
 #define DOCB_VCV_HEXFIELD_H
 #include "rnd.h"
 
+
+
 /***
  * An editable Textfield which only accepts hex strings
  * some stuff i learned from https://github.com/mgunyho/Little-Utils
  */
-template<typename T>
+template<typename M,typename W>
 struct HexField : TextField {
   unsigned maxTextLength=16;
   bool isFocused=false;
@@ -22,8 +24,10 @@ struct HexField : TextField {
   NVGcolor defaultTextColor;
   NVGcolor textColor; // This can be used to temporarily override text color
   NVGcolor backgroundColor;
+  NVGcolor backgroundColorFocus;
   NVGcolor dirtyColor;
-  T *module;
+  M *module;
+  W *moduleWidget;
   bool dirty=false;
   bool rndInit = false;
   RND rnd;
@@ -34,6 +38,7 @@ struct HexField : TextField {
     dirtyColor=nvgRGB(0xAA,0x20,0x20);
     textColor=defaultTextColor;
     backgroundColor=nvgRGB(0xcc,0xcc,0xcc);
+    backgroundColorFocus=nvgRGB(0xcc,0xff,0xcc);
     box.size=mm2px(Vec(45.5,6.f));
     font_size=14;
     charWidth = 16.5f;
@@ -43,13 +48,17 @@ struct HexField : TextField {
   }
 
   int nr;
+  bool onWidgetSelect = false;
 
   void setNr(int k) {
     nr=k;
   }
 
-  void setModule(T *_module) {
+  void setModule(M *_module) {
     module=_module;
+  }
+  void setModuleWidget(W *_moduleWidget) {
+    moduleWidget=_moduleWidget;
   }
 
   static bool checkText(std::string newText) {
@@ -64,15 +73,20 @@ struct HexField : TextField {
   }
 
   static bool checkChar(int c) {
-    return (c>=48&&c<58)||(c>=65&&c<=70);
+    return (c>=48&&c<58)||(c>=65&&c<=70)||(c>=97&&c<=102);
   }
 
   void onSelectText(const event::SelectText &e) override {
-    INFO("on select text %d %d %d\n",e.codepoint, cursor, selection);
-    if((TextField::text.size()<maxTextLength||cursor!=selection)&&checkChar(e.codepoint)) {
-      TextField::onSelectText(e);
+    if(onWidgetSelect) {
+      onWidgetSelect = false;
+      e.consume(nullptr);
     } else {
-      e.consume(NULL);
+      INFO("on select text %d %d %d\n",e.codepoint,cursor,selection);
+      if((TextField::text.size()<maxTextLength||cursor!=selection)&&checkChar(e.codepoint)) {
+        TextField::onSelectText(e);
+      } else {
+        e.consume(nullptr);
+      }
     }
   }
 
@@ -99,14 +113,38 @@ struct HexField : TextField {
       std::stringstream stream;
       stream<<std::uppercase<<std::setfill('0')<<std::setw(8)<<std::hex<<(rnd.next()&0xFFFFFFFF);
       setText(stream.str());
+    } else if(act&&(e.key==GLFW_KEY_S)) {
+      unsigned long long x;
+      std::stringstream ss;
+      unsigned int bitlen = text.size()*4;
+      ss << std::hex << text;
+      ss >> x;
+      unsigned long long mask = ((1ULL&x) << (bitlen-1));
+      x >>= 1; x|=mask;
+      std::stringstream stream;
+      stream<<std::uppercase<<std::setfill('0')<<std::setw(text.size())<<std::hex<<(x);
+      setText(stream.str());
+
     } else if(act&&(e.mods&RACK_MOD_MASK)==GLFW_MOD_SHIFT&&e.key==GLFW_KEY_HOME) {
       cursor=0;
     } else if(act&&(e.mods&RACK_MOD_MASK)==GLFW_MOD_SHIFT&&e.key==GLFW_KEY_END) {
       cursor=TextField::text.size();
+    } else if(act&&(e.key==GLFW_KEY_DOWN)) {
+      module->setHex(nr,text);
+      dirty=false;
+      moduleWidget->moveFocusDown(nr);
+    } else if(act&&(e.key==GLFW_KEY_TAB)) {
+      moduleWidget->moveFocusDown(nr);
+    } else if(act&&(e.key==GLFW_KEY_UP)) {
+      module->setHex(nr,text);
+      dirty=false;
+      moduleWidget->moveFocusUp(nr);
+    } else if(act&&(e.mods&RACK_MOD_MASK)==GLFW_MOD_SHIFT&&e.key==GLFW_KEY_TAB) {
+      moduleWidget->moveFocusUp(nr);
     } else if(act&&e.key==GLFW_KEY_ESCAPE) {
       event::Deselect eDeselect;
       onDeselect(eDeselect);
-      APP->event->selectedWidget=NULL;
+      APP->event->selectedWidget=nullptr;
       setText(module->getHex(nr));
       dirty=false;
     } else {
@@ -172,7 +210,7 @@ struct HexField : TextField {
 
     nvgBeginPath(vg);
     nvgRoundedRect(vg,0,0,box.size.x,box.size.y,3.0);
-    nvgFillColor(vg,backgroundColor);
+    nvgFillColor(vg,isFocused?backgroundColorFocus:backgroundColor);
     nvgFill(vg);
 
     if(font->handle>=0) {

@@ -50,6 +50,7 @@ struct HexSeqP : Module {
   HexSeqP() {
     config(PARAMS_LEN,INPUTS_LEN,OUTPUTS_LEN,LIGHTS_LEN);
     configSwitch(PATTERN_PARAM,0.f,15.f,0.f,"Pattern",{"1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16"});
+    getParamQuantity(PATTERN_PARAM)->snapEnabled=true;
     configParam(DELAY_PARAM,0.f,10.f,0.f,"Clock Delay");
     configParam(COPY_PARAM,0.f,1.f,0.f,"Copy");
     configParam(PASTE_PARAM,0.f,1.f,0.f,"Paste");
@@ -94,6 +95,7 @@ struct HexSeqP : Module {
   void paste() {
     for(int k=0;k<NUMSEQ;k++) {
       hexs[currentPattern][k] = clipBoard[k];
+      dirty[k]=true;
     }
   }
 
@@ -103,12 +105,6 @@ struct HexSeqP : Module {
         pos[currentPattern][k]=0;
     }
     if(inputs[PAT_INPUT].isConnected()) {
-      /*
-      int pat=inputs[PAT_INPUT].getVoltage();
-      if(pat!=currentPattern) {
-        params[PATTERN_PARAM].setValue(pat);
-      }
-       */
       for(int k=0;k<NUMPAT;k++) {
         if(patTrigger[k].process(inputs[PAT_INPUT].getVoltage(k))) {
           currentPattern = k;
@@ -166,9 +162,10 @@ struct HexSeqP : Module {
 
   }
 };
+struct HexSeqPWidget;
 
-struct HexFieldP : HexField<HexSeqP> {
-  HexFieldP() : HexField<HexSeqP>() {
+struct HexFieldP : HexField<HexSeqP,HexSeqPWidget> {
+  HexFieldP() : HexField<HexSeqP,HexSeqPWidget>() {
     font_size=13;
     box.size=mm2px(Vec(45.5,5.f));
   }
@@ -224,6 +221,8 @@ struct PasteButton : SvgSwitch {
 };
 
 struct HexSeqPWidget : ModuleWidget {
+  std::vector<HexField<HexSeqP,HexSeqPWidget>*> fields;
+
   HexSeqPWidget(HexSeqP *module) {
     setModule(module);
     setPanel(createPanel(asset::plugin(pluginInstance,"res/HexSeqP.svg")));
@@ -253,13 +252,22 @@ struct HexSeqPWidget : ModuleWidget {
     for(int k=0;k<NUMSEQ;k++) {
       auto *textField=createWidget<HexFieldP>(mm2px(Vec(3,MHEIGHT-(118.f-((float)k*7.f)))));
       textField->setModule(module);
+      textField->setModuleWidget(this);
       textField->nr=k;
       textField->multiline=false;
+      fields.push_back(textField);
       addChild(textField);
     }
     addOutput(createOutput<SmallPort>(mm2px(Vec(51.5f,MHEIGHT-29.5f)),module,HexSeqP::GATE_OUTPUT));
     addParam(createParam<TrimbotWhiteSnap>(mm2px(Vec(51.5f,MHEIGHT-19.5f)),module,HexSeqP::DELAY_PARAM));
   }
+  void moveFocusDown(int current) {
+    APP->event->setSelectedWidget(fields[(current+1)%NUMSEQ]);
+  }
+  void moveFocusUp(int current) {
+    APP->event->setSelectedWidget(fields[(NUMSEQ+current-1)%NUMSEQ]);
+  }
+
 };
 
 

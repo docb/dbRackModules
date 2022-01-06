@@ -19,6 +19,7 @@ struct HexSeq : Module {
     NUM_LIGHTS
   };
   unsigned pos[NUMSEQ]={};
+  unsigned long songpos = 0;
   std::string hexs[NUMSEQ]={};
   dsp::PulseGenerator gatePulseGenerators[NUMSEQ];
   dsp::PulseGenerator gatePulseInvGenerators[NUMSEQ];
@@ -67,7 +68,8 @@ struct HexSeq : Module {
     for(int k=0;k<NUMSEQ;k++) {
       int len=hexs[k].length();
       if(len>0) {
-        unsigned spos=pos[k]%(len*4);
+        //unsigned spos=pos[k]%(len*4);
+        unsigned spos=songpos%(len*4);
         unsigned charPos=spos/4;
         std::string hs=hexs[k].substr(charPos,1);
         unsigned int hex=hexToInt(hs);
@@ -81,16 +83,20 @@ struct HexSeq : Module {
           gatePulseInvGenerators[k].trigger(0.01f); // process by expander
         }
         pos[k]=(pos[k]+1)%(len*4);
+
       } else {
         state[k]=false;
       }
     }
+    songpos++;
   }
 
   void process(const ProcessArgs &args) override {
     if(rstTrigger.process(inputs[RST_INPUT].getVoltage())) {
-      for(int k=0;k<NUMSEQ;k++)
+      for(int k=0;k<NUMSEQ;k++) {
         pos[k]=0;
+        songpos = 0;
+      }
     }
     if(inputs[CLK_INPUT].isConnected()) {
       if(clockTrigger.process(inputs[CLK_INPUT].getVoltage())) {
