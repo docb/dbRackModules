@@ -321,6 +321,14 @@ struct HexSeqPWidget : ModuleWidget {
     addOutput(createOutput<SmallPort>(mm2px(Vec(51.5f,MHEIGHT-12.f- 6.287f)),module,HexSeqP::INV_OUTPUT));
     //addParam(createParam<TrimbotWhiteSnap>(mm2px(Vec(51.5f,MHEIGHT-19.5f)),module,HexSeqP::DELAY_PARAM));
   }
+  void onHoverKey(const event::HoverKey &e) override {
+    int k = e.key - 48;
+    if(k>=0 && k<10) {
+      fields[k]->onWidgetSelect = true;
+      APP->event->setSelectedWidget(fields[k]);
+    }
+    ModuleWidget::onHoverKey(e);
+  }
   void moveFocusDown(int current) {
     APP->event->setSelectedWidget(fields[(current+1)%NUMSEQ]);
   }
