@@ -18,7 +18,6 @@ struct HexSeq : Module {
   enum LightIds {
     NUM_LIGHTS
   };
-  unsigned pos[NUMSEQ]={};
   unsigned long songpos = 0;
   std::string hexs[NUMSEQ]={};
   dsp::PulseGenerator gatePulseGenerators[NUMSEQ];
@@ -68,7 +67,6 @@ struct HexSeq : Module {
     for(int k=0;k<NUMSEQ;k++) {
       int len=hexs[k].length();
       if(len>0) {
-        //unsigned spos=pos[k]%(len*4);
         unsigned spos=songpos%(len*4);
         unsigned charPos=spos/4;
         std::string hs=hexs[k].substr(charPos,1);
@@ -82,8 +80,6 @@ struct HexSeq : Module {
           state[k] = false;
           gatePulseInvGenerators[k].trigger(0.01f); // process by expander
         }
-        pos[k]=(pos[k]+1)%(len*4);
-
       } else {
         state[k]=false;
       }
@@ -94,7 +90,6 @@ struct HexSeq : Module {
   void process(const ProcessArgs &args) override {
     if(rstTrigger.process(inputs[RST_INPUT].getVoltage())) {
       for(int k=0;k<NUMSEQ;k++) {
-        pos[k]=0;
         songpos = 0;
       }
     }

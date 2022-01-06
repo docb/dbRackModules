@@ -7,27 +7,32 @@
 
 struct HexSeqP : Module {
   enum ParamId {
-    PATTERN_PARAM,DELAY_PARAM,COPY_PARAM,PASTE_PARAM,PARAMS_LEN
+    PATTERN_PARAM,COPY_PARAM,PASTE_PARAM,PARAMS_LEN
   };
   enum InputId {
     CLK_INPUT,RST_INPUT,PAT_INPUT,INPUTS_LEN
   };
   enum OutputId {
-    GATE_OUTPUT,OUTPUTS_LEN
+    TRG_OUTPUT,GATE_OUTPUT,CLK_OUTPUT,INV_OUTPUT,OUTPUTS_LEN
   };
   enum LightId {
     LIGHTS_LEN
   };
   int currentPattern=0;
-  unsigned pos[NUMPAT][NUMSEQ]={};
+  unsigned long songpos = 0;
   std::string hexs[NUMPAT][NUMSEQ]={};
   std::string clipBoard[NUMSEQ];
   bool dirty[NUMSEQ]={};
+  bool state[NUMSEQ]={};
   dsp::PulseGenerator gatePulseGenerators[NUMSEQ];
+  dsp::PulseGenerator gatePulseInvGenerators[NUMSEQ];
   dsp::SchmittTrigger clockTrigger;
   dsp::SchmittTrigger rstTrigger;
   dsp::SchmittTrigger patTrigger[NUMSEQ];
   int clockCounter=-1;
+  int delay;
+  bool polySelect = true;
+  float lastClock=0.f;
   RND rnd;
   void setDirty(int nr,bool _dirty) {
     dirty[nr]=_dirty;
@@ -51,13 +56,15 @@ struct HexSeqP : Module {
     config(PARAMS_LEN,INPUTS_LEN,OUTPUTS_LEN,LIGHTS_LEN);
     configSwitch(PATTERN_PARAM,0.f,15.f,0.f,"Pattern",{"1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16"});
     getParamQuantity(PATTERN_PARAM)->snapEnabled=true;
-    configParam(DELAY_PARAM,0.f,10.f,0.f,"Clock Delay");
     configParam(COPY_PARAM,0.f,1.f,0.f,"Copy");
     configParam(PASTE_PARAM,0.f,1.f,0.f,"Paste");
     configInput(CLK_INPUT,"Clock");
     configInput(RST_INPUT,"Reset");
     configInput(PAT_INPUT,"Pattern select");
+    configOutput(TRG_OUTPUT,"Trig");
     configOutput(GATE_OUTPUT,"Gate");
+    configOutput(CLK_OUTPUT,"Clock");
+    configOutput(INV_OUTPUT,"Inverted");
   }
 
   static unsigned int hexToInt(const std::string &hex) {
@@ -72,7 +79,8 @@ struct HexSeqP : Module {
     for(int k=0;k<NUMSEQ;k++) {
       unsigned int len=hexs[currentPattern][k].length();
       if(len>0) {
-        unsigned spos=pos[currentPattern][k]%(len*4);
+        //unsigned spos=pos[currentPattern][k]%(len*4);
+        unsigned spos=songpos%(len*4);
         unsigned charPos=spos/4;
         std::string hs=hexs[currentPattern][k].substr(charPos,1);
         unsigned int hex=hexToInt(hs);
@@ -80,10 +88,14 @@ struct HexSeqP : Module {
         bool on=hex>>(3-posInChar)&0x01;
         if(on) {
           gatePulseGenerators[k].trigger(0.01f);
+          state[k] = true; // used by expander
+        } else {
+          state[k] = false;
+          gatePulseInvGenerators[k].trigger(0.01f); // process by expander
         }
-        pos[currentPattern][k]=(pos[currentPattern][k]+1)%(len*4);
       }
     }
+    songpos++;
   }
 
   void copy() {
@@ -101,23 +113,37 @@ struct HexSeqP : Module {
 
   void process(const ProcessArgs &args) override {
     if(rstTrigger.process(inputs[RST_INPUT].getVoltage())) {
-      for(int k=0;k<NUMSEQ;k++)
-        pos[currentPattern][k]=0;
+      for(int k=0;k<NUMSEQ;k++) {
+        songpos=0;
+      }
     }
     if(inputs[PAT_INPUT].isConnected()) {
-      for(int k=0;k<NUMPAT;k++) {
-        if(patTrigger[k].process(inputs[PAT_INPUT].getVoltage(k))) {
-          currentPattern = k;
+      if(polySelect) {
+        for(int k=0;k<NUMPAT;k++) {
+          if(patTrigger[k].process(inputs[PAT_INPUT].getVoltage(k))) {
+            currentPattern=k;
+            getParamQuantity(PATTERN_PARAM)->setValue(k);
+            for(int j=0;j<NUMSEQ;j++) {
+              setDirty(j,true);
+              songpos = 0;
+            }
+          }
+        }
+      } else {
+        int k = clamp(inputs[PAT_INPUT].getVoltage()*1.6f-0.1,0.f,15.9f);
+        if(k!=currentPattern) {
+          currentPattern=k;
+          songpos = 0;
+          getParamQuantity(PATTERN_PARAM)->setValue(k);
           for(int j=0;j<NUMSEQ;j++) {
             setDirty(j,true);
-            pos[currentPattern][j]=0;
           }
         }
       }
     }
     if(inputs[CLK_INPUT].isConnected()) {
       if(clockTrigger.process(inputs[CLK_INPUT].getVoltage())) {
-        clockCounter=params[DELAY_PARAM].getValue();
+        clockCounter=delay;
       }
       if(clockCounter>0) {
         clockCounter--;
@@ -129,9 +155,17 @@ struct HexSeqP : Module {
     }
     for(int k=0;k<NUMSEQ;k++) {
       bool trigger=gatePulseGenerators[k].process(1.0/args.sampleRate);
-      outputs[GATE_OUTPUT].setVoltage((trigger?10.0f:0.0f),k);
+      outputs[TRG_OUTPUT].setVoltage((trigger?10.0f:0.0f),k);
+      outputs[GATE_OUTPUT].setVoltage(state[k]?10.0f:0.0f,k);
+      outputs[CLK_OUTPUT].setVoltage(state[k]&&lastClock>1.f?10.0f:0.0f,k);
+      lastClock = inputs[CLK_INPUT].getVoltage();
+      trigger=gatePulseInvGenerators[k].process(1.0/args.sampleRate);
+      outputs[INV_OUTPUT].setVoltage((trigger?10.0f:0.0f),k);
     }
+    outputs[TRG_OUTPUT].setChannels(16);
     outputs[GATE_OUTPUT].setChannels(16);
+    outputs[CLK_OUTPUT].setChannels(16);
+    outputs[INV_OUTPUT].setChannels(16);
 
   }
 
@@ -209,7 +243,7 @@ struct PatternKnob : TrimbotWhite {
       module->currentPattern=pattern;
       for(int k=0;k<NUMSEQ;k++) {
         module->setDirty(k,true);
-        module->pos[pattern][k]=0;
+        module->songpos = 0;
       }
     }
     SvgKnob::onChange(ev);
@@ -255,20 +289,20 @@ struct HexSeqPWidget : ModuleWidget {
     addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH,RACK_GRID_HEIGHT-RACK_GRID_WIDTH)));
     addChild(createWidget<ScrewSilver>(Vec(box.size.x-2*RACK_GRID_WIDTH,RACK_GRID_HEIGHT-RACK_GRID_WIDTH)));
 
-    addInput(createInput<SmallPort>(mm2px(Vec(51.5f,MHEIGHT-115.5f)),module,HexSeqP::CLK_INPUT));
-    addInput(createInput<SmallPort>(mm2px(Vec(51.5f,MHEIGHT-100.5f)),module,HexSeqP::RST_INPUT));
+    addInput(createInput<SmallPort>(mm2px(Vec(51.5f,MHEIGHT-108.8f-6.287)),module,HexSeqP::CLK_INPUT));
+    addInput(createInput<SmallPort>(mm2px(Vec(51.5f,MHEIGHT-99.f-6.287)),module,HexSeqP::RST_INPUT));
 
-    auto *patKnob=createParam<PatternKnob>(mm2px(Vec(51.5f,MHEIGHT-85.f)),module,HexSeqP::PATTERN_PARAM);
+    auto *patKnob=createParam<PatternKnob>(mm2px(Vec(51.5f,MHEIGHT-87.7f-6.274)),module,HexSeqP::PATTERN_PARAM);
     patKnob->module=module;
     addParam(patKnob);
 
-    addInput(createInput<SmallPort>(mm2px(Vec(51.5f,MHEIGHT-73.5f)),module,HexSeqP::PAT_INPUT));
+    addInput(createInput<SmallPort>(mm2px(Vec(51.5f,MHEIGHT-80.f - 6.287f)),module,HexSeqP::PAT_INPUT));
 
-    auto copyButton = createParam<CopyButton<HexSeqP>>(mm2px(Vec(51.5f,MHEIGHT-59.5f)),module,HexSeqP::COPY_PARAM);
+    auto copyButton = createParam<CopyButton<HexSeqP>>(mm2px(Vec(51.5f,MHEIGHT-71.f-3.2f)),module,HexSeqP::COPY_PARAM);
     copyButton->module = module;
     addParam(copyButton);
 
-    auto pasteButton = createParam<PasteButton<HexSeqP>>(mm2px(Vec(51.5f,MHEIGHT-44.5f)),module,HexSeqP::PASTE_PARAM);
+    auto pasteButton = createParam<PasteButton<HexSeqP>>(mm2px(Vec(51.5f,MHEIGHT-62.f-3.2f)),module,HexSeqP::PASTE_PARAM);
     pasteButton->module = module;
     addParam(pasteButton);
 
@@ -281,8 +315,11 @@ struct HexSeqPWidget : ModuleWidget {
       fields.push_back(textField);
       addChild(textField);
     }
-    addOutput(createOutput<SmallPort>(mm2px(Vec(51.5f,MHEIGHT-29.5f)),module,HexSeqP::GATE_OUTPUT));
-    addParam(createParam<TrimbotWhiteSnap>(mm2px(Vec(51.5f,MHEIGHT-19.5f)),module,HexSeqP::DELAY_PARAM));
+    addOutput(createOutput<SmallPort>(mm2px(Vec(51.5f,MHEIGHT-48.f- 6.287f)),module,HexSeqP::TRG_OUTPUT));
+    addOutput(createOutput<SmallPort>(mm2px(Vec(51.5f,MHEIGHT-36.f- 6.287f)),module,HexSeqP::GATE_OUTPUT));
+    addOutput(createOutput<SmallPort>(mm2px(Vec(51.5f,MHEIGHT-24.f- 6.287f)),module,HexSeqP::CLK_OUTPUT));
+    addOutput(createOutput<SmallPort>(mm2px(Vec(51.5f,MHEIGHT-12.f- 6.287f)),module,HexSeqP::INV_OUTPUT));
+    //addParam(createParam<TrimbotWhiteSnap>(mm2px(Vec(51.5f,MHEIGHT-19.5f)),module,HexSeqP::DELAY_PARAM));
   }
   void moveFocusDown(int current) {
     APP->event->setSelectedWidget(fields[(current+1)%NUMSEQ]);
@@ -290,7 +327,33 @@ struct HexSeqPWidget : ModuleWidget {
   void moveFocusUp(int current) {
     APP->event->setSelectedWidget(fields[(NUMSEQ+current-1)%NUMSEQ]);
   }
+  void appendContextMenu(Menu* menu) override {
+    HexSeqP* module = dynamic_cast<HexSeqP*>(this->module);
+    assert(module);
 
+    menu->addChild(new MenuSeparator);
+
+    menu->addChild(createBoolPtrMenuItem("Pattern Poly Select", "", &module->polySelect));
+    struct DelayItem : MenuItem {
+      HexSeqP* module;
+      Menu* createChildMenu() override {
+        Menu* menu = new Menu;
+        for (int c = 0; c <= 10; c++) {
+          menu->addChild(createCheckMenuItem(string::f("%d", c), "",
+                                             [=]() {return module->delay == c;},
+                                             [=]() {module->delay = c;}
+          ));
+        }
+        return menu;
+      }
+    };
+    auto* delayItem = new DelayItem;
+    delayItem->text = "Clock In Delay";
+    delayItem->rightText = string::f("%d", module->delay) + "  " + RIGHT_ARROW;
+    delayItem->module = module;
+    menu->addChild(delayItem);
+
+  }
 };
 
 
