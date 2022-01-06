@@ -5,15 +5,72 @@
 #ifndef DOCB_VCV_HEXFIELD_H
 #define DOCB_VCV_HEXFIELD_H
 #include "rnd.h"
+#include "textfield.hpp"
+#include <bitset>
 
+template<typename M,typename W>
+struct HexField;
 
+template<typename M,typename W>
+struct DensQuantity : Quantity {
+  HexField<M,W>* hexField;
+
+  DensQuantity(HexField<M,W>* m) : hexField(m) {}
+
+  void setValue(float value) override {
+    value = clamp(value, getMinValue(), getMaxValue());
+    if (hexField) {
+      hexField->dens = value;
+    }
+  }
+
+  float getValue() override {
+    if (hexField) {
+      return hexField->dens;
+    }
+    return 0.5f;
+  }
+
+  float getMinValue() override { return 0.0f; }
+  float getMaxValue() override { return 1.0f; }
+  float getDefaultValue() override { return 0.5f; }
+  float getDisplayValue() override { return getValue() *100.f; }
+  void setDisplayValue(float displayValue) override { setValue(displayValue/100.f); }
+  std::string getLabel() override { return "Random density"; }
+  std::string getUnit() override { return "%"; }
+};
+template<typename M,typename W>
+struct DensSlider : ui::Slider {
+  DensSlider(HexField<M,W>* hexField) {
+    quantity = new DensQuantity<M,W>(hexField);
+    box.size.x = 200.0f;
+  }
+  virtual ~DensSlider() {
+    delete quantity;
+  }
+};
+template<typename M,typename W>
+struct DensMenuItem : MenuItem {
+  HexField<M,W>* hexField;
+
+  DensMenuItem(HexField<M,W>* hexField1) : hexField(hexField1) {
+    this->text = "Random";
+    this->rightText = "▸";
+  }
+
+  Menu* createChildMenu() override {
+    Menu* menu = new Menu;
+    menu->addChild(new DensSlider<M,W>(hexField));
+    return menu;
+  }
+};
 
 /***
  * An editable Textfield which only accepts hex strings
  * some stuff i learned from https://github.com/mgunyho/Little-Utils
  */
 template<typename M,typename W>
-struct HexField : TextField {
+struct HexField : MTextField {
   unsigned maxTextLength=16;
   bool isFocused=false;
   std::basic_string<char> fontPath;
@@ -31,8 +88,9 @@ struct HexField : TextField {
   bool dirty=false;
   bool rndInit = false;
   RND rnd;
+  float dens;
 
-  HexField() : TextField() {
+  HexField() : MTextField() {
     fontPath = asset::plugin(pluginInstance,"res/FreeMonoBold.ttf");
     defaultTextColor=nvgRGB(0x20,0x44,0x20);
     dirtyColor=nvgRGB(0xAA,0x20,0x20);
@@ -45,6 +103,7 @@ struct HexField : TextField {
     charWidth2 = 16.25f;
     letter_spacing=0.f;
     textOffset=Vec(2.f,2.f);
+    dens = 0.2f;
   }
 
   int nr;
@@ -65,7 +124,7 @@ struct HexField : TextField {
     std::string::iterator it;
     for(it=newText.begin();it!=newText.end();++it) {
       char c=*it;
-      bool ret=(c>=48&&c<58)||(c>=65&&c<=70);
+      bool ret=(c>=48&&c<58)||(c>=65&&c<=70)||(c>=97&&c<=102);
       if(!ret)
         return false;
     }
@@ -82,53 +141,99 @@ struct HexField : TextField {
       e.consume(nullptr);
     } else {
       INFO("on select text %d %d %d\n",e.codepoint,cursor,selection);
-      if((TextField::text.size()<maxTextLength||cursor!=selection)&&checkChar(e.codepoint)) {
-        TextField::onSelectText(e);
+      if((MTextField::text.size()<maxTextLength||cursor!=selection)&&checkChar(e.codepoint)) {
+        MTextField::onSelectText(e);
       } else {
         e.consume(nullptr);
       }
     }
   }
 
-  void onSelectKey(const event::SelectKey &e) override {
-    //if(!(e.action == GLFW_REPEAT)) printf("on select key\n");
-    bool act=e.action==GLFW_PRESS||e.action==GLFW_REPEAT;
-    if(act&&e.key==GLFW_KEY_V&&(e.mods&RACK_MOD_MASK)==RACK_MOD_CTRL) {
-      // prevent pasting too long text
-      unsigned int pasteLength=maxTextLength-TextField::text.size()+abs(selection-cursor);
-      if(pasteLength>0) {
-        std::string newText(glfwGetClipboardString(APP->window->win));
-        if(checkText(newText)) {
-          if(newText.size()>pasteLength)
-            newText.erase(pasteLength);
-          insertText(newText);
+  unsigned long long toLong() {
+    unsigned long long x;
+    std::stringstream ss;
+    ss << std::hex << text;
+    ss >> x;
+    return x;
+  }
+
+  void pasteCheckedString() {
+    unsigned int pasteLength=maxTextLength-MTextField::text.size()+abs(selection-cursor);
+    if(pasteLength>0) {
+      std::string newText(glfwGetClipboardString(APP->window->win));
+      if(checkText(newText)) {
+        if(newText.size()>pasteLength)
+          newText.erase(pasteLength);
+        insertText(newText);
+        if(isFocused) {
           dirty=true;
+        } else {
+          module->setHex(nr,text);
+          dirty=false;
         }
       }
-    } else if(act&&(e.key==GLFW_KEY_R)) {
+    }
+  }
+  void pasteClipboard() override {
+    pasteCheckedString();
+  }
+  void onSelectKey(const event::SelectKey &e) override {
+    bool act=e.action==GLFW_PRESS||e.action==GLFW_REPEAT;
+    if(act&&(e.keyName == "v" && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL)) {
+      pasteCheckedString();
+    } else if(act&&(e.keyName=="p")) {
       if(!rndInit) {
         rnd.reset(0);
         rndInit = true;
       }
+      unsigned long val;
+      std::stringstream rstream;
+      for(int k=0;k<32;k++) {
+        if(rnd.nextCoin(1-dens)) {
+          rstream << "1";
+        } else {
+          rstream << "0";
+        }
+      }
+      val = std::bitset<32>(rstream.str()).to_ulong();
+      //unsigned long val = rnd.next();
       std::stringstream stream;
-      stream<<std::uppercase<<std::setfill('0')<<std::setw(8)<<std::hex<<(rnd.next()&0xFFFFFFFF);
+      stream<<std::uppercase<<std::setfill('0')<<std::setw(8)<<std::hex<<(val&0xFFFFFFFF);
       setText(stream.str());
-    } else if(act&&(e.key==GLFW_KEY_S)) {
-      unsigned long long x;
-      std::stringstream ss;
-      unsigned int bitlen = text.size()*4;
-      ss << std::hex << text;
-      ss >> x;
-      unsigned long long mask = ((1ULL&x) << (bitlen-1));
+      if((e.mods&RACK_MOD_MASK)==GLFW_MOD_SHIFT) {
+        module->setHex(nr,text);
+        dirty=false;
+      }
+    } else if(act&&(e.keyName=="r")) {
+      unsigned long long x = toLong();
+      unsigned long long mask = ((1ULL&x) << (text.size()*4-1));
       x >>= 1; x|=mask;
       std::stringstream stream;
       stream<<std::uppercase<<std::setfill('0')<<std::setw(text.size())<<std::hex<<(x);
       setText(stream.str());
-
+      if((e.mods&RACK_MOD_MASK)==GLFW_MOD_SHIFT) {
+        module->setHex(nr,text);
+        dirty=false;
+      }
+    } else if(act&&(e.keyName=="l")) {
+      unsigned long long x = toLong();
+      int ps = text.size()*4-1;
+      unsigned long long mask = (x&(1<<ps)) >> ps;
+      long long m = text.size()==16?-1:((1LL<<text.size()*4)-1LL);
+      auto um = (unsigned long long)m;
+      x = (x << 1); x|=mask; x&=um;
+      std::stringstream stream;
+      stream<<std::uppercase<<std::setfill('0')<<std::setw(text.size())<<std::hex<<(x);
+      std::string str = stream.str().substr(0,text.size());
+      setText(str);
+      if((e.mods&RACK_MOD_MASK)==GLFW_MOD_SHIFT) {
+        module->setHex(nr,text);
+        dirty=false;
+      }
     } else if(act&&(e.mods&RACK_MOD_MASK)==GLFW_MOD_SHIFT&&e.key==GLFW_KEY_HOME) {
       cursor=0;
     } else if(act&&(e.mods&RACK_MOD_MASK)==GLFW_MOD_SHIFT&&e.key==GLFW_KEY_END) {
-      cursor=TextField::text.size();
+      cursor=MTextField::text.size();
     } else if(act&&(e.key==GLFW_KEY_DOWN)) {
       module->setHex(nr,text);
       dirty=false;
@@ -148,10 +253,10 @@ struct HexField : TextField {
       setText(module->getHex(nr));
       dirty=false;
     } else {
-      TextField::onSelectKey(e);
+      MTextField::onSelectKey(e);
     }
     if(!e.isConsumed())
-      e.consume(dynamic_cast<TextField *>(this));
+      e.consume(dynamic_cast<MTextField *>(this));
   }
 
   virtual void onChange(const event::Change &e) override {
@@ -164,7 +269,7 @@ struct HexField : TextField {
   }
 
   void onButton(const event::Button &e) override {
-    TextField::onButton(e);
+    MTextField::onButton(e);
     INFO("%d %d %f %f %f %f\n", cursor, selection, e.pos.x,e.pos.y,box.size.x,box.size.y);
   }
 
@@ -178,16 +283,16 @@ struct HexField : TextField {
   }
 
   void onHover(const event::Hover &e) override {
-    TextField::onHover(e);
+    MTextField::onHover(e);
   }
 
   void onHoverScroll(const event::HoverScroll &e) override {
-    TextField::onHoverScroll(e);
+    MTextField::onHoverScroll(e);
   }
 
   void onSelect(const event::Select &e) override {
     isFocused=true;
-    e.consume(dynamic_cast<TextField *>(this));
+    e.consume(dynamic_cast<MTextField *>(this));
   }
 
   void onDeselect(const event::Deselect &e) override {
@@ -196,7 +301,7 @@ struct HexField : TextField {
   }
 
   void step() override {
-    TextField::step();
+    MTextField::step();
   }
 
   void draw(const DrawArgs &args) override {
@@ -241,5 +346,17 @@ struct HexField : TextField {
 
   }
 
+  void createContextMenu() override {
+    MTextField::createContextMenu();
+    menu->addChild(new DensMenuItem<M,W>(this));
+  }
+  void copyClipboard() override {
+    if (cursor == selection && isFocused)
+      return;
+    if(!isFocused)
+      glfwSetClipboardString(APP->window->win, getText().c_str());
+    else
+      glfwSetClipboardString(APP->window->win, getSelectedText().c_str());
+  }
 };
 #endif //DOCB_VCV_HEXFIELD_H

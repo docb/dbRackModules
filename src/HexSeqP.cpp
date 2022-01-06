@@ -28,7 +28,7 @@ struct HexSeqP : Module {
   dsp::SchmittTrigger rstTrigger;
   dsp::SchmittTrigger patTrigger[NUMSEQ];
   int clockCounter=-1;
-
+  RND rnd;
   void setDirty(int nr,bool _dirty) {
     dirty[nr]=_dirty;
   }
@@ -160,6 +160,29 @@ struct HexSeqP : Module {
       }
     }
 
+  }
+  void randomizeField(int j,int k) {
+    std::stringstream stream;
+    stream<<std::uppercase<<std::setfill('0')<<std::setw(8)<<std::hex<<(rnd.next()&0xFFFFFFFF);
+    hexs[j][k]=stream.str();
+    dirty[k]=true;
+  }
+
+  void onRandomize(const RandomizeEvent &e) override {
+    for(int j=0;j<NUMPAT;j++) {
+      for(int k=0;k<NUMSEQ;k++) {
+        randomizeField(j,k);
+      }
+    }
+  }
+
+  void onReset(const ResetEvent &e) override {
+    for(int j=0;j<NUMPAT;j++) {
+      for(int k=0;k<NUMSEQ;k++) {
+        hexs[j][k]="";
+        dirty[k]=true;
+      }
+    }
   }
 };
 struct HexSeqPWidget;
