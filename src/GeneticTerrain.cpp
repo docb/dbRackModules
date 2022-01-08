@@ -653,7 +653,7 @@ struct GeneticSuperTerrain : Module {
 
 
   void onRandomize(const RandomizeEvent& e) override {
-    INFO("onRandomize");
+    //INFO("onRandomize");
     params[RX_PARAM].setValue((float)rnd.nextDouble());
     params[RY_PARAM].setValue((float)rnd.nextDouble());
 

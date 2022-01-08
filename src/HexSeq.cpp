@@ -5,6 +5,8 @@
 
 struct HexSeqWidget : ModuleWidget {
   std::vector<HexField<HexSeq,HexSeqWidget>*> fields;
+  std::vector<DBSmallLight<GreenLight>*> lights;
+  bool showLights = true;
   HexSeqWidget(HexSeq *module) {
     setModule(module);
     setPanel(APP->window->loadSvg(asset::plugin(pluginInstance,"res/HexSeq.svg")));
@@ -26,6 +28,12 @@ struct HexSeqWidget : ModuleWidget {
       addChild(textField);
       fields.push_back(textField);
       addOutput(createOutput<SmallPort>(mm2px(Vec(50,MHEIGHT-(105.5f-(k*8.3f)))),module,HexSeq::GATE_OUTPUTS+k));
+      for(int j=0;j<16;j++) {
+        auto light = createLight<DBSmallLight<GreenLight>>(mm2px(Vec(3.7f+2.75f*j,MHEIGHT-(105.f-((float)k*8.3f)+2.f))), module, k*16+j);
+        light->setVisible(module!=nullptr&&module->showLights);
+        addChild(light);
+        lights.push_back(light);
+      }
     }
 
     addChild(createWidget<Widget>(mm2px(Vec(-0.0,14.585))));
@@ -43,6 +51,39 @@ struct HexSeqWidget : ModuleWidget {
   }
   void moveFocusUp(int current) {
     APP->event->setSelectedWidget(fields[(NUMSEQ+current-1)%NUMSEQ]);
+  }
+  void toggleLights() {
+    HexSeq* module = dynamic_cast<HexSeq*>(this->module);
+    if(!module->showLights) {
+      for(auto light: lights) {
+        light->setVisible(true);
+      }
+      module->showLights = true;
+    } else {
+      for(auto light: lights) {
+        light->setVisible(false);
+      }
+      module->showLights = false;
+    }
+  }
+  void appendContextMenu(Menu* menu) override {
+    HexSeq* module = dynamic_cast<HexSeq*>(this->module);
+    assert(module);
+
+    menu->addChild(new MenuSeparator);
+
+    menu->addChild(createCheckMenuItem("ShowLights", "",
+                                       [=]() {return module->showLights;},
+                                       [=]() { toggleLights();}));
+    menu->addChild(new DensMenuItem<HexSeq>(module));
+    auto* randomLengthFromItem = new IntSelectItem(&module->randomLengthFrom,1,16);
+    randomLengthFromItem->text = "Random length from";
+    randomLengthFromItem->rightText = string::f("%d", module->randomLengthFrom) + "  " + RIGHT_ARROW;
+    menu->addChild(randomLengthFromItem);
+    auto* randomLengthToItem = new IntSelectItem(&module->randomLengthTo,1,16);
+    randomLengthToItem->text = "Random length from";
+    randomLengthToItem->rightText = string::f("%d", module->randomLengthTo) + "  " + RIGHT_ARROW;
+    menu->addChild(randomLengthToItem);
   }
 };
 

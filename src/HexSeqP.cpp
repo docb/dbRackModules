@@ -1,6 +1,6 @@
 #include "dcb.h"
 #include "hexfield.h"
-
+#include "hexutil.h"
 #define NUMSEQ 16
 #define NUMPAT 16
 
@@ -16,7 +16,7 @@ struct HexSeqP : Module {
     TRG_OUTPUT,GATE_OUTPUT,CLK_OUTPUT,INV_OUTPUT,OUTPUTS_LEN
   };
   enum LightId {
-    LIGHTS_LEN
+    LIGHTS_LEN = NUMSEQ*16
   };
   int currentPattern=0;
   unsigned long songpos = 0;
@@ -30,9 +30,13 @@ struct HexSeqP : Module {
   dsp::SchmittTrigger rstTrigger;
   dsp::SchmittTrigger patTrigger[NUMSEQ];
   int clockCounter=-1;
-  int delay;
+  unsigned int delay = 0;
   bool polySelect = true;
+  bool showLights = true;
   float lastClock=0.f;
+  float randomDens = 0.3;
+  int randomLengthFrom = 8;
+  int randomLengthTo = 8;
   RND rnd;
   void setDirty(int nr,bool _dirty) {
     dirty[nr]=_dirty;
@@ -77,11 +81,15 @@ struct HexSeqP : Module {
 
   void next() {
     for(int k=0;k<NUMSEQ;k++) {
+      for(int j=0;j<16;j++) {
+        lights[k*16+j].setBrightness(0.f);
+      }
       unsigned int len=hexs[currentPattern][k].length();
       if(len>0) {
         //unsigned spos=pos[currentPattern][k]%(len*4);
         unsigned spos=songpos%(len*4);
         unsigned charPos=spos/4;
+        lights[k*16+charPos].setBrightness(1.f);
         std::string hs=hexs[currentPattern][k].substr(charPos,1);
         unsigned int hex=hexToInt(hs);
         unsigned posInChar=spos%4;
@@ -125,8 +133,8 @@ struct HexSeqP : Module {
             getParamQuantity(PATTERN_PARAM)->setValue(k);
             for(int j=0;j<NUMSEQ;j++) {
               setDirty(j,true);
-              songpos = 0;
             }
+            songpos = 0;
           }
         }
       } else {
@@ -180,6 +188,12 @@ struct HexSeqP : Module {
       json_array_append_new(patList,hexList);
     }
     json_object_set_new(data,"hexStrings",patList);
+    json_object_set_new(data,"polySelect",json_boolean(polySelect));
+    json_object_set_new(data,"showLights",json_boolean(showLights));
+    json_object_set_new(data,"delay",json_integer(delay));
+    json_object_set_new(data,"randomDens",json_real(randomDens));
+    json_object_set_new(data,"randomLengthFrom",json_integer(randomLengthFrom));
+    json_object_set_new(data,"randomLengthTo",json_integer(randomLengthTo));
     return data;
   }
 
@@ -193,15 +207,36 @@ struct HexSeqP : Module {
         dirty[j]=true;
       }
     }
-
+    json_t *jPolySelect = json_object_get(rootJ,"polySelect");
+    if(jPolySelect!=nullptr) polySelect = json_boolean_value(jPolySelect);
+    json_t *jShowLights = json_object_get(rootJ,"showLights");
+    if(jShowLights!=nullptr) showLights = json_boolean_value(jShowLights);
+    json_t *jDelay =json_object_get(rootJ,"delay");
+    if(jDelay!=nullptr) delay = json_integer_value(jDelay);
+    json_t *jDens =json_object_get(rootJ,"randomDens");
+    if(jDens!=nullptr) randomDens = json_real_value(jDens);
+    json_t *jRandomLengthFrom =json_object_get(rootJ,"randomLengthFrom");
+    if(jRandomLengthFrom!=nullptr) randomLengthFrom= json_integer_value(jRandomLengthFrom);
+    json_t *jRandomLengthTo =json_object_get(rootJ,"randomLengthTo");
+    if(jRandomLengthTo!=nullptr) randomLengthTo = json_integer_value(jRandomLengthTo);
   }
   void randomizeField(int j,int k) {
-    std::stringstream stream;
-    stream<<std::uppercase<<std::setfill('0')<<std::setw(8)<<std::hex<<(rnd.next()&0xFFFFFFFF);
-    hexs[j][k]=stream.str();
+    //std::stringstream stream;
+    //stream<<std::uppercase<<std::setfill('0')<<std::setw(8)<<std::hex<<(rnd.next()&0xFFFFFFFF);
+    hexs[j][k]=getRandomHex(rnd,randomDens,randomLengthFrom,randomLengthTo);
     dirty[k]=true;
   }
-
+  void randomizeCurrentPattern() {
+    for(int k=0;k<NUMSEQ;k++) {
+      randomizeField(currentPattern,k);
+    }
+  }
+  void initializeCurrentPattern() {
+    for(int k=0;k<NUMSEQ;k++) {
+      hexs[currentPattern][k]="";
+      dirty[k]=true;
+    }
+  }
   void onRandomize(const RandomizeEvent &e) override {
     for(int j=0;j<NUMPAT;j++) {
       for(int k=0;k<NUMSEQ;k++) {
@@ -279,6 +314,8 @@ struct PasteButton : SvgSwitch {
 
 struct HexSeqPWidget : ModuleWidget {
   std::vector<HexField<HexSeqP,HexSeqPWidget>*> fields;
+  std::vector<DBSmallLight<GreenLight>*> lights;
+
 
   HexSeqPWidget(HexSeqP *module) {
     setModule(module);
@@ -314,6 +351,12 @@ struct HexSeqPWidget : ModuleWidget {
       textField->multiline=false;
       fields.push_back(textField);
       addChild(textField);
+      for(int j=0;j<16;j++) {
+        auto light = createLight<DBSmallLight<GreenLight>>(mm2px(Vec(3.7f+2.75f*j,MHEIGHT-(118.f-((float)k*7.f)+2.f))), module, k*16+j);
+        addChild(light);
+        light->setVisible(module!=nullptr&&module->showLights);
+        lights.push_back(light);
+      }
     }
     addOutput(createOutput<SmallPort>(mm2px(Vec(51.5f,MHEIGHT-48.f- 6.287f)),module,HexSeqP::TRG_OUTPUT));
     addOutput(createOutput<SmallPort>(mm2px(Vec(51.5f,MHEIGHT-36.f- 6.287f)),module,HexSeqP::GATE_OUTPUT));
@@ -335,6 +378,20 @@ struct HexSeqPWidget : ModuleWidget {
   void moveFocusUp(int current) {
     APP->event->setSelectedWidget(fields[(NUMSEQ+current-1)%NUMSEQ]);
   }
+  void toggleLights() {
+    HexSeqP* module = dynamic_cast<HexSeqP*>(this->module);
+    if(!module->showLights) {
+      for(auto light: lights) {
+        light->setVisible(true);
+      }
+      module->showLights = true;
+    } else {
+      for(auto light: lights) {
+        light->setVisible(false);
+      }
+      module->showLights = false;
+    }
+  }
   void appendContextMenu(Menu* menu) override {
     HexSeqP* module = dynamic_cast<HexSeqP*>(this->module);
     assert(module);
@@ -342,11 +399,14 @@ struct HexSeqPWidget : ModuleWidget {
     menu->addChild(new MenuSeparator);
 
     menu->addChild(createBoolPtrMenuItem("Pattern Poly Select", "", &module->polySelect));
+    menu->addChild(createCheckMenuItem("ShowLights", "",
+                                       [=]() {return module->showLights;},
+                                       [=]() { toggleLights();}));
     struct DelayItem : MenuItem {
       HexSeqP* module;
       Menu* createChildMenu() override {
         Menu* menu = new Menu;
-        for (int c = 0; c <= 10; c++) {
+        for (unsigned int c = 0; c <= 10; c++) {
           menu->addChild(createCheckMenuItem(string::f("%d", c), "",
                                              [=]() {return module->delay == c;},
                                              [=]() {module->delay = c;}
@@ -360,6 +420,39 @@ struct HexSeqPWidget : ModuleWidget {
     delayItem->rightText = string::f("%d", module->delay) + "  " + RIGHT_ARROW;
     delayItem->module = module;
     menu->addChild(delayItem);
+    menu->addChild(new DensMenuItem<HexSeqP>(module));
+    auto* randomLengthFromItem = new IntSelectItem(&module->randomLengthFrom,1,16);
+    randomLengthFromItem->text = "Random length from";
+    randomLengthFromItem->rightText = string::f("%d", module->randomLengthFrom) + "  " + RIGHT_ARROW;
+    menu->addChild(randomLengthFromItem);
+    auto* randomLengthToItem = new IntSelectItem(&module->randomLengthTo,1,16);
+    randomLengthToItem->text = "Random length from";
+    randomLengthToItem->rightText = string::f("%d", module->randomLengthTo) + "  " + RIGHT_ARROW;
+    menu->addChild(randomLengthToItem);
+    struct RandomizePattern : ui::MenuItem {
+      HexSeqP *module;
+      RandomizePattern(HexSeqP *m) : module(m) {}
+      void onAction(const ActionEvent& e) override {
+        if (!module)
+          return;
+        module->randomizeCurrentPattern();
+      }
+    };
+    auto rpMenu = new RandomizePattern(module);
+    rpMenu->text = "Randomize Pattern";
+    menu->addChild(rpMenu);
+    struct InitializePattern : ui::MenuItem {
+      HexSeqP *module;
+      InitializePattern(HexSeqP *m) : module(m) {}
+      void onAction(const ActionEvent& e) override {
+        if (!module)
+          return;
+        module->initializeCurrentPattern();
+      }
+    };
+    auto ipMenu = new InitializePattern(module);
+    ipMenu->text = "Initialize Pattern";
+    menu->addChild(ipMenu);
 
   }
 };

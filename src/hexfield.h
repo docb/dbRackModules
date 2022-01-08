@@ -7,64 +7,7 @@
 #include "rnd.h"
 #include "textfield.hpp"
 #include <bitset>
-
-template<typename M,typename W>
-struct HexField;
-
-template<typename M,typename W>
-struct DensQuantity : Quantity {
-  HexField<M,W>* hexField;
-
-  DensQuantity(HexField<M,W>* m) : hexField(m) {}
-
-  void setValue(float value) override {
-    value = clamp(value, getMinValue(), getMaxValue());
-    if (hexField) {
-      hexField->dens = value;
-    }
-  }
-
-  float getValue() override {
-    if (hexField) {
-      return hexField->dens;
-    }
-    return 0.5f;
-  }
-
-  float getMinValue() override { return 0.0f; }
-  float getMaxValue() override { return 1.0f; }
-  float getDefaultValue() override { return 0.5f; }
-  float getDisplayValue() override { return getValue() *100.f; }
-  void setDisplayValue(float displayValue) override { setValue(displayValue/100.f); }
-  std::string getLabel() override { return "Random density"; }
-  std::string getUnit() override { return "%"; }
-};
-template<typename M,typename W>
-struct DensSlider : ui::Slider {
-  DensSlider(HexField<M,W>* hexField) {
-    quantity = new DensQuantity<M,W>(hexField);
-    box.size.x = 200.0f;
-  }
-  virtual ~DensSlider() {
-    delete quantity;
-  }
-};
-template<typename M,typename W>
-struct DensMenuItem : MenuItem {
-  HexField<M,W>* hexField;
-
-  DensMenuItem(HexField<M,W>* hexField1) : hexField(hexField1) {
-    this->text = "Random";
-    this->rightText = "▸";
-  }
-
-  Menu* createChildMenu() override {
-    Menu* menu = new Menu;
-    menu->addChild(new DensSlider<M,W>(hexField));
-    return menu;
-  }
-};
-
+#include "hexutil.h"
 /***
  * An editable Textfield which only accepts hex strings
  * some stuff i learned from https://github.com/mgunyho/Little-Utils
@@ -88,7 +31,7 @@ struct HexField : MTextField {
   bool dirty=false;
   bool rndInit = false;
   RND rnd;
-  float dens;
+
 
   HexField() : MTextField() {
     fontPath = asset::plugin(pluginInstance,"res/FreeMonoBold.ttf");
@@ -103,7 +46,6 @@ struct HexField : MTextField {
     charWidth2 = 16.25f;
     letter_spacing=0.f;
     textOffset=Vec(2.f,2.f);
-    dens = 0.2f;
   }
 
   int nr;
@@ -140,7 +82,7 @@ struct HexField : MTextField {
       onWidgetSelect = false;
       e.consume(nullptr);
     } else {
-      INFO("on select text %d %d %d\n",e.codepoint,cursor,selection);
+      //INFO("on select text %d %d %d\n",e.codepoint,cursor,selection);
       if((MTextField::text.size()<maxTextLength||cursor!=selection)&&checkChar(e.codepoint)) {
         MTextField::onSelectText(e);
       } else {
@@ -177,29 +119,15 @@ struct HexField : MTextField {
   void pasteClipboard() override {
     pasteCheckedString();
   }
+
+
+
   void onSelectKey(const event::SelectKey &e) override {
     bool act=e.action==GLFW_PRESS||e.action==GLFW_REPEAT;
     if(act&&(e.keyName == "v" && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL)) {
       pasteCheckedString();
     } else if(act&&(e.keyName=="p")) {
-      if(!rndInit) {
-        rnd.reset(0);
-        rndInit = true;
-      }
-      unsigned long val;
-      std::stringstream rstream;
-      for(int k=0;k<32;k++) {
-        if(rnd.nextCoin(1-dens)) {
-          rstream << "1";
-        } else {
-          rstream << "0";
-        }
-      }
-      val = std::bitset<32>(rstream.str()).to_ulong();
-      //unsigned long val = rnd.next();
-      std::stringstream stream;
-      stream<<std::uppercase<<std::setfill('0')<<std::setw(8)<<std::hex<<(val&0xFFFFFFFF);
-      setText(stream.str());
+      setText(getRandomHex(rnd,module->randomDens,module->randomLengthFrom,module->randomLengthTo));
       if((e.mods&RACK_MOD_MASK)==GLFW_MOD_SHIFT) {
         module->setHex(nr,text);
         dirty=false;
@@ -270,7 +198,7 @@ struct HexField : MTextField {
 
   void onButton(const event::Button &e) override {
     MTextField::onButton(e);
-    INFO("%d %d %f %f %f %f\n", cursor, selection, e.pos.x,e.pos.y,box.size.x,box.size.y);
+    //INFO("%d %d %f %f %f %f\n", cursor, selection, e.pos.x,e.pos.y,box.size.x,box.size.y);
   }
 
   void onAction(const event::Action &e) override {
@@ -348,7 +276,6 @@ struct HexField : MTextField {
 
   void createContextMenu() override {
     MTextField::createContextMenu();
-    menu->addChild(new DensMenuItem<M,W>(this));
   }
   void copyClipboard() override {
     if (cursor == selection && isFocused)

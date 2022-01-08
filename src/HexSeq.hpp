@@ -4,6 +4,7 @@
 #include "dcb.h"
 #include "hexfield.h"
 #include "rnd.h"
+#include "hexutil.h"
 #define NUMSEQ 12
 struct HexSeq : Module {
   enum ParamIds {
@@ -16,7 +17,7 @@ struct HexSeq : Module {
     GATE_OUTPUTS,NUM_OUTPUTS=GATE_OUTPUTS+NUMSEQ
   };
   enum LightIds {
-    NUM_LIGHTS
+    NUM_LIGHTS = NUMSEQ*16
   };
   unsigned long songpos = 0;
   std::string hexs[NUMSEQ]={};
@@ -26,9 +27,12 @@ struct HexSeq : Module {
   dsp::SchmittTrigger rstTrigger;
 
   RND rnd;
-
+  float randomDens = 0.3;
+  int randomLengthFrom = 8;
+  int randomLengthTo = 8;
   bool state[NUMSEQ]={};
   bool dirty[NUMSEQ]={};
+  bool showLights = true;
 
   void setDirty(int nr,bool _dirty) {
     dirty[nr]=_dirty;
@@ -65,10 +69,14 @@ struct HexSeq : Module {
 
   void next() {
     for(int k=0;k<NUMSEQ;k++) {
+      for(int j=0;j<16;j++) {
+        lights[k*16+j].setBrightness(0.f);
+      }
       int len=hexs[k].length();
       if(len>0) {
         unsigned spos=songpos%(len*4);
         unsigned charPos=spos/4;
+        lights[k*16+charPos].setBrightness(1.f);
         std::string hs=hexs[k].substr(charPos,1);
         unsigned int hex=hexToInt(hs);
         unsigned posInChar=spos%4;
@@ -112,6 +120,10 @@ struct HexSeq : Module {
       json_array_append_new(hexList,json_string(hexs[k].c_str()));
     }
     json_object_set_new(data,"hexStrings",hexList);
+    json_object_set_new(data,"showLights",json_boolean(showLights));
+    json_object_set_new(data,"randomDens",json_real(randomDens));
+    json_object_set_new(data,"randomLengthFrom",json_integer(randomLengthFrom));
+    json_object_set_new(data,"randomLengthTo",json_integer(randomLengthTo));
     return data;
   }
 
@@ -122,13 +134,18 @@ struct HexSeq : Module {
       hexs[k]=json_string_value(hexStr);
       dirty[k]=true;
     }
-
+    json_t *jShowLights = json_object_get(rootJ,"showLights");
+    if(jShowLights!=nullptr) showLights = json_boolean_value(jShowLights);
+    json_t *jDens =json_object_get(rootJ,"randomDens");
+    if(jDens!=nullptr) randomDens = json_real_value(jDens);
+    json_t *jRandomLengthFrom =json_object_get(rootJ,"randomLengthFrom");
+    if(jRandomLengthFrom!=nullptr) randomLengthFrom= json_integer_value(jRandomLengthFrom);
+    json_t *jRandomLengthTo =json_object_get(rootJ,"randomLengthTo");
+    if(jRandomLengthTo!=nullptr) randomLengthTo = json_integer_value(jRandomLengthTo);
   }
 
   void randomizeField(int k) {
-    std::stringstream stream;
-    stream<<std::uppercase<<std::setfill('0')<<std::setw(8)<<std::hex<<(rnd.next()&0xFFFFFFFF);
-    hexs[k]=stream.str();
+    hexs[k]=getRandomHex(rnd,randomDens,randomLengthFrom,randomLengthTo);
     dirty[k]=true;
   }
 
