@@ -133,30 +133,37 @@ struct HexField : MTextField {
         dirty=false;
       }
     } else if(act&&(e.keyName=="r")) {
-      unsigned long long x = toLong();
-      unsigned long long mask = ((1ULL&x) << (text.size()*4-1));
-      x >>= 1; x|=mask;
-      std::stringstream stream;
-      stream<<std::uppercase<<std::setfill('0')<<std::setw(text.size())<<std::hex<<(x);
-      setText(stream.str());
-      if((e.mods&RACK_MOD_MASK)==GLFW_MOD_SHIFT) {
-        module->setHex(nr,text);
-        dirty=false;
+      if(text.size()>0) {
+        unsigned long long x=toLong();
+        unsigned long long mask=((1ULL&x)<<(text.size()*4-1));
+        x>>=1;
+        x|=mask;
+        std::stringstream stream;
+        stream<<std::uppercase<<std::setfill('0')<<std::setw(text.size())<<std::hex<<(x);
+        setText(stream.str());
+        if((e.mods&RACK_MOD_MASK)==GLFW_MOD_SHIFT) {
+          module->setHex(nr,text);
+          dirty=false;
+        }
       }
     } else if(act&&(e.keyName=="l")) {
-      unsigned long long x = toLong();
-      int ps = text.size()*4-1;
-      unsigned long long mask = (x&(1<<ps)) >> ps;
-      long long m = text.size()==16?-1:((1LL<<text.size()*4)-1LL);
-      auto um = (unsigned long long)m;
-      x = (x << 1); x|=mask; x&=um;
-      std::stringstream stream;
-      stream<<std::uppercase<<std::setfill('0')<<std::setw(text.size())<<std::hex<<(x);
-      std::string str = stream.str().substr(0,text.size());
-      setText(str);
-      if((e.mods&RACK_MOD_MASK)==GLFW_MOD_SHIFT) {
-        module->setHex(nr,text);
-        dirty=false;
+      if(text.size()>0) {
+        unsigned long long x=toLong();
+        int ps=text.size()*4-1;
+        unsigned long long mask=(x&(1<<ps))>>ps;
+        long long m=text.size()==16?-1:((1LL<<text.size()*4)-1LL);
+        auto um=(unsigned long long)m;
+        x=(x<<1);
+        x|=mask;
+        x&=um;
+        std::stringstream stream;
+        stream<<std::uppercase<<std::setfill('0')<<std::setw(text.size())<<std::hex<<(x);
+        std::string str=stream.str().substr(0,text.size());
+        setText(str);
+        if((e.mods&RACK_MOD_MASK)==GLFW_MOD_SHIFT) {
+          module->setHex(nr,text);
+          dirty=false;
+        }
       }
     } else if(act&&(e.mods&RACK_MOD_MASK)==GLFW_MOD_SHIFT&&e.key==GLFW_KEY_HOME) {
       cursor=0;
