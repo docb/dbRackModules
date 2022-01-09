@@ -208,7 +208,7 @@ New features in 2.0.4:
 - new Expander **HexSeqExp**
   - The expander for HexSeq provides additional outputs:
     - Gte: outputs constant 10V if the last bit was set, 0V otherwise.
-    - Clk: represents the incoming clock gate
+    - Clk: represents the incoming clock gate if bit is set
     - Inv: outputs the inverted trigger signal i.e. fires if the current bit is 0
     - NOTE: the expander can only be placed on the right side of HexSeq.
 - Presets for learning purposes (Thanks to Andras Szabo)
