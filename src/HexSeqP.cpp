@@ -426,7 +426,7 @@ struct HexSeqPWidget : ModuleWidget {
     randomLengthFromItem->rightText = string::f("%d", module->randomLengthFrom) + "  " + RIGHT_ARROW;
     menu->addChild(randomLengthFromItem);
     auto* randomLengthToItem = new IntSelectItem(&module->randomLengthTo,1,16);
-    randomLengthToItem->text = "Random length from";
+    randomLengthToItem->text = "Random length to";
     randomLengthToItem->rightText = string::f("%d", module->randomLengthTo) + "  " + RIGHT_ARROW;
     menu->addChild(randomLengthToItem);
     struct RandomizePattern : ui::MenuItem {

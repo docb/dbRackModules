@@ -239,7 +239,7 @@ struct SuperLFOWidget : ModuleWidget {
     addParam(createParam<TrimbotWhite>(mm2px(Vec(rx+24.f,MHEIGHT-79.5f-6.371f)),module,SuperLFO::ROT_SCL_PARAM));
 
     addParam(createParam<TrimbotWhite9>(mm2px(Vec(rx,MHEIGHT-64.f-9.f)),module,SuperLFO::N1_PARAM));
-    addParam(createParam<SmallRoundButton>(mm2px(Vec(rx+12.33f,MHEIGHT-73.f)),module,SuperLFO::N1_SGN_PARAM));
+    addParam(createParam<SmallRoundButton>(mm2px(Vec(rx+10.33f,MHEIGHT-74.f)),module,SuperLFO::N1_SGN_PARAM));
     addInput(createInput<SmallPort>(mm2px(Vec(rx+13.33f,MHEIGHT-65.5f-6.287f)),module,SuperLFO::N1_INPUT));
     addParam(createParam<TrimbotWhite>(mm2px(Vec(rx+24.f,MHEIGHT-65.5f-6.371f)),module,SuperLFO::N1_SCL_PARAM));
 

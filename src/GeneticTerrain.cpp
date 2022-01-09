@@ -1071,7 +1071,7 @@ struct GeneticSuperTerrainWidget : ModuleWidget {
     addParam(createParam<TrimbotWhite>(mm2px(Vec(180.f,MHEIGHT-79.5f-6.371f)),module,GeneticSuperTerrain::ROT_SCL_PARAM));
 
     addParam(createParam<TrimbotWhite9>(mm2px(Vec(156,MHEIGHT-64.f-9.f)),module,GeneticSuperTerrain::N1_PARAM));
-    addParam(createParam<SmallRoundButton>(mm2px(Vec(167.f,MHEIGHT-73.f)),module,GeneticSuperTerrain::N1_SGN_PARAM));
+    addParam(createParam<SmallRoundButton>(mm2px(Vec(166.f,MHEIGHT-74.f)),module,GeneticSuperTerrain::N1_SGN_PARAM));
     addInput(createInput<SmallPort>(mm2px(Vec(169.33f,MHEIGHT-65.5f-6.287f)),module,GeneticSuperTerrain::N1_INPUT));
     addParam(createParam<TrimbotWhite>(mm2px(Vec(180.f,MHEIGHT-65.5f-6.371f)),module,GeneticSuperTerrain::N1_SCL_PARAM));
 
