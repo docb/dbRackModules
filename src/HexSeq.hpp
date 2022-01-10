@@ -14,7 +14,7 @@ struct HexSeq : Module {
     CLK_INPUT,RST_INPUT,NUM_INPUTS
   };
   enum OutputIds {
-    GATE_OUTPUTS,NUM_OUTPUTS=GATE_OUTPUTS+NUMSEQ
+    GATE_OUTPUTS,NUM_OUTPUTS=GATE_OUTPUTS+NUMSEQ+1
   };
   enum LightIds {
     NUM_LIGHTS = NUMSEQ*16
@@ -53,13 +53,15 @@ struct HexSeq : Module {
   HexSeq() {
     config(NUM_PARAMS,NUM_INPUTS,NUM_OUTPUTS,NUM_LIGHTS);
     for(int k=0;k<NUMSEQ;k++) {
-      configOutput(GATE_OUTPUTS+k,std::to_string(k));
+      configOutput(GATE_OUTPUTS+k,"Trigger " + std::to_string(k+1));
     }
+    configOutput(GATE_OUTPUTS+NUMSEQ,"Polyphonic Trigger");
     configInput(CLK_INPUT,"Clock");
     configInput(RST_INPUT,"Reset");
   }
 
-  static unsigned int hexToInt(const std::string &hex) {
+  unsigned int hexToInt(const std::string &hex) {
+    if(hex == "*") return rnd.nextRange(0,15);
     unsigned int x;
     std::stringstream ss;
     ss<<std::hex<<hex;
@@ -109,8 +111,9 @@ struct HexSeq : Module {
     for(int k=0;k<NUMSEQ;k++) {
       bool trigger=gatePulseGenerators[k].process(1.0/args.sampleRate);
       outputs[GATE_OUTPUTS+k].setVoltage((trigger?10.0f:0.0f));
+      outputs[GATE_OUTPUTS+NUMSEQ].setVoltage(trigger?10.0f:0.0f,k);
     }
-
+    outputs[GATE_OUTPUTS+NUMSEQ].setChannels(12);
   }
 
   json_t *dataToJson() override {

@@ -227,8 +227,8 @@ The patterns can be selected via the pattern input in two modes (configurable in
 
 ![](images/seq2.png?raw=true)
 
-For the polyphonic outputs see HexSeq and HexSeqExp.
-A clock delay for the incoming clock can be configured in the menu.
+
+For the description of the polyphonic outputs see HexSeq and HexSeqExp.
 
 ### Frac and Hopa
 

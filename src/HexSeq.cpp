@@ -35,14 +35,15 @@ struct HexSeqWidget : ModuleWidget {
         lights.push_back(light);
       }
     }
+    addOutput(createOutput<SmallPort>(mm2px(Vec(50,MHEIGHT-115.5f)),module,HexSeq::GATE_OUTPUTS+NUMSEQ));
 
     addChild(createWidget<Widget>(mm2px(Vec(-0.0,14.585))));
   }
   void onHoverKey(const event::HoverKey &e) override {
     int k = e.key - 48;
-    if(k>=0 && k<10) {
-      fields[k]->onWidgetSelect = true;
-      APP->event->setSelectedWidget(fields[k]);
+    if(k>=1 && k<10) {
+      fields[k-1]->onWidgetSelect = true;
+      APP->event->setSelectedWidget(fields[k-1]);
     }
     ModuleWidget::onHoverKey(e);
   }

@@ -10,7 +10,7 @@ struct HexSeqExp : Module {
     INPUTS_LEN
   };
   enum OutputId {
-    OUTPUTS_LEN=NUMSEQ*3
+    OUTPUTS_LEN=NUMSEQ*3+3
   };
   enum LightId {
     LIGHTS_LEN
@@ -18,10 +18,16 @@ struct HexSeqExp : Module {
 
   HexSeqExp() {
     config(PARAMS_LEN,INPUTS_LEN,OUTPUTS_LEN,LIGHTS_LEN);
+    for(int k=0;k<NUMSEQ;k++) {
+      configOutput(k,"Gate "+std::to_string(k+1));
+      configOutput(k+NUMSEQ,"Clock "+std::to_string(k+1));
+      configOutput(k+NUMSEQ*2,"Inverted "+std::to_string(k+1));
+    }
+    configOutput(NUMSEQ*3,"Polyphonic Gate");
+    configOutput(NUMSEQ*3+1,"Polyphonic Clock");
+    configOutput(NUMSEQ*3+2,"Polyphonic Inverted");
   }
 
-  dsp::PulseGenerator gatePulseInvGenerators[NUMSEQ];
-  dsp::SchmittTrigger invTrigger;
   bool last[NUMSEQ]={};
   float lastClock=0.f;
   void process(const ProcessArgs &args) override {
@@ -34,16 +40,20 @@ struct HexSeqExp : Module {
     if(mother) {
       for(int k=0;k<NUMSEQ;k++) {
         outputs[k].setVoltage(mother->state[k]?10.0f:0.0f);
+        outputs[NUMSEQ*3].setVoltage(mother->state[k]?10.0f:0.0f,k);
       }
       for(int k=0;k<NUMSEQ;k++) {
         outputs[k+NUMSEQ].setVoltage(mother->state[k]&&lastClock>1.f?10.0f:0.0f);
+        outputs[NUMSEQ*3+1].setVoltage(mother->state[k]&&lastClock>1.f?10.0f:0.0f,k);
         lastClock = mother->inputs[HexSeq::CLK_INPUT].getVoltage();
       }
       for(int k=0;k<NUMSEQ;k++) {
         bool trigger=mother->gatePulseInvGenerators[k].process(1.0/args.sampleRate);
         outputs[NUMSEQ*2+k].setVoltage((trigger?10.0f:0.0f));
+        outputs[NUMSEQ*3+1].setVoltage(trigger?10.0f:0.0f,k);
       }
-
+      for(int k=0;k<3;k++)
+        outputs[NUMSEQ*3+k].setChannels(12);
     }
   }
 };
@@ -63,6 +73,9 @@ struct HexSeqExpWidget : ModuleWidget {
       addOutput(createOutput<SmallPort>(mm2px(Vec(12,MHEIGHT-(105.5f-(k*8.3f)))),module,NUMSEQ + k));
       addOutput(createOutput<SmallPort>(mm2px(Vec(22,MHEIGHT-(105.5f-(k*8.3f)))),module,2*NUMSEQ + k));
     }
+    addOutput(createOutput<SmallPort>(mm2px(Vec(2,MHEIGHT-115.5f)),module,NUMSEQ*3));
+    addOutput(createOutput<SmallPort>(mm2px(Vec(12,MHEIGHT-115.5f)),module,NUMSEQ*3+1));
+    addOutput(createOutput<SmallPort>(mm2px(Vec(22,MHEIGHT-115.5f)),module,NUMSEQ*3+2));
   }
 };
 

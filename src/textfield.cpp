@@ -8,7 +8,7 @@ struct MTextFieldCopyItem : ui::MenuItem {
 		if (!textField)
 			return;
 		textField->copyClipboard();
-		//APP->event->setSelectedWidget(textField);
+		APP->event->setSelectedWidget(textField);
 	}
 };
 
@@ -30,7 +30,7 @@ struct MTextFieldPasteItem : ui::MenuItem {
 		if (!textField)
 			return;
 		textField->pasteClipboard();
-		//APP->event->setSelectedWidget(textField);
+		APP->event->setSelectedWidget(textField);
 	}
 };
 
@@ -202,17 +202,17 @@ void MTextField::onSelectKey(const SelectKeyEvent& e) {
 		}
 		// Ctrl+V
 		if (e.keyName == "v" && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
-			pasteClipboard();
+			pasteClipboard(false);
 			e.consume(this);
 		}
 		// Ctrl+X
 		if (e.keyName == "x" && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
-			cutClipboard();
+			cutClipboard(false);
 			e.consume(this);
 		}
 		// Ctrl+C
 		if (e.keyName == "c" && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
-			copyClipboard();
+			copyClipboard(false);
 			e.consume(this);
 		}
 		// Ctrl+A
@@ -306,18 +306,18 @@ void MTextField::insertText(std::string text) {
 	}
 }
 
-void MTextField::copyClipboard() {
+void MTextField::copyClipboard(bool menu) {
 	if (cursor == selection)
 		return;
 	glfwSetClipboardString(APP->window->win, getSelectedText().c_str());
 }
 
-void MTextField::cutClipboard() {
+void MTextField::cutClipboard(bool menu) {
 	copyClipboard();
 	insertText("");
 }
 
-void MTextField::pasteClipboard() {
+void MTextField::pasteClipboard(bool menu) {
 	const char* newText = glfwGetClipboardString(APP->window->win);
 	if (!newText)
 		return;

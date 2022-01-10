@@ -47,8 +47,7 @@ struct HexSeqP : Module {
   }
 
 
-  void setHex(int nr,const std::string &hexStr,int pattern=0) {
-    printf("SET %d %s\n",nr,hexStr.c_str());
+  void setHex(int nr,const std::string &hexStr) {
     hexs[currentPattern][nr]=hexStr;
   }
 
@@ -65,13 +64,14 @@ struct HexSeqP : Module {
     configInput(CLK_INPUT,"Clock");
     configInput(RST_INPUT,"Reset");
     configInput(PAT_INPUT,"Pattern select");
-    configOutput(TRG_OUTPUT,"Trig");
+    configOutput(TRG_OUTPUT,"Trigger");
     configOutput(GATE_OUTPUT,"Gate");
     configOutput(CLK_OUTPUT,"Clock");
     configOutput(INV_OUTPUT,"Inverted");
   }
 
-  static unsigned int hexToInt(const std::string &hex) {
+  unsigned int hexToInt(const std::string &hex) {
+    if(hex == "*") return rnd.nextRange(0,15);
     unsigned int x;
     std::stringstream ss;
     ss<<std::hex<<hex;
@@ -86,7 +86,6 @@ struct HexSeqP : Module {
       }
       unsigned int len=hexs[currentPattern][k].length();
       if(len>0) {
-        //unsigned spos=pos[currentPattern][k]%(len*4);
         unsigned spos=songpos%(len*4);
         unsigned charPos=spos/4;
         lights[k*16+charPos].setBrightness(1.f);
@@ -221,8 +220,6 @@ struct HexSeqP : Module {
     if(jRandomLengthTo!=nullptr) randomLengthTo = json_integer_value(jRandomLengthTo);
   }
   void randomizeField(int j,int k) {
-    //std::stringstream stream;
-    //stream<<std::uppercase<<std::setfill('0')<<std::setw(8)<<std::hex<<(rnd.next()&0xFFFFFFFF);
     hexs[j][k]=getRandomHex(rnd,randomDens,randomLengthFrom,randomLengthTo);
     dirty[k]=true;
   }
@@ -258,7 +255,8 @@ struct HexSeqPWidget;
 
 struct HexFieldP : HexField<HexSeqP,HexSeqPWidget> {
   HexFieldP() : HexField<HexSeqP,HexSeqPWidget>() {
-    font_size=13;
+    font_size=14;
+    textOffset=Vec(2.f,1.f);
     box.size=mm2px(Vec(45.5,5.f));
   }
 };
@@ -313,7 +311,7 @@ struct PasteButton : SvgSwitch {
 };
 
 struct HexSeqPWidget : ModuleWidget {
-  std::vector<HexField<HexSeqP,HexSeqPWidget>*> fields;
+  std::vector<HexFieldP*> fields;
   std::vector<DBSmallLight<GreenLight>*> lights;
 
 
@@ -366,9 +364,9 @@ struct HexSeqPWidget : ModuleWidget {
   }
   void onHoverKey(const event::HoverKey &e) override {
     int k = e.key - 48;
-    if(k>=0 && k<10) {
-      fields[k]->onWidgetSelect = true;
-      APP->event->setSelectedWidget(fields[k]);
+    if(k>=1 && k<10) {
+      fields[k-1]->onWidgetSelect = true;
+      APP->event->setSelectedWidget(fields[k-1]);
     }
     ModuleWidget::onHoverKey(e);
   }

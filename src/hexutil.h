@@ -5,7 +5,6 @@ static std::string getRandomHex(RND &rnd,float dens,int randomLengthFrom,int ran
   unsigned long val=0;
   int len=rnd.nextRange(randomLengthFrom,randomLengthTo);
   for(int k=0;k<len;k++) {
-    unsigned long long v;
     std::stringstream rstream;
     for(int j=0;j<4;j++) {
       if(rnd.nextCoin(1-dens)) {

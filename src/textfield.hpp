@@ -36,9 +36,9 @@ struct MTextField : OpaqueWidget {
 	std::string getSelectedText();
 	/** Inserts text at the cursor, replacing the selection if necessary */
 	void insertText(std::string text);
-	virtual void copyClipboard();
-	virtual void cutClipboard();
-	virtual void pasteClipboard();
+	virtual void copyClipboard(bool menu = true);
+	virtual void cutClipboard(bool menu = true);
+	virtual void pasteClipboard(bool menu = true);
 	void cursorToPrevWord();
 	void cursorToNextWord();
 	virtual void createContextMenu();

@@ -26,6 +26,7 @@ struct HexField : MTextField {
   NVGcolor backgroundColor;
   NVGcolor backgroundColorFocus;
   NVGcolor dirtyColor;
+  NVGcolor emptyColor;
   M *module;
   W *moduleWidget;
   bool dirty=false;
@@ -37,6 +38,7 @@ struct HexField : MTextField {
     fontPath = asset::plugin(pluginInstance,"res/FreeMonoBold.ttf");
     defaultTextColor=nvgRGB(0x20,0x44,0x20);
     dirtyColor=nvgRGB(0xAA,0x20,0x20);
+    emptyColor=nvgRGB(0x88,0x88,0x88);
     textColor=defaultTextColor;
     backgroundColor=nvgRGB(0xcc,0xcc,0xcc);
     backgroundColorFocus=nvgRGB(0xcc,0xff,0xcc);
@@ -66,7 +68,7 @@ struct HexField : MTextField {
     std::string::iterator it;
     for(it=newText.begin();it!=newText.end();++it) {
       char c=*it;
-      bool ret=(c>=48&&c<58)||(c>=65&&c<=70)||(c>=97&&c<=102);
+      bool ret=checkChar(c);
       if(!ret)
         return false;
     }
@@ -74,7 +76,7 @@ struct HexField : MTextField {
   }
 
   static bool checkChar(int c) {
-    return (c>=48&&c<58)||(c>=65&&c<=70)||(c>=97&&c<=102);
+    return (c>=48&&c<58)||(c>=65&&c<=70)||(c>=97&&c<=102)||c=='*';
   }
 
   void onSelectText(const event::SelectText &e) override {
@@ -84,7 +86,9 @@ struct HexField : MTextField {
     } else {
       //INFO("on select text %d %d %d\n",e.codepoint,cursor,selection);
       if((MTextField::text.size()<maxTextLength||cursor!=selection)&&checkChar(e.codepoint)) {
-        MTextField::onSelectText(e);
+        std::string newText(1, (char) toupper(e.codepoint));
+        insertText(newText);
+        e.consume(this);
       } else {
         e.consume(nullptr);
       }
@@ -106,17 +110,18 @@ struct HexField : MTextField {
       if(checkText(newText)) {
         if(newText.size()>pasteLength)
           newText.erase(pasteLength);
+        std::transform(newText.begin(), newText.end(), newText.begin(), ::toupper);
         insertText(newText);
         if(isFocused) {
           dirty=true;
-        } else {
+        } /*else {
           module->setHex(nr,text);
           dirty=false;
-        }
+        }*/
       }
     }
   }
-  void pasteClipboard() override {
+  void pasteClipboard(bool menu) override {
     pasteCheckedString();
   }
 
@@ -134,6 +139,7 @@ struct HexField : MTextField {
       }
     } else if(act&&(e.keyName=="r")) {
       if(text.size()>0) {
+        std::replace( text.begin(), text.end(), '*', '0');
         unsigned long long x=toLong();
         unsigned long long mask=((1ULL&x)<<(text.size()*4-1));
         x>>=1;
@@ -148,6 +154,7 @@ struct HexField : MTextField {
       }
     } else if(act&&(e.keyName=="l")) {
       if(text.size()>0) {
+        std::replace( text.begin(), text.end(), '*', '0');
         unsigned long long x=toLong();
         int ps=text.size()*4-1;
         unsigned long long mask=(x&(1<<ps))>>ps;
@@ -243,7 +250,10 @@ struct HexField : MTextField {
     std::shared_ptr <Font> font = APP->window->loadFont(fontPath);
     if(module && module->isDirty(nr)) {
       text = module->getHex(nr);
+      cursor = 0;
+      selection = 0;
       module->setDirty(nr,false);
+      dirty = false;
     }
     auto vg=args.vg;
     nvgScissor(vg,0,0,box.size.x,box.size.y);
@@ -260,7 +270,12 @@ struct HexField : MTextField {
       nvgFontSize(vg,font_size);
       nvgTextLetterSpacing(vg,letter_spacing);
       nvgTextAlign(vg,NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
-      nvgText(vg,textOffset.x,textOffset.y,text.c_str(),NULL);
+      if(module!=nullptr && text.size()==0 && module->getHex(nr).size()>0 && !isFocused) {
+        nvgFillColor(vg,emptyColor);
+        nvgText(vg,textOffset.x,textOffset.y,module->getHex(nr).c_str(),NULL);
+      } else {
+        nvgText(vg,textOffset.x,textOffset.y,text.c_str(),NULL);
+      }
     }
     if(isFocused) {
       NVGcolor highlightColor=nvgRGB(0x0,0x90,0xd8);
@@ -284,13 +299,28 @@ struct HexField : MTextField {
   void createContextMenu() override {
     MTextField::createContextMenu();
   }
-  void copyClipboard() override {
-    if (cursor == selection && isFocused)
-      return;
-    if(!isFocused)
-      glfwSetClipboardString(APP->window->win, getText().c_str());
-    else
-      glfwSetClipboardString(APP->window->win, getSelectedText().c_str());
+
+  void copyClipboard(bool menu) override {
+    if(menu) {
+      if(cursor!=selection) {
+        glfwSetClipboardString(APP->window->win,getSelectedText().c_str());
+      } else {
+        glfwSetClipboardString(APP->window->win,getText().c_str());
+      }
+    } else {
+      if(cursor!=selection) {
+        glfwSetClipboardString(APP->window->win,getSelectedText().c_str());
+      }
+    }
   }
+  void cutClipboard(bool menu) override {
+    copyClipboard(menu);
+    if(cursor!=selection) {
+      insertText("");
+    } else {
+      if(menu) setText("");
+    }
+  }
+
 };
 #endif //DOCB_VCV_HEXFIELD_H
