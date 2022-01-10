@@ -166,8 +166,9 @@ It can also used as normal polyphonic Oscillator by moving the freq button to ma
 ![](images/seq.png?raw=true)
 ## HexSeq
 **HexSeq** is a **_12x64_** step trigger sequencer in a very compact format.
-It accepts hex digits `0123456789ABCDEFabcdef` an interprets one hex digit as 4 steps according
+It accepts hex digits `0123456789ABCDEFabcdef*` an interprets one hex digit as 4 steps according
 to the bit representation of the hex number. The original idea is from Steven Yi in his Csound live coding toolset.
+The asterix (*) causes a hex char to be randomly choosen on every hit.
 
 The only thing you must master to remember are the bits of the 16 digits:
 ```
@@ -203,7 +204,7 @@ New features in 2.0.4:
   - p: randomizes the current active field, P: additionally activates/save
   - r: rotates the current active field one bit right, R: additionally activates/save
   - l: rotates the current active field one bit left,  L: additionally activates/save
-- if the mouse is over the module the field 0-9 can be focused by press key 0-9
+- if the mouse is over the module the field 1-9 can be focused by pressing key 1-9
 
 - new Expander **HexSeqExp**
   - The expander for HexSeq provides additional outputs:
@@ -229,6 +230,9 @@ The patterns can be selected via the pattern input in two modes (configurable in
 
 
 For the description of the polyphonic outputs see HexSeq and HexSeqExp.
+
+An internal incoming clock delay can be configured in the menu.
+
 
 ### Frac and Hopa
 
