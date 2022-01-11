@@ -110,9 +110,9 @@ The standard presets are provided in the factory presets of the module.
 *RndH* is a polyphonic, seedable random and hold with 3 Outputs serving different distributions:
 - Min outputs the minimum of k uniform random values (k is adjusted with the Strength-Parameter). In bi-polar mode
   the output is randomly flipped at zero.
-- WB ouputs the weibull distribution with sigma = 1/k. In bi-polar mode
+- WB outputs the weibull distribution with sigma = 1/k. In bi-polar mode
   the output is randomly flipped at zero.
-- Tri putputs the triangular distribution i.e outputs the average of k uniform random values. 
+- Tri outputs the triangular distribution i.e. outputs the average of k uniform random values. 
   With higher k it approximates the gaussian normal distribution.
 
 If Strength = 1 all outputs deliver a uniform distribution. The image below shows the difference
@@ -166,8 +166,9 @@ It can also used as normal polyphonic Oscillator by moving the freq button to ma
 ![](images/seq.png?raw=true)
 ## HexSeq
 **HexSeq** is a **_12x64_** step trigger sequencer in a very compact format.
-It accepts hex digits `0123456789ABCDEF` an interprets one hex digit as 4 steps according
+It accepts hex digits `0123456789ABCDEFabcdef*` an interprets one hex digit as 4 steps according
 to the bit representation of the hex number. The original idea is from Steven Yi in his Csound live coding toolset.
+The asterix (*) causes a hex char to be randomly choosen on every hit.
 
 The only thing you must master to remember are the bits of the 16 digits:
 ```
@@ -197,9 +198,42 @@ If the hex sequence is edited or changed it appers as red. You must press enter 
 As usual due to the one sample delay per cable, it is recommended always to feed the clock delayed by 2-10 samples
 so that the rst is triggered for sure before the clock.
 
-### HexSeqP (alpha)
-**HexSeqP** is a **_16x16x64_** step trigger sequencer. Similar to as HexSeq but with 16 selectable patterns.
+New features in 2.0.4:
+- new key commands for active fields:
+  - TAB: moves focus a field down without saving
+  - UP: saves/activates the field and moves focus a field up
+  - DOWN: saves/activates the field and moves focus a field down
+  - p: randomizes the current active field, P: additionally activates/save
+  - r: rotates the current active field one bit right, R: additionally activates/save
+  - l: rotates the current active field one bit left,  L: additionally activates/save
+- if the mouse is over the module the field 1-9 can be focused by pressing key 1-9
 
+- new Expander **HexSeqExp**
+  - The expander for HexSeq provides additional outputs:
+    - Gte: outputs constant 10V if the last bit was set, 0V otherwise.
+    - Clk: represents the incoming clock gate if bit is set
+    - Inv: outputs the inverted trigger signal i.e. fires if the current bit is 0
+    - NOTE: the expander can only be placed on the right side of HexSeq.
+- Presets for learning purposes (Thanks to Andras Szabo)
+- Menus for randomization settings - Bit density, Length Range
+- Lights for the current Step - can be turned on/off in the menu
+
+Thanks to Andras Szabo and Dave Benham for feature suggestions/requests.
+
+
+### HexSeqP
+**HexSeqP** is a **_16x16x64_** step trigger sequencer. Similar to HexSeq but with 16 selectable patterns.
+
+The patterns can be selected via the pattern input in two modes (configurable in the menu):
+- Poly Mode: The pattern is selected on a trigger on the respective polyphonic channel (left case in image below)
+- Otherwise: The pattern is selected by the incoming voltage (0V-10V) (right case in image below)
+
+![](images/seq2.png?raw=true)
+
+
+For the description of the polyphonic outputs see HexSeq and HexSeqExp.
+
+An internal incoming clock delay can be configured in the menu.
 
 
 ### Frac and Hopa

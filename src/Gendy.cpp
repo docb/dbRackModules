@@ -96,6 +96,7 @@ struct DSS {
     if(phs>=1.0f) {
       int index=lastIndex;
       phs-=1.0f;
+
       if(numPoints>MAX_POINTS||numPoints<1)
         numPoints=MAX_POINTS;
       lastIndex=index=(index+1)%numPoints;
@@ -187,7 +188,7 @@ struct Gendy : Module {
       float maxFreq = 261.626f*powf(2.0f,voct+dtune);
       int numPoints;
       if(inputs[NUM_INPUT].isConnected()) {
-        numPoints = clamp(inputs[NUM_INPUT].getPolyVoltage(k),0.f,10.f)*0.1*(MAX_POINTS-1);
+        numPoints = clamp(inputs[NUM_INPUT].getPolyVoltage(k),1.f,10.f)*0.1*(MAX_POINTS-1);
       } else {
         numPoints = params[NUM_PARAM].getValue();
       }

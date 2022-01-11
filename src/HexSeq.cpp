@@ -1,122 +1,12 @@
-#include "dcb.h"
-#include "hexfield.h"
-#define NUMSEQ 12
 
-struct HexSeq : Module {
-  enum ParamIds {
-    NUM_PARAMS
-  };
-  enum InputIds {
-    CLK_INPUT,RST_INPUT,NUM_INPUTS
-  };
-  enum OutputIds {
-    GATE_OUTPUTS,NUM_OUTPUTS=GATE_OUTPUTS+NUMSEQ
-  };
-  enum LightIds {
-    NUM_LIGHTS
-  };
-  unsigned pos[NUMSEQ]={};
-  std::string hexs[NUMSEQ]={};
-  dsp::PulseGenerator gatePulseGenerators[NUMSEQ];
-  dsp::SchmittTrigger clockTrigger;
-  dsp::SchmittTrigger rstTrigger;
-
-  bool dirty[NUMSEQ] = {};
-
-  void setDirty(int nr, bool _dirty) {
-    dirty[nr] = _dirty;
-  }
-  bool isDirty(int nr, int pattern = 0) {
-    return dirty[nr];
-  }
-
-
-  void setHex(int nr,const std::string& hexStr) {
-    printf("SET %d %s\n",nr,hexStr.c_str());
-    hexs[nr]=hexStr;
-  }
-
-  std::string getHex(int nr) {
-    return hexs[nr];
-  }
-
-  HexSeq() {
-    config(NUM_PARAMS,NUM_INPUTS,NUM_OUTPUTS,NUM_LIGHTS);
-    for(int k=0;k<NUMSEQ;k++) {
-      configOutput(GATE_OUTPUTS+k,std::to_string(k));
-    }
-    configInput(CLK_INPUT,"Clock");
-    configInput(RST_INPUT,"Reset");
-
-  }
-
-  static unsigned int hexToInt(const std::string &hex) {
-    unsigned int x;
-    std::stringstream ss;
-    ss<<std::hex<<hex;
-    ss>>x;
-    return x;
-  }
-
-  void next() {
-    for(int k=0;k<NUMSEQ;k++) {
-      int len=hexs[k].length();
-      if(len>0) {
-        unsigned spos=pos[k]%(len*4);
-        unsigned charPos=spos/4;
-        std::string hs=hexs[k].substr(charPos,1);
-        unsigned int hex=hexToInt(hs);
-        unsigned posInChar=spos%4;
-        bool on=hex>>(3-posInChar)&0x01;
-        if(on) {
-          gatePulseGenerators[k].trigger(0.01f);
-        }
-        pos[k]=(pos[k]+1)%(len*4);
-      }
-    }
-  }
-
-  void process(const ProcessArgs &args) override {
-    if(rstTrigger.process(inputs[RST_INPUT].getVoltage())) {
-      for(int k=0;k<NUMSEQ;k++)
-        pos[k]=0;
-    }
-    if(inputs[CLK_INPUT].isConnected()) {
-      if(clockTrigger.process(inputs[CLK_INPUT].getVoltage())) {
-        next();
-      }
-    }
-    for(int k=0;k<NUMSEQ;k++) {
-      bool trigger=gatePulseGenerators[k].process(1.0/args.sampleRate);
-      outputs[GATE_OUTPUTS+k].setVoltage((trigger?10.0f:0.0f));
-    }
-
-  }
-
-  json_t *dataToJson() override {
-    json_t *data=json_object();
-    json_t *hexList=json_array();
-    for(int k=0;k<NUMSEQ;k++) {
-      json_array_append_new(hexList,json_string(hexs[k].c_str()));
-    }
-    json_object_set_new(data,"hexStrings",hexList);
-    return data;
-  }
-
-  void dataFromJson(json_t *rootJ) override {
-    json_t *data=json_object_get(rootJ,"hexStrings");
-    for(int k=0;k<NUMSEQ;k++) {
-      json_t *hexStr=json_array_get(data,k);
-      hexs[k]=json_string_value(hexStr);
-      dirty[k] = true;
-    }
-
-  }
-};
+#include "HexSeq.hpp"
 
 
 
 struct HexSeqWidget : ModuleWidget {
+  std::vector<HexField<HexSeq,HexSeqWidget>*> fields;
+  std::vector<DBSmallLight<GreenLight>*> lights;
+  bool showLights = true;
   HexSeqWidget(HexSeq *module) {
     setModule(module);
     setPanel(APP->window->loadSvg(asset::plugin(pluginInstance,"res/HexSeq.svg")));
@@ -130,15 +20,71 @@ struct HexSeqWidget : ModuleWidget {
     addInput(createInput<SmallPort>(mm2px(Vec(15.f,MHEIGHT-115.5f)),module,HexSeq::RST_INPUT));
 
     for(int k=0;k<NUMSEQ;k++) {
-      auto *textField=createWidget<HexField<HexSeq>>(mm2px(Vec(3,MHEIGHT-(105.f-((float)k*8.3f)))));
+      auto *textField=createWidget<HexField<HexSeq,HexSeqWidget>>(mm2px(Vec(3,MHEIGHT-(105.f-((float)k*8.3f)))));
       textField->setModule(module);
+      textField->setModuleWidget(this);
       textField->nr=k;
       textField->multiline=false;
       addChild(textField);
+      fields.push_back(textField);
       addOutput(createOutput<SmallPort>(mm2px(Vec(50,MHEIGHT-(105.5f-(k*8.3f)))),module,HexSeq::GATE_OUTPUTS+k));
+      for(int j=0;j<16;j++) {
+        auto light = createLight<DBSmallLight<GreenLight>>(mm2px(Vec(3.7f+2.75f*j,MHEIGHT-(105.f-((float)k*8.3f)+2.f))), module, k*16+j);
+        light->setVisible(module!=nullptr&&module->showLights);
+        addChild(light);
+        lights.push_back(light);
+      }
     }
+    addOutput(createOutput<SmallPort>(mm2px(Vec(50,MHEIGHT-115.5f)),module,HexSeq::GATE_OUTPUTS+NUMSEQ));
 
     addChild(createWidget<Widget>(mm2px(Vec(-0.0,14.585))));
+  }
+  void onHoverKey(const event::HoverKey &e) override {
+    int k = e.key - 48;
+    if(k>=1 && k<10) {
+      fields[k-1]->onWidgetSelect = true;
+      APP->event->setSelectedWidget(fields[k-1]);
+    }
+    ModuleWidget::onHoverKey(e);
+  }
+  void moveFocusDown(int current) {
+    APP->event->setSelectedWidget(fields[(current+1)%NUMSEQ]);
+  }
+  void moveFocusUp(int current) {
+    APP->event->setSelectedWidget(fields[(NUMSEQ+current-1)%NUMSEQ]);
+  }
+  void toggleLights() {
+    HexSeq* module = dynamic_cast<HexSeq*>(this->module);
+    if(!module->showLights) {
+      for(auto light: lights) {
+        light->setVisible(true);
+      }
+      module->showLights = true;
+    } else {
+      for(auto light: lights) {
+        light->setVisible(false);
+      }
+      module->showLights = false;
+    }
+  }
+  void appendContextMenu(Menu* menu) override {
+    HexSeq* module = dynamic_cast<HexSeq*>(this->module);
+    assert(module);
+
+    menu->addChild(new MenuSeparator);
+
+    menu->addChild(createCheckMenuItem("ShowLights", "",
+                                       [=]() {return module->showLights;},
+                                       [=]() { toggleLights();}));
+    menu->addChild(new DensMenuItem<HexSeq>(module));
+    auto* randomLengthFromItem = new IntSelectItem(&module->randomLengthFrom,1,16);
+    randomLengthFromItem->text = "Random length from";
+    randomLengthFromItem->rightText = string::f("%d", module->randomLengthFrom) + "  " + RIGHT_ARROW;
+    menu->addChild(randomLengthFromItem);
+    auto* randomLengthToItem = new IntSelectItem(&module->randomLengthTo,1,16);
+    randomLengthToItem->text = "Random length to";
+    randomLengthToItem->rightText = string::f("%d", module->randomLengthTo) + "  " + RIGHT_ARROW;
+    menu->addChild(randomLengthToItem);
   }
 };
 

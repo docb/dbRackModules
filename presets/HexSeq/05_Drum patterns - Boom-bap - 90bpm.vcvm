@@ -1,0 +1,22 @@
+{
+  "plugin": "dbRackModules",
+  "model": "HexSeq",
+  "version": "2.0.3",
+  "params": [],
+  "data": {
+    "hexStrings": [
+      "C0D0",
+      "09",
+      "A",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+    ]
+  }
+}

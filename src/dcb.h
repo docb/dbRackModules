@@ -4,7 +4,8 @@
 #include <sstream>
 #include <iomanip>
 #include <utility>
-
+#include "rnd.h"
+#include <bitset>
 struct SelectButton : Widget {
   int _value;
   std::string _label;
@@ -151,6 +152,13 @@ struct SmallPort : app::SvgPort {
     setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/SmallPort.svg")));
   }
 };
+template <typename TBase>
+struct DBSmallLight : TSvgLight<TBase> {
+  DBSmallLight() {
+    this->setSvg(Svg::load(asset::plugin(pluginInstance, "res/SmallLight.svg")));
+  }
+};
+
 struct NumberDisplayWidget : TransparentWidget {
   float *value = nullptr;
   float size = 10;
@@ -215,7 +223,7 @@ struct UpdateOnReleaseKnob : TrimbotWhite {
   void onDragEnd(const DragEndEvent &e) override {
     SvgKnob::onDragEnd(e);
     if(e.button==GLFW_MOUSE_BUTTON_LEFT) {
-      INFO("update");
+      //INFO("update");
       *update=true;
     }
 
@@ -244,6 +252,63 @@ struct Averager {
     return sum/(float)S;
   }
 };
+
+template<typename T>
+struct DensQuantity : Quantity {
+  T* module;
+
+  DensQuantity(T* m) : module(m) {}
+
+  void setValue(float value) override {
+    value = clamp(value, getMinValue(), getMaxValue());
+    if (module) {
+      module->randomDens = value;
+    }
+  }
+
+  float getValue() override {
+    if (module) {
+      return module->randomDens;
+    }
+    return 0.5f;
+  }
+
+  float getMinValue() override { return 0.0f; }
+  float getMaxValue() override { return 1.0f; }
+  float getDefaultValue() override { return 0.5f; }
+  float getDisplayValue() override { return getValue() *100.f; }
+  void setDisplayValue(float displayValue) override { setValue(displayValue/100.f); }
+  std::string getLabel() override { return "Random density"; }
+  std::string getUnit() override { return "%"; }
+};
+template<typename T>
+struct DensSlider : ui::Slider {
+  DensSlider(T* module) {
+    quantity = new DensQuantity<T>(module);
+    box.size.x = 200.0f;
+  }
+  virtual ~DensSlider() {
+    delete quantity;
+  }
+};
+template<typename T>
+struct DensMenuItem : MenuItem {
+  T* module;
+
+  DensMenuItem(T* m) : module(m) {
+    this->text = "Random";
+    this->rightText = "▸";
+  }
+
+  Menu* createChildMenu() override {
+    Menu* menu = new Menu;
+    menu->addChild(new DensSlider<T>(module));
+    return menu;
+  }
+};
+
+
+
 #define TWOPIF 6.2831853f
 #define MHEIGHT 128.5f
 

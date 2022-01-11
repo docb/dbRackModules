@@ -153,7 +153,9 @@ struct GeneticTerrain : Module {
   }
 
   int getCurve() {
-    return clamp(inputs[CURVE_TYPE_INPUT].getNormalVoltage(floorf(params[CURVE_TYPE_PARAM].getValue())),0.f,9.99f);
+    int curve = clamp(inputs[CURVE_TYPE_INPUT].getNormalVoltage(floorf(params[CURVE_TYPE_PARAM].getValue())),0.f,9.99f);
+    getParamQuantity(CURVE_TYPE_PARAM)->setValue(curve);
+    return curve;
   }
 
   void process(const ProcessArgs &args) override {
@@ -653,7 +655,7 @@ struct GeneticSuperTerrain : Module {
 
 
   void onRandomize(const RandomizeEvent& e) override {
-    INFO("onRandomize");
+    //INFO("onRandomize");
     params[RX_PARAM].setValue((float)rnd.nextDouble());
     params[RY_PARAM].setValue((float)rnd.nextDouble());
 
@@ -788,7 +790,7 @@ struct SuperTerrainDisplay : TransparentWidget {
                        {255,0,  255},
                        {0,  255,255},
                        {128,0,  0},
-                       {0,  128,128},
+                       {0,  128,0},
                        {128,128,128},
                        {255,128,0},
                        {255,0,  128},
@@ -1071,7 +1073,7 @@ struct GeneticSuperTerrainWidget : ModuleWidget {
     addParam(createParam<TrimbotWhite>(mm2px(Vec(180.f,MHEIGHT-79.5f-6.371f)),module,GeneticSuperTerrain::ROT_SCL_PARAM));
 
     addParam(createParam<TrimbotWhite9>(mm2px(Vec(156,MHEIGHT-64.f-9.f)),module,GeneticSuperTerrain::N1_PARAM));
-    addParam(createParam<SmallRoundButton>(mm2px(Vec(167.f,MHEIGHT-73.f)),module,GeneticSuperTerrain::N1_SGN_PARAM));
+    addParam(createParam<SmallRoundButton>(mm2px(Vec(166.f,MHEIGHT-74.f)),module,GeneticSuperTerrain::N1_SGN_PARAM));
     addInput(createInput<SmallPort>(mm2px(Vec(169.33f,MHEIGHT-65.5f-6.287f)),module,GeneticSuperTerrain::N1_INPUT));
     addParam(createParam<TrimbotWhite>(mm2px(Vec(180.f,MHEIGHT-65.5f-6.371f)),module,GeneticSuperTerrain::N1_SCL_PARAM));
 

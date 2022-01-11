@@ -30,6 +30,7 @@ extern Model* modelPad;
 extern Model* modelRndG;
 extern Model* modelPlotter;
 extern Model* modelSuperLFO;
+extern Model* modelHexSeqExp;
 
 void init(Plugin* p) {
 	pluginInstance = p;
@@ -63,5 +64,6 @@ void init(Plugin* p) {
 	p->addModel(modelRndG);
 	p->addModel(modelPlotter);
 	p->addModel(modelSuperLFO);
+	p->addModel(modelHexSeqExp);
 
 }

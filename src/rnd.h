@@ -15,13 +15,7 @@ public:
     state=seed;
   }
 
-  void reset(unsigned long long rseed) {
-    if(rseed==0) {
-      state=seed=(unsigned long long)time(nullptr);
-    } else {
-      state=seed=rseed*1234567;
-    }
-  }
+  void reset(unsigned long long rseed);
 
   unsigned long next() {
     state=(a*state+c)%m;
@@ -35,6 +29,15 @@ public:
 
   bool nextCoin(float thresh = 0.5f) {
     return nextDouble() > thresh;
+  }
+
+  int nextRange(int from, int to) {
+    if(from==to) return from;
+    if(from<to) {
+      return from+int(round(nextDouble()*(to-from)));
+    } else {
+      return to+int(round(nextDouble()*(from-to)));
+    }
   }
 
   double nextBeta(double _a,double b) {
@@ -113,7 +116,6 @@ private:
   unsigned long long a=25214903917;
   unsigned long long c=11;
   unsigned long long m=0x0001000000000000ULL;
-
 };
 
 #endif // RND_H
