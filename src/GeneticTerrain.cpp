@@ -153,7 +153,9 @@ struct GeneticTerrain : Module {
   }
 
   int getCurve() {
-    return clamp(inputs[CURVE_TYPE_INPUT].getNormalVoltage(floorf(params[CURVE_TYPE_PARAM].getValue())),0.f,9.99f);
+    int curve = clamp(inputs[CURVE_TYPE_INPUT].getNormalVoltage(floorf(params[CURVE_TYPE_PARAM].getValue())),0.f,9.99f);
+    getParamQuantity(CURVE_TYPE_PARAM)->setValue(curve);
+    return curve;
   }
 
   void process(const ProcessArgs &args) override {
