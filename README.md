@@ -140,7 +140,7 @@ This image shows from left to right: weibull, min, tri with strength 15 and unif
 
 ### RndG
 The module does the same as Count Modulas Clocked Random Gates but is full polyphonic, seedable and a bit smaller sized.
-The probabilities can be provided via the polyphonic prop input (0-10V).
+The probabilities can be provided via the polyphonic prop input (-5V/5V, 0V = 50%).
 
 ### RndHVS3
 
