@@ -32,6 +32,7 @@ struct PadTable {
 
   void generate(const std::vector<float> &partials,float sampleRate,float fundFreq,float partialBW,float bwScale) {
     auto input=new float[LENGTH*2];
+    auto work=new float[LENGTH*2];
     memset(input,0,LENGTH*2*sizeof(float));
     input[0]=0.f;
     input[1]=0.f;
@@ -55,11 +56,13 @@ struct PadTable {
       input[k*2+1]=(input[k*2]*sinf(randomPhase));
     };
     int idx=(currentTable+1)%2;
-    _realFFT.irfft(input,table[idx]);
+    pffft_transform_ordered(_realFFT.setup, input, table[idx], work, PFFFT_BACKWARD);
+    //_realFFT.irfft(input,table[idx]);
     _realFFT.scale(table[idx]);
     // this does the trick to avoid clicks
     currentTable=idx;
     delete[] input;
+    delete[] work;
   }
 
   float lookup(float phs) {
