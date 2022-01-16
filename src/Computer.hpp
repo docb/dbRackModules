@@ -339,7 +339,7 @@ struct Computer {
   }
 
   enum Terrains {
-    SINX,COSY,SINXPY,COSXMY,SINX2,COSY2,SINXCOSY,COSYSINX,SINSQR,SIMPLEX,VALUE_NOISE_UNI,VALUE_NOISE_DISCRETE_05,VALUE_NOISE_DISCRETE_07,VALUE_NOISE_DISCRETE_09,VALUE_NOISE_DIST1,VALUE_NOISE_DIST2,COS_DIV,TRIADD,SAWADD,PLSADD,TRI2,SAW2,PLS2,TANTER,NUM_TERRAINS
+    SINX,COSY,SINXPY,COSXMY,SINX2,COSY2,SINXCOSY,COSYSINX,SINSQR,SIMPLEX,VALUE_NOISE_UNI,VALUE_NOISE_DISCRETE_05,VALUE_NOISE_DISCRETE_07,VALUE_NOISE_DISCRETE_09,VALUE_NOISE_DIST1,VALUE_NOISE_DIST2,COS_DIV,TRIADD,SAWADD,PLSADD,TRI2,SAW2,PLS2,TANTER,SINSQRTANH,NUM_TERRAINS
   };
   float_4 vnoise(int n,float_4 x,float_4 y) {
     float v[4];
@@ -430,6 +430,11 @@ struct Computer {
     return value*pls(x*x)*pls(y*y);
   } //C
 
+  T mtanh(T x) {
+    T ex = simd::exp(2*x);
+    return (ex-1)/(ex+1);
+  }
+
   T genomFunc(const int *gen,int len,T x,T y) {
     T v=1;
     for(int k=0;k<len;k++) {
@@ -467,6 +472,9 @@ struct Computer {
           break;
         case SINSQR:
           v=v*sinl(sqr(y+x))*x+sqr(sinl(x)*cosl(y));
+          break;
+        case SINSQRTANH:
+          v=v*mtanh(sinl(sqr(y+x))*x+sqr(sinl(x)*cosl(y)));
           break;
         case VALUE_NOISE_DISCRETE_05:
           v=valueNoise(1,v,x,y);

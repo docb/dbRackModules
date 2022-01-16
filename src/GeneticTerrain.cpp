@@ -69,7 +69,7 @@ struct GeneticTerrain : Module {
   std::vector<std::string> labels = {"NONE","sin(x)","cos(y)","sin(x+y)","cos(x-y)","sin(x*x)","cos(y*y)","sin(x*cos(y))","cos(y*sin(x)",
                                       "sin(sqr(y+x))*x+sqr(sin(x)*cos(y))","Simplex Noise","Value Noise Uni","Value Noise Discrete 0.5","Value Noise Discrete 0.7",
                                       "Value Noise Discrete 0.9","Value Noise Cauchy","Value Noise ArcSin","cos(x/y)","tri(x*x+y*y)","saw(x*x+y*y)","pls(x*x+y*y)",
-                                      "tri(x*x)*tri(y*y)","saw(x*x)*saw(y*y)","pls(x*x)*pls(y*y)","atan(((y)+tan((x+y)-sin(x+PI)-sin(x*y/PI)*sin((y*x+PI)))))"};
+                                      "tri(x*x)*tri(y*y)","saw(x*x)*saw(y*y)","pls(x*x)*pls(y*y)","atan(((y)+tan((x+y)-sin(x+PI)-sin(x*y/PI)*sin((y*x+PI)))))","sin(sqr(y+x))*x+sqr(sin(x)*cos(y))"};
 
   GeneticTerrain() {
     config(NUM_PARAMS,NUM_INPUTS,NUM_OUTPUTS,NUM_LIGHTS);
