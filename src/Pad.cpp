@@ -32,15 +32,16 @@ struct PadTable {
 
   void generate(const std::vector<float> &partials,float sampleRate,float fundFreq,float partialBW,float bwScale) {
     auto input=new float[LENGTH*2];
+    auto work=new float[LENGTH*2];
     memset(input,0,LENGTH*2*sizeof(float));
     input[0]=0.f;
     input[1]=0.f;
     for(unsigned int k=1;k<partials.size();k++) {
       if(partials[k]>0.f) {
-        float partialHz=fundFreq*(k);
+        float partialHz=fundFreq*float(k);
         float freqIdx=partialHz/((float)sampleRate);
-        float bandwidthHz=(std::pow(2.0,partialBW/1200.0)-1.0)*fundFreq*std::pow(float(k),bwScale);
-        float bandwidthSamples=bandwidthHz/(2.0*sampleRate);
+        float bandwidthHz=(std::pow(2.0f,partialBW/1200.0f)-1.0f)*fundFreq*std::pow(float(k),bwScale);
+        float bandwidthSamples=bandwidthHz/(2.0f*sampleRate);
         for(int i=0;i<LENGTH;i++) {
           float fttIdx=((float)i)/((float)LENGTH*2);
           float profileIdx=fttIdx-freqIdx;
@@ -55,11 +56,13 @@ struct PadTable {
       input[k*2+1]=(input[k*2]*sinf(randomPhase));
     };
     int idx=(currentTable+1)%2;
-    _realFFT.irfft(input,table[idx]);
+    pffft_transform_ordered(_realFFT.setup, input, table[idx], work, PFFFT_BACKWARD);
+    //_realFFT.irfft(input,table[idx]);
     _realFFT.scale(table[idx]);
     // this does the trick to avoid clicks
     currentTable=idx;
     delete[] input;
+    delete[] work;
   }
 
   float lookup(float phs) {
@@ -96,8 +99,8 @@ struct Pad : Module {
     partials.push_back(0.f);
     partials.push_back(1.f);
     float seed=params[SEED_PARAM].getValue();
-    int method=params[MTH_PARAM].getValue();
-    unsigned int is=(unsigned int)(seed*UINT_MAX);
+    int method=(int)params[MTH_PARAM].getValue();
+    auto is=(unsigned long long)(seed*(float)UINT_MAX);
     rnd.reset(is);
     switch(method) {
       case EVEN_MIN:

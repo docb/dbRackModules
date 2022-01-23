@@ -69,7 +69,7 @@ struct GeneticTerrain : Module {
   std::vector<std::string> labels = {"NONE","sin(x)","cos(y)","sin(x+y)","cos(x-y)","sin(x*x)","cos(y*y)","sin(x*cos(y))","cos(y*sin(x)",
                                       "sin(sqr(y+x))*x+sqr(sin(x)*cos(y))","Simplex Noise","Value Noise Uni","Value Noise Discrete 0.5","Value Noise Discrete 0.7",
                                       "Value Noise Discrete 0.9","Value Noise Cauchy","Value Noise ArcSin","cos(x/y)","tri(x*x+y*y)","saw(x*x+y*y)","pls(x*x+y*y)",
-                                      "tri(x*x)*tri(y*y)","saw(x*x)*saw(y*y)","pls(x*x)*pls(y*y)","atan(((y)+tan((x+y)-sin(x+PI)-sin(x*y/PI)*sin((y*x+PI)))))"};
+                                      "tri(x*x)*tri(y*y)","saw(x*x)*saw(y*y)","pls(x*x)*pls(y*y)","atan(((y)+tan((x+y)-sin(x+PI)-sin(x*y/PI)*sin((y*x+PI)))))","tanh(sin(sqr(y+x))*x+sqr(sin(x)*cos(y)))"};
 
   GeneticTerrain() {
     config(NUM_PARAMS,NUM_INPUTS,NUM_OUTPUTS,NUM_LIGHTS);
@@ -595,14 +595,14 @@ struct GeneticSuperTerrain : Module {
   std::vector<std::string> labels = {"NONE","sin(x)","cos(y)","sin(x+y)","cos(x-y)","sin(x*x)","cos(y*y)","sin(x*cos(y))","cos(y*sin(x)",
                                      "sin(sqr(y+x))*x+sqr(sin(x)*cos(y))","Simplex Noise","Value Noise Uni","Value Noise Discrete 0.5","Value Noise Discrete 0.7",
                                      "Value Noise Discrete 0.9","Value Noise Cauchy","Value Noise ArcSin","cos(x/y)","tri(x*x+y*y)","saw(x*x+y*y)","pls(x*x+y*y)",
-                                     "tri(x*x)*tri(y*y)","saw(x*x)*saw(y*y)","pls(x*x)*pls(y*y)","atan(((y)+tan((x+y)-sin(x+PI)-sin(x*y/PI)*sin((y*x+PI)))))"};
+                                     "tri(x*x)*tri(y*y)","saw(x*x)*saw(y*y)","pls(x*x)*pls(y*y)","atan(((y)+tan((x+y)-sin(x+PI)-sin(x*y/PI)*sin((y*x+PI)))))","tanh(sin(sqr(y+x))*x+sqr(sin(x)*cos(y)))"};
 
   GeneticSuperTerrain() {
     config(NUM_PARAMS,NUM_INPUTS,NUM_OUTPUTS,NUM_LIGHTS);
-    configSwitch(G1_PARAM,-1,33.f,0.f,"T1",labels);
-    configSwitch(G2_PARAM,-1,33.f,-1.f,"T2",labels);
-    configSwitch(G3_PARAM,-1,33.f,-1.f,"T3",labels);
-    configSwitch(G4_PARAM,-1,33.f,-1.f,"T4",labels);
+    configSwitch(G1_PARAM,-1,Computer<float>::NUM_TERRAINS -1,0.f,"T1",labels);
+    configSwitch(G2_PARAM,-1,Computer<float>::NUM_TERRAINS -1,-1.f,"T2",labels);
+    configSwitch(G3_PARAM,-1,Computer<float>::NUM_TERRAINS -1,-1.f,"T3",labels);
+    configSwitch(G4_PARAM,-1,Computer<float>::NUM_TERRAINS -1,-1.f,"T4",labels);
     configParam(M0_PARAM,0.f,16.f,4.f,"M0");
     configParam(M1_PARAM,0.f,16.f,4.f,"M1");
     configParam(X_PARAM,-10.f,10.f,0.f,"X");

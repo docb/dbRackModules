@@ -179,7 +179,7 @@ struct RndCWidget : ModuleWidget {
     addParam(createParam<TrimbotWhite>(mm2px(Vec(2,MHEIGHT-91.5f)),module,RndC::SEED_PARAM));
     addParam(createParam<TrimbotWhiteSnap>(mm2px(Vec(2,MHEIGHT-79.0f)),module,RndC::STRENGTH_PARAM));
 
-    auto biPolarButton=createParam<SmallButtonWithLabel>(mm2px(Vec(1.5,MHEIGHT-66.f)),module,RndC::BI_PARAM);
+    auto biPolarButton=createParam<SmallButtonWithLabel>(mm2px(Vec(1.5,MHEIGHT-63.f)),module,RndC::BI_PARAM);
     biPolarButton->setLabel("BiP");
     addParam(biPolarButton);
     addOutput(createOutput<SmallPort>(mm2px(Vec(xpos,MHEIGHT-55.f)),module,RndC::MIN_OUTPUT));
