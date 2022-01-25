@@ -4,7 +4,9 @@
 
 #ifndef DOCB_VCV_COMPUTER_HPP
 #define DOCB_VCV_COMPUTER_HPP
+
 #include "rnd.h"
+
 using simd::float_4;
 
 // =============================================================================
@@ -227,12 +229,14 @@ struct Computer {
   const float mpih=M_PI/2;
   SimplexNoise simplex;
   ValueNoise noise;
+  RND rnd;
 
   Computer() {
     genTable(0,{1.f});//SIN
     genTable(1,{1.f,0.5f,1/3.f,1/4.f,1/5.f,1/6.f,1/7.f,1/8.f,1/9.f,1/10.f,1/11.f});//SAW
     genTable(2,{1.f,0.f,1/3.f,0.f,1/5.f,0.f,1/7.f,0.f,1/9.f,0.f,1/11.f}); //PULSE
     genTable(3,{1,0.5f,0.f,0.25f,0.f,1/6.f,0.f,1/8.f,0.f,1/10.f});//TRI
+    rnd.reset(10000);
   }
 
   void genTable(int tblNr,std::initializer_list<float> list) {
@@ -264,28 +268,28 @@ struct Computer {
     return (float)sign*table[tblNr][(sign*phs)&0xFFFF];
   }
 
-  double fastPrecisePow(double a, const double b) {
+  double fastPrecisePow(double a,const double b) {
     // calculate approximation with just the fraction of the exponent
-    int exp = (int) b;
+    int exp=(int)b;
     union {
       double d;
       int x[2];
-    } u = { a };
-    u.x[1] = (int)((b - exp) * (u.x[1] - 1072632447) + 1072632447);
-    u.x[0] = 0;
+    }u={a};
+    u.x[1]=(int)((b-exp)*(u.x[1]-1072632447)+1072632447);
+    u.x[0]=0;
 
     // exponentiation by squaring with the exponent's integer part
     // double r = u.d makes everything much slower, not sure why
-    double r = 1.0;
-    while (exp) {
-      if (exp & 1) {
-        r *= a;
+    double r=1.0;
+    while(exp) {
+      if(exp&1) {
+        r*=a;
       }
-      a *= a;
-      exp >>= 1;
+      a*=a;
+      exp>>=1;
     }
 
-    return r * u.d;
+    return r*u.d;
   }
 
   double fastPow(double a,double b) {
@@ -339,8 +343,9 @@ struct Computer {
   }
 
   enum Terrains {
-    SINX,COSY,SINXPY,COSXMY,SINX2,COSY2,SINXCOSY,COSYSINX,SINSQR,SIMPLEX,VALUE_NOISE_UNI,VALUE_NOISE_DISCRETE_05,VALUE_NOISE_DISCRETE_07,VALUE_NOISE_DISCRETE_09,VALUE_NOISE_DIST1,VALUE_NOISE_DIST2,COS_DIV,TRIADD,SAWADD,PLSADD,TRI2,SAW2,PLS2,TANTER,SINSQRTANH,NUM_TERRAINS
+    SINX,COSY,SINXPY,COSXMY,SINX2,COSY2,SINXCOSY,COSYSINX,SINSQR,SIMPLEX,VALUE_NOISE_UNI,VALUE_NOISE_DISCRETE_05,VALUE_NOISE_DISCRETE_07,VALUE_NOISE_DISCRETE_09,VALUE_NOISE_DIST1,VALUE_NOISE_DIST2,COS_DIV,TRIADD,SAWADD,PLSADD,TRI2,SAW2,PLS2,TANTER,SINSQRTANH,NOISE,WNOISE,NUM_TERRAINS
   };
+
   float_4 vnoise(int n,float_4 x,float_4 y) {
     float v[4];
     for(int k=0;k<4;k++) {
@@ -366,6 +371,29 @@ struct Computer {
     return (float)simplex.noise(x,y);
   }
 
+  float_4 rnoise(float_4 v,float_4 x,float_4 y, float x1, float y1, float x2, float y2) {
+    //double dens = 1.0/20.0;
+    // how can it be done better?
+    return simd::ifelse(x>x1,simd::ifelse(y>y1,simd::ifelse(x<x2,simd::ifelse(y<y2,v*float_4(float(rnd.nextDouble()),float(rnd.nextDouble()),float(rnd.nextDouble()),float(rnd.nextDouble())),v),v),v),v);
+    //return simd::ifelse(x>x1,simd::ifelse(y>y1,simd::ifelse(x<x2,simd::ifelse(y<y2,v*float_4(float(rnd.nextWeibull(dens)),float(rnd.nextWeibull(dens)),float(rnd.nextWeibull(dens)),float(rnd.nextWeibull(dens))),v),v),v),v);
+  }
+
+  float rnoise(float v,float x,float y, float x1, float y1, float x2, float y2) {
+    return (x>x1&&x<x2&&y>y1&&y<y2)?v*float(rnd.nextDouble()):v;
+    //return (x>x1&&x<x2&&y>y1&&y<y2)?v*float(rnd.nextWeibull(1.0/20.0)):v;
+  }
+  float_4 wnoise(float_4 v,float_4 x,float_4 y, float x1, float y1, float x2, float y2) {
+    double dens = 20.0;
+    // how can it be done better?
+    //return simd::ifelse(x>x1,simd::ifelse(y>y1,simd::ifelse(x<x2,simd::ifelse(y<y2,v*float_4(float(rnd.nextDouble()),float(rnd.nextDouble()),float(rnd.nextDouble()),float(rnd.nextDouble())),v),v),v),v);
+    return simd::ifelse(x>x1,simd::ifelse(y>y1,simd::ifelse(x<x2,simd::ifelse(y<y2,v*float_4(float(rnd.nextWeibull(dens)),float(rnd.nextWeibull(dens)),float(rnd.nextWeibull(dens)),float(rnd.nextWeibull(dens))),v),v),v),v);
+  }
+
+  float wnoise(float v,float x,float y, float x1, float y1, float x2, float y2) {
+    //return (x>x1&&x<x2&&y>y1&&y<y2)?v*float(rnd.nextDouble()):v;
+    return (x>x1&&x<x2&&y>y1&&y<y2)?v*float(rnd.nextWeibull(20.0)):v;
+  }
+
   T simplexNoise(T value,T x,T y) {
     return value*snoise(x,y);
   }
@@ -377,6 +405,7 @@ struct Computer {
   T sinxpy(T value,T x,T y) {
     return value*sinl(4*(x+y));
   }
+
   T cosxmy(T value,T x,T y) {
     return value*cosl(4*(x-y));
   }
@@ -392,6 +421,7 @@ struct Computer {
   T sinxcosy(T value,T x,T y) {
     return value*sinl(2*x*cosl(y));
   }
+
   T cosysinx(T value,T x,T y) {
     return value*cosl(2*y*sinl(x));
   }
@@ -431,9 +461,10 @@ struct Computer {
   } //C
 
   T mtanh(T x) {
-    T ex = simd::exp(2*x);
+    T ex=simd::exp(2*x);
     return (ex-1)/(ex+1);
   }
+
 
   T genomFunc(const int *gen,int len,T x,T y) {
     T v=1;
@@ -518,6 +549,18 @@ struct Computer {
         case PLS2:
           v=pls2(v,x,y);
           break;
+        case NOISE:
+          v=rnoise(v,x,y,0,0,1,1);
+          v=rnoise(v,x,y,-3,1,-1,3);
+          v=rnoise(v,x,y,-5,-4,-2,-1);
+          v=rnoise(v,x,y,2,-6,6,-2);
+          break;
+        case WNOISE:
+          v=wnoise(v,x,y,0,0,1,1);
+          v=wnoise(v,x,y,-3,1,-1,3);
+          v=wnoise(v,x,y,-5,-4,-2,-1);
+          v=wnoise(v,x,y,2,-6,6,-2);
+          break;
       }
     }
     return v;
@@ -598,16 +641,18 @@ struct Computer {
     outX=kx+krx*cost*(1+kparam*sint*sint);
     outY=ky+kry*sint*(1-kparam-kparam*cost*cost);
   }
+
   template<int A>
   void lissajous(T t,T kx,T ky,T krx,T kry,T kparam,T &outX,T &outY) {
-    outX = kx+krx*sinl(t);
-    outY = ky+kry*sinl(A*t + kparam);
+    outX=kx+krx*sinl(t);
+    outY=ky+kry*sinl(A*t+kparam);
   }
-  template<int N, int P>
+
+  template<int N,int P>
   void hypocycloid(T t,T kx,T ky,T krx,T kry,T kparam,T &outX,T &outY) {
-    float a = float(N)/float(P);
-    outX = kx+krx*((1.f-a)*cosl(a*t*float(P))+a*kparam*cosl((1-a)*t*float(P)));
-    outY = ky+kry*((1.f-a)*sinl(a*t*float(P))-a*kparam*sinl((1-a)*t*float(P)));
+    float a=float(N)/float(P);
+    outX=kx+krx*((1.f-a)*cosl(a*t*float(P))+a*kparam*cosl((1-a)*t*float(P)));
+    outY=ky+kry*((1.f-a)*sinl(a*t*float(P))-a*kparam*sinl((1-a)*t*float(P)));
   }
 
   enum Curves {

@@ -8,6 +8,10 @@ struct GeneticTerrainOSC {
   DCBlocker<T> dcBlock;
   float phs=TWOPIF;
 
+  void reset() {
+    dcBlock.reset();
+  }
+
   void setPitch(T voct) {
     //freq = dsp::FREQ_C4 * dsp::approxExp2_taylor5(voct + 30) / 1073741824;
     freq=261.626f*simd::pow(2.0f,voct);
@@ -65,11 +69,12 @@ struct GeneticTerrain : Module {
   float cx,cy;
   bool state=false;
   bool center = false;
+  bool reset;
   RND rnd;
   std::vector<std::string> labels = {"NONE","sin(x)","cos(y)","sin(x+y)","cos(x-y)","sin(x*x)","cos(y*y)","sin(x*cos(y))","cos(y*sin(x)",
                                       "sin(sqr(y+x))*x+sqr(sin(x)*cos(y))","Simplex Noise","Value Noise Uni","Value Noise Discrete 0.5","Value Noise Discrete 0.7",
                                       "Value Noise Discrete 0.9","Value Noise Cauchy","Value Noise ArcSin","cos(x/y)","tri(x*x+y*y)","saw(x*x+y*y)","pls(x*x+y*y)",
-                                      "tri(x*x)*tri(y*y)","saw(x*x)*saw(y*y)","pls(x*x)*pls(y*y)","atan(((y)+tan((x+y)-sin(x+PI)-sin(x*y/PI)*sin((y*x+PI)))))","tanh(sin(sqr(y+x))*x+sqr(sin(x)*cos(y)))"};
+                                      "tri(x*x)*tri(y*y)","saw(x*x)*saw(y*y)","pls(x*x)*pls(y*y)","atan(((y)+tan((x+y)-sin(x+PI)-sin(x*y/PI)*sin((y*x+PI)))))","tanh(sin(sqr(y+x))*x+sqr(sin(x)*cos(y)))","Noise", "Weibull Noise"};
 
   GeneticTerrain() {
     config(NUM_PARAMS,NUM_INPUTS,NUM_OUTPUTS,NUM_LIGHTS);
@@ -112,6 +117,12 @@ struct GeneticTerrain : Module {
       oscBw[k].computer=&computer;
     }
   }
+
+  void onReset(const ResetEvent &e) override {
+    Module::onReset(e);
+    reset = true;
+  }
+
   void onRandomize(const RandomizeEvent& e) override {
 
     params[RX_PARAM].setValue((float)rnd.nextDouble());
@@ -159,6 +170,17 @@ struct GeneticTerrain : Module {
   }
 
   void process(const ProcessArgs &args) override {
+    if(reset) {
+      reset = false;
+      for(int k=0;k<4;k++) {
+        osc[k].reset();
+        oscBw[k].reset();
+      }
+      for(int k=0;k<16;k++) {
+        outputs[LEFT_OUTPUT].setVoltage(0.f,k);
+        outputs[RIGHT_OUTPUT].setVoltage(0.f,k);
+      }
+    }
     genParam[0]=floorf(params[G1_PARAM].getValue());
     genParam[1]=floorf(params[G2_PARAM].getValue());
     genParam[2]=floorf(params[G3_PARAM].getValue());
@@ -591,11 +613,12 @@ struct GeneticSuperTerrain : Module {
   float cx,cy;
   bool state=false;
   bool center = false;
+  bool reset = false;
   RND rnd;
   std::vector<std::string> labels = {"NONE","sin(x)","cos(y)","sin(x+y)","cos(x-y)","sin(x*x)","cos(y*y)","sin(x*cos(y))","cos(y*sin(x)",
                                      "sin(sqr(y+x))*x+sqr(sin(x)*cos(y))","Simplex Noise","Value Noise Uni","Value Noise Discrete 0.5","Value Noise Discrete 0.7",
                                      "Value Noise Discrete 0.9","Value Noise Cauchy","Value Noise ArcSin","cos(x/y)","tri(x*x+y*y)","saw(x*x+y*y)","pls(x*x+y*y)",
-                                     "tri(x*x)*tri(y*y)","saw(x*x)*saw(y*y)","pls(x*x)*pls(y*y)","atan(((y)+tan((x+y)-sin(x+PI)-sin(x*y/PI)*sin((y*x+PI)))))","tanh(sin(sqr(y+x))*x+sqr(sin(x)*cos(y)))"};
+                                     "tri(x*x)*tri(y*y)","saw(x*x)*saw(y*y)","pls(x*x)*pls(y*y)","atan(((y)+tan((x+y)-sin(x+PI)-sin(x*y/PI)*sin((y*x+PI)))))","tanh(sin(sqr(y+x))*x+sqr(sin(x)*cos(y)))","Noise", "Weibull Noise"};
 
   GeneticSuperTerrain() {
     config(NUM_PARAMS,NUM_INPUTS,NUM_OUTPUTS,NUM_LIGHTS);
@@ -653,6 +676,10 @@ struct GeneticSuperTerrain : Module {
     }
   }
 
+  void onReset(const ResetEvent &e) override {
+    Module::onReset(e);
+    reset = true;
+  }
 
   void onRandomize(const RandomizeEvent& e) override {
     //INFO("onRandomize");
@@ -694,6 +721,17 @@ struct GeneticSuperTerrain : Module {
   }
 
   void process(const ProcessArgs &args) override {
+    if(reset) {
+      reset = false;
+      for(int k=0;k<4;k++) {
+        osc[k].reset();
+        oscBw[k].reset();
+      }
+      for(int k=0;k<16;k++) {
+        outputs[LEFT_OUTPUT].setVoltage(0.f,k);
+        outputs[RIGHT_OUTPUT].setVoltage(0.f,k);
+      }
+    }
     genParam[0]=floorf(params[G1_PARAM].getValue());
     genParam[1]=floorf(params[G2_PARAM].getValue());
     genParam[2]=floorf(params[G3_PARAM].getValue());

@@ -239,6 +239,10 @@ struct DCBlocker {
     x = v;
     return y;
   }
+  void reset() {
+    x = 0.f;
+    y = 0.f;
+  }
 };
 template<size_t S>
 struct Averager {
