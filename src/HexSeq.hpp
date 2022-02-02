@@ -21,6 +21,7 @@ struct HexSeq : Module {
   };
   unsigned long songpos = 0;
   std::string hexs[NUMSEQ]={};
+  int numSeq = NUMSEQ;
   dsp::PulseGenerator gatePulseGenerators[NUMSEQ];
   dsp::PulseGenerator gatePulseInvGenerators[NUMSEQ];
   dsp::SchmittTrigger clockTrigger;
