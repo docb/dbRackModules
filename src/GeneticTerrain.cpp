@@ -18,7 +18,13 @@ struct GeneticTerrainOSC {
     //freq = 207.652f * simd::pow(2.0f, voct);
 
   }
-
+  void updateExtPhase(T extPhs, bool backWards) {
+    if(backWards) {
+      phase=simd::fmod(-extPhs*phs,phs);
+    } else {
+      phase=simd::fmod(extPhs*phs,phs);
+    }
+  }
   void updatePhase(float oneSampleTime,bool backWards) {
     T dPhase=simd::clamp(freq*oneSampleTime*phs,0.f,0.5f);
     if(backWards) {
@@ -51,7 +57,7 @@ struct GeneticTerrain : Module {
     ZOOM_PARAM,X_SCL_PARAM,Y_SCL_PARAM,RX_SCL_PARAM,RY_SCL_PARAM,ROT_SCL_PARAM,CP_SCL_PARAM,GATE_OSC_PARAM,CENTER_PARAM,NUM_PARAMS
   };
   enum InputIds {
-    VOCT_INPUT,GATE_INPUT,X_INPUT,Y_INPUT,RX_INPUT,RY_INPUT,ROT_INPUT,CURVE_TYPE_INPUT,CURVE_PARAM_INPUT,NUM_INPUTS
+    VOCT_INPUT,GATE_INPUT,X_INPUT,Y_INPUT,RX_INPUT,RY_INPUT,ROT_INPUT,CURVE_TYPE_INPUT,CURVE_PARAM_INPUT,PHS_INPUT,NUM_INPUTS
   };
   enum OutputIds {
     LEFT_OUTPUT,RIGHT_OUTPUT,NUM_OUTPUTS
@@ -108,6 +114,7 @@ struct GeneticTerrain : Module {
     configInput(RX_INPUT, "Modulation Scale X");
     configInput(RY_INPUT, "Modulation Scale Y");
     configInput(CURVE_PARAM_INPUT, "Modulation Curve Parameter");
+    configInput(PHS_INPUT, "Ext Phase");
     configOutput(RIGHT_OUTPUT, "Right Out");
     configOutput(LEFT_OUTPUT, "Left Out");
 
@@ -194,7 +201,8 @@ struct GeneticTerrain : Module {
     float rx=params[RX_PARAM].getValue();
     float ry=params[RY_PARAM].getValue();
     float rot=params[ROT_PARAM].getValue();
-    int channels=std::max(inputs[VOCT_INPUT].getChannels(),1);
+    bool extMode = inputs[PHS_INPUT].isConnected();
+    int channels=std::max(extMode?inputs[PHS_INPUT].getChannels():inputs[VOCT_INPUT].getChannels(),1);
     //int maxChannels = 0;
     for(int c=0;c<channels;c+=4) {
       auto *oscil=&osc[c/4];
@@ -211,13 +219,21 @@ struct GeneticTerrain : Module {
         float_4 rotIn=inputs[ROT_INPUT].getVoltageSimd<float_4>(c)*params[ROT_SCL_PARAM].getValue()+rot;
 
         oscil->setPitch(voct);
-        oscil->updatePhase(args.sampleTime,false);
+        if(extMode) {
+          oscil->updateExtPhase(inputs[PHS_INPUT].getVoltageSimd<float_4>(c)/5.f,false);
+        } else {
+          oscil->updatePhase(args.sampleTime,false);
+        }
         float_4 outL=oscil->process(genParam,4,curve,cpIn,xIn,yIn,rxIn,ryIn,rotIn);
         outputs[LEFT_OUTPUT].setVoltageSimd(outL*5.f,c);
         if(outputs[RIGHT_OUTPUT].isConnected()) {
           auto *oscilBw=&oscBw[c/4];
           oscilBw->setPitch(voct);
-          oscilBw->updatePhase(args.sampleTime,true);
+          if(extMode) {
+            oscilBw->updateExtPhase(inputs[PHS_INPUT].getVoltageSimd<float_4>(c)/5.f,true);
+          } else {
+            oscilBw->updatePhase(args.sampleTime,true);
+          }
           float_4 outR=oscilBw->process(genParam,4,curve,cpIn,xIn,yIn,rxIn,ryIn,rotIn);
           outputs[RIGHT_OUTPUT].setVoltageSimd(outR*5.f,c);
         }
@@ -577,7 +593,7 @@ struct GeneticTerrainWidget : ModuleWidget {
     addInput(createInputCentered<SmallPort>(mm2px(Vec(156.75f,MHEIGHT-37.5f)),module,GeneticTerrain::RY_INPUT));
     addParam(createParam<TrimbotWhite>(mm2px(Vec(166.75-3.15f,MHEIGHT-37.5f-3.15)),module,GeneticTerrain::RY_SCL_PARAM));
 
-
+    addInput(createInputCentered<SmallPort>(mm2px(Vec(8,MHEIGHT-50)),module,GeneticTerrain::PHS_INPUT));
     addInput(createInputCentered<SmallPort>(mm2px(Vec(8,MHEIGHT-28)),module,GeneticTerrain::GATE_INPUT));
     addParam(createParam<SmallRoundButton>(mm2px(Vec(7,MHEIGHT-38)),module,GeneticTerrain::GATE_OSC_PARAM));
     addInput(createInputCentered<SmallPort>(mm2px(Vec(8,MHEIGHT-14)),module,GeneticTerrain::VOCT_INPUT));
@@ -595,7 +611,7 @@ struct GeneticSuperTerrain : Module {
     G1_PARAM,G2_PARAM,G3_PARAM,G4_PARAM,X_PARAM,Y_PARAM,RX_PARAM,RY_PARAM,ROT_PARAM,M0_PARAM,M1_PARAM,N1_PARAM,N1_SGN_PARAM,N2_PARAM,N3_PARAM,A_PARAM,B_PARAM,X_SCL_PARAM,Y_SCL_PARAM,RX_SCL_PARAM,RY_SCL_PARAM,ROT_SCL_PARAM,N1_SCL_PARAM,N2_SCL_PARAM,N3_SCL_PARAM,A_SCL_PARAM,B_SCL_PARAM,CENTER_PARAM,ZOOM_PARAM,GATE_OSC_PARAM,NUM_PARAMS
   };
   enum InputIds {
-    VOCT_INPUT,GATE_INPUT,X_INPUT,Y_INPUT,RX_INPUT,RY_INPUT,ROT_INPUT,N1_INPUT,N2_INPUT,N3_INPUT,A_INPUT,B_INPUT,NUM_INPUTS
+    VOCT_INPUT,GATE_INPUT,X_INPUT,Y_INPUT,RX_INPUT,RY_INPUT,ROT_INPUT,N1_INPUT,N2_INPUT,N3_INPUT,A_INPUT,B_INPUT,PHS_INPUT,NUM_INPUTS
   };
   enum OutputIds {
     LEFT_OUTPUT,RIGHT_OUTPUT,NUM_OUTPUTS
@@ -665,6 +681,7 @@ struct GeneticSuperTerrain : Module {
     configInput(N3_INPUT,"N3");
     configInput(A_INPUT,"A");
     configInput(B_INPUT,"B");
+    configInput(PHS_INPUT,"Ext Phase");
     configOutput(LEFT_OUTPUT,"Left");
     configOutput(RIGHT_OUTPUT,"Right");
 
@@ -749,7 +766,8 @@ struct GeneticSuperTerrain : Module {
     float rx=params[RX_PARAM].getValue();
     float ry=params[RY_PARAM].getValue();
     float rot=params[ROT_PARAM].getValue();
-    int channels=std::max(inputs[VOCT_INPUT].getChannels(),1);
+    bool extMode = inputs[PHS_INPUT].isConnected();
+    int channels=std::max(extMode?inputs[PHS_INPUT].getChannels():inputs[VOCT_INPUT].getChannels(),1);
 
     for(int c=0;c<channels;c+=4) {
       auto *oscil=&osc[c/4];
@@ -782,15 +800,27 @@ struct GeneticSuperTerrain : Module {
         float_4 rotIn=inputs[ROT_INPUT].getVoltageSimd<float_4>(c)*params[ROT_SCL_PARAM].getValue()+rot;
 
         oscil->setPitch(voct);
-        oscil->updatePhase(args.sampleTime,false);
+        if(extMode) {
+          oscil->updateExtPhase(inputs[PHS_INPUT].getVoltageSimd<float_4>(c)/5.f,false);
+        } else {
+          oscil->updatePhase(args.sampleTime,false);
+        }
         float_4 outL=oscil->process(genParam,4,xIn,yIn,rxIn,ryIn,rotIn,m0,m1,n1Ins,n2In,n3In,aIn,bIn);
         outputs[LEFT_OUTPUT].setVoltageSimd(outL*5.f,c);
 
-        auto *oscilBw=&oscBw[c/4];
-        oscilBw->setPitch(voct);
-        oscilBw->updatePhase(args.sampleTime,true);
-        float_4 outR=oscilBw->process(genParam,4,xIn,yIn,rxIn,ryIn,rotIn,m0,m1,n1Ins,n2In,n3In,aIn,bIn);
-        outputs[RIGHT_OUTPUT].setVoltageSimd(outR*5.f,c);
+        if(outputs[RIGHT_OUTPUT].isConnected()) {
+          auto *oscilBw=&oscBw[c/4];
+          oscilBw->setPitch(voct);
+          if(extMode) {
+            oscilBw->updateExtPhase(inputs[PHS_INPUT].getVoltageSimd<float_4>(c)/5.f,true);
+          } else {
+            oscilBw->updatePhase(args.sampleTime,true);
+          }
+          float_4 outR=oscilBw->process(genParam,4,xIn,yIn,rxIn,ryIn,rotIn,m0,m1,n1Ins,n2In,n3In,aIn,bIn);
+          outputs[RIGHT_OUTPUT].setVoltageSimd(outR*5.f,c);
+        } else {
+          outputs[RIGHT_OUTPUT].setVoltageSimd(float_4(0.f),c);
+        }
       } else {
         outputs[LEFT_OUTPUT].setVoltageSimd(float_4(0.f),c);
         outputs[RIGHT_OUTPUT].setVoltageSimd(float_4(0.f),c);
@@ -1080,11 +1110,12 @@ struct GeneticSuperTerrainWidget : ModuleWidget {
     addParam(createParam<TrimbotWhite9Snap>(mm2px(Vec(3,MHEIGHT-93.f-9.f)),module,GeneticSuperTerrain::G2_PARAM));
     addParam(createParam<TrimbotWhite9Snap>(mm2px(Vec(3,MHEIGHT-78.f-9.f)),module,GeneticSuperTerrain::G3_PARAM));
     addParam(createParam<TrimbotWhite9Snap>(mm2px(Vec(3,MHEIGHT-63.f-9.f)),module,GeneticSuperTerrain::G4_PARAM));
-    addInput(createInput<SmallPort>(mm2px(Vec(4.350,MHEIGHT-51.f-6.287f)),module,GeneticSuperTerrain::GATE_INPUT));
+    addInput(createInput<SmallPort>(mm2px(Vec(4.350,MHEIGHT-52.f-6.287f)),module,GeneticSuperTerrain::GATE_INPUT));
     addParam(createParam<SmallRoundButton>(mm2px(Vec(11,MHEIGHT-51.f-6.287f)),module,GeneticSuperTerrain::GATE_OSC_PARAM));
-    addInput(createInput<SmallPort>(mm2px(Vec(4.350,MHEIGHT-36.5f-6.287f)),module,GeneticSuperTerrain::VOCT_INPUT));
-    addOutput(createOutput<SmallPort>(mm2px(Vec(4.350,MHEIGHT-22.75f-6.287f)),module,GeneticSuperTerrain::LEFT_OUTPUT));
-    addOutput(createOutput<SmallPort>(mm2px(Vec(4.350,MHEIGHT-10.75f-6.287f)),module,GeneticSuperTerrain::RIGHT_OUTPUT));
+    addInput(createInput<SmallPort>(mm2px(Vec(4.350,MHEIGHT-41.5f-6.287f)),module,GeneticSuperTerrain::VOCT_INPUT));
+    addInput(createInput<SmallPort>(mm2px(Vec(4.350,MHEIGHT-31.0f-6.287f)),module,GeneticSuperTerrain::PHS_INPUT));
+    addOutput(createOutput<SmallPort>(mm2px(Vec(4.350,MHEIGHT-20.5f-6.287f)),module,GeneticSuperTerrain::LEFT_OUTPUT));
+    addOutput(createOutput<SmallPort>(mm2px(Vec(4.350,MHEIGHT-10.0f-6.287f)),module,GeneticSuperTerrain::RIGHT_OUTPUT));
 
 
     addParam(createParam<TrimbotWhite9>(mm2px(Vec(140,MHEIGHT-7.751f-9.f)),module,GeneticSuperTerrain::ZOOM_PARAM));
