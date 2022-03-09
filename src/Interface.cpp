@@ -29,7 +29,7 @@ struct Interface : Module {
   void process(const ProcessArgs &args) override {
     for (int i = 0; i < ROWS; i++) {
       if (inputs[i].isConnected()) {
-        int channels = std::min(inputs[i].getChannels(),1);
+        int channels = std::max(inputs[i].getChannels(),1);
         for(int k=0;k<channels;k++) {
           outputs[i].setVoltage(inputs[i].getVoltage(k),k);
         }

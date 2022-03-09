@@ -1,25 +1,23 @@
 #include "dcb.h"
 #include "Computer.hpp"
-
+#include <osdialog.h>
 template<typename T>
 struct SuperLFOSC {
   T phase=0.f;
   T freq=1.021977f;
   Computer<T> *computer;
   float phs=TWOPIF*2;
-  float ofs = 0;
+  T ofs = 0.f;
 
   void setPitch(T voct,T frq) {
-    freq=1.021977f*simd::pow(2.0f,frq+voct);
+    freq = simd::ifelse(frq == -8.f,0.f,1.021977f*simd::pow(2.0f,frq+voct));
   }
 
   void reset() {
-    phase=0;
+    phase=0.f;
   }
 
-  void updatePhase(float oneSampleTime,float p=0.f) {
-    //T dPhase=freq*oneSampleTime*phs;
-    //phase=simd::fmod(phase+dPhase,phs);
+  void updatePhase(float oneSampleTime,T p=0.f) {
     ofs = p;
     T dPhase=freq*oneSampleTime;
     phase=phase+dPhase;
@@ -27,16 +25,26 @@ struct SuperLFOSC {
   }
   void superformula(T t,T kx,T ky,T krx,T kry,T y,T z,T n1,T n2,T n3,T a,T b,T &outX,T &outY) {
 
-    T t1=cosl(y*t/4);
-    T t2=sinl(z*t/4);
-    T r0=fpow(simd::fabs(t1/a),n2)+fpow(simd::fabs(t2/b),n3);
-    T r=fpow(r0,-1/n1);
-    outX=kx+krx*r*cosl(t);
-    outY=ky+kry*r*sinl(t);
+    T t1=simd::cos(y*t/4);
+    T t2=simd::sin(z*t/4);
+    T r0=simd::pow(simd::fabs(t1/a),n2)+simd::pow(simd::fabs(t2/b),n3);
+    T r=simd::pow(r0,-1/n1);
+    outX=kx+krx*r*simd::cos(t);
+    outY=ky+kry*r*simd::sin(t);
+  }
+  void rotate_point(T cx,T cy,T angle,T &x,T &y) {
+    T s=simd::sin(angle);
+    T c=simd::cos(angle);
+    x-=cx;
+    y-=cy;
+    T xnew=x*c-y*s;
+    T ynew=x*s+y*c;
+    x=xnew+cx;
+    y=ynew+cy;
   }
   void process(T cx,T cy,T rx,T ry,T rot,T y,T z,T n1,T n2,T n3,T a,T b,T &xc,T &yc) {
-    computer->superformula((phase+ofs)*phs,cx,cy,rx,ry,y,z,n1,n2,n3,a,b,xc,yc);
-    computer->rotate_point(cx,cy,rot,xc,yc);
+    superformula((phase+ofs)*phs,cx,cy,rx,ry,y,z,n1,n2,n3,a,b,xc,yc);
+    rotate_point(cx,cy,rot,xc,yc);
   }
 };
 struct SuperLFOSC2 {
@@ -46,7 +54,10 @@ struct SuperLFOSC2 {
   float ofs = 0;
 
   void setPitch(float voct,float frq) {
-    freq=1.021977f*powf(2.0f,frq+voct);
+    if(frq == -8.f)
+      freq = 0;
+    else
+      freq=1.021977f*powf(2.0f,frq+voct);
   }
 
   void reset() {
@@ -103,6 +114,7 @@ struct SuperLFO : Module {
   Computer<float> computer;
   //SuperLFOSC<float> osc[16];
   SuperLFOSC2 osc[16];
+  SuperLFOSC<float_4> oscs[4];
   dsp::SchmittTrigger rstTrigger;
 
   SuperLFO() {
@@ -149,8 +161,10 @@ struct SuperLFO : Module {
     }
      */
   }
-
   void process(const ProcessArgs &args) override {
+    processsimd(args);
+  }
+  void processf(const ProcessArgs &args) {
     float m0=floorf(params[M0_PARAM].getValue());
     float m1=floorf(params[M1_PARAM].getValue());
     float n1=params[N1_PARAM].getValue();
@@ -199,6 +213,64 @@ struct SuperLFO : Module {
       oscil->process(0.f,0.f,rxIn,ryIn,rotIn,m0,m1,n1Ins,n2In,n3In,aIn,bIn,xout,yout);
       outputs[X_OUTPUT].setVoltage(clamp(xout*5.f,-10.f,10.f),c);
       outputs[Y_OUTPUT].setVoltage(clamp(yout*5.f,-10.f,10.f),c);
+    }
+    outputs[X_OUTPUT].setChannels(channels);
+    outputs[Y_OUTPUT].setChannels(channels);
+  }
+
+  void processsimd(const ProcessArgs &args) {
+    float m0=floorf(params[M0_PARAM].getValue());
+    float m1=floorf(params[M1_PARAM].getValue());
+    float n1=params[N1_PARAM].getValue();
+    float n2=params[N2_PARAM].getValue();
+    float n3=params[N3_PARAM].getValue();
+    float a=params[A_PARAM].getValue();
+    float b=params[B_PARAM].getValue();
+    float rx=params[RX_PARAM].getValue();
+    float ry=params[RY_PARAM].getValue();
+    float rot=params[ROT_PARAM].getValue();
+    float freq=params[FREQ_PARAM].getValue();
+    int channels=std::max(inputs[VOCT_INPUT].getChannels(),1);
+
+    if(rstTrigger.process(inputs[RST_INPUT].getVoltage())) {
+      for(auto &k:oscs) {
+        k.reset();
+      }
+    }
+
+    for(int c=0;c<channels;c+=4) {
+      auto *oscil=&oscs[c/4];
+
+      float_4 voct=inputs[VOCT_INPUT].getVoltageSimd<float_4>(c);
+
+      //float_4 n1In=simd::fabs(inputs[N1_INPUT].getVoltageSimd<float_4>(c))*params[N1_SCL_PARAM].getValue()+n1;
+      float_4 n1In= inputs[N1_INPUT].getVoltageSimd<float_4>(c)*params[N1_SCL_PARAM].getValue()+n1;
+      n1In=simd::clamp(n1In,0.05f,16.f);
+      float_4 n1Ins=simd::ifelse(float_4(params[N1_SGN_PARAM].getValue())>0.f,-1.f*n1In,n1In);
+
+      float_4 aIn=inputs[A_INPUT].getVoltageSimd<float_4>(c)*params[A_SCL_PARAM].getValue()+a;
+      aIn=simd::clamp(aIn,0.05f,5.f);
+
+      float_4 bIn=inputs[B_INPUT].getVoltageSimd<float_4>(c)*params[B_SCL_PARAM].getValue()+b;
+      bIn=simd::clamp(bIn,0.05f,5.f);
+
+      float_4 n2In=inputs[N2_INPUT].getVoltageSimd<float_4>(c)*params[N2_SCL_PARAM].getValue()+n2;
+      n2In=simd::clamp(n2In,-5.f,5.f);
+      float_4 n3In=inputs[N3_INPUT].getVoltageSimd<float_4>(c)*params[N3_SCL_PARAM].getValue()+n3;
+      n3In=simd::clamp(n3In,-5.f,5.f);
+
+      float_4 rxIn=inputs[RX_INPUT].getVoltageSimd<float_4>(c)*params[RX_SCL_PARAM].getValue()+rx;
+      float_4 ryIn=inputs[RY_INPUT].getVoltageSimd<float_4>(c)*params[RY_SCL_PARAM].getValue()+ry;
+      float_4 rotIn=inputs[ROT_INPUT].getVoltageSimd<float_4>(c)*params[ROT_SCL_PARAM].getValue()+rot;
+
+
+      float_4 phs=inputs[PHS_INPUT].getVoltageSimd<float_4>(c)/10.f;
+      oscil->setPitch(voct,freq);
+      oscil->updatePhase(args.sampleTime,phs);
+      float_4 xout,yout;
+      oscil->process(0.f,0.f,rxIn,ryIn,rotIn,m0,m1,n1Ins,n2In,n3In,aIn,bIn,xout,yout);
+      outputs[X_OUTPUT].setVoltageSimd(simd::clamp(xout*5.f,-10.f,10.f),c);
+      outputs[Y_OUTPUT].setVoltageSimd(simd::clamp(yout*5.f,-10.f,10.f),c);
     }
     outputs[X_OUTPUT].setChannels(channels);
     outputs[Y_OUTPUT].setChannels(channels);

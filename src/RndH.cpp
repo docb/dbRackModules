@@ -113,7 +113,9 @@ struct RndH : Module {
       float seedParam=0;
       if(inputs[SEED_INPUT].isConnected())
         seedParam=inputs[SEED_INPUT].getVoltage()/10.f;
-      rnd.reset((unsigned long long)(floor((double)seedParam*(double)ULONG_MAX)));
+      auto seedInput = (unsigned long long)(floor((double)seedParam*(double)ULONG_MAX));
+      INFO("%.8f %lld",seedParam,seedInput);
+      rnd.reset(seedInput);
       next(bi>0.f);
     }
     if(inputs[CLOCK_INPUT].isConnected()) {

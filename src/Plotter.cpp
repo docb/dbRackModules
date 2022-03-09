@@ -41,10 +41,8 @@ struct Plotter : Module {
   }
 
   void process(const ProcessArgs &args) override {
-    if(leftExpander.module) {
-      if(leftExpander.module->model->slug == "SuperLFO") {
+    if(leftExpander.module && leftExpander.module->model->slug == "SuperLFO") {
         superLFO = leftExpander.module;
-      }
     } else {
       superLFO =nullptr;
       bufsize=params[DIM_PARAM].getValue();
