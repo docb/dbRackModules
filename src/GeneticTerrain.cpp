@@ -1,5 +1,6 @@
 #include "dcb.h"
 #include "Computer.hpp"
+//#define USE_SIMD
 template<typename T>
 struct GeneticTerrainOSC {
   T phase=0.f;
@@ -54,7 +55,7 @@ struct GeneticTerrainOSC {
 struct GeneticTerrain : Module {
   enum ParamIds {
     G1_PARAM,G2_PARAM,G3_PARAM,G4_PARAM,X_PARAM,Y_PARAM,RX_PARAM,RY_PARAM,ROT_PARAM,CURVE_PARAM,CURVE_TYPE_PARAM,
-    ZOOM_PARAM,X_SCL_PARAM,Y_SCL_PARAM,RX_SCL_PARAM,RY_SCL_PARAM,ROT_SCL_PARAM,CP_SCL_PARAM,GATE_OSC_PARAM,CENTER_PARAM,NUM_PARAMS
+    ZOOM_PARAM,X_SCL_PARAM,Y_SCL_PARAM,RX_SCL_PARAM,RY_SCL_PARAM,ROT_SCL_PARAM,CP_SCL_PARAM,GATE_OSC_PARAM,CENTER_PARAM,SIMD_PARAM,NUM_PARAMS
   };
   enum InputIds {
     VOCT_INPUT,GATE_INPUT,X_INPUT,Y_INPUT,RX_INPUT,RY_INPUT,ROT_INPUT,CURVE_TYPE_INPUT,CURVE_PARAM_INPUT,PHS_INPUT,NUM_INPUTS
@@ -70,8 +71,11 @@ struct GeneticTerrain : Module {
   Computer<float_4> computer;
   GeneticTerrainOSC<float_4> osc[4];
   GeneticTerrainOSC<float_4> oscBw[4];
-  Averager<64> xavg;
-  Averager<64> yavg;
+  Computer<float> fcomputer;
+  GeneticTerrainOSC<float> fosc[16];
+  GeneticTerrainOSC<float> foscBw[16];
+  Averager<16> xavg;
+  Averager<16> yavg;
   float cx,cy;
   bool state=false;
   bool center = false;
@@ -91,7 +95,7 @@ struct GeneticTerrain : Module {
     configParam(X_PARAM,-20.f,20.f,0.f,"X");
     configParam(Y_PARAM,-20.f,20.f,0.f,"Y");
     configParam(CURVE_PARAM,-2.f,4.f,0,"CP");
-    configSwitch(CURVE_TYPE_PARAM,0,9,0,"Curve",{"Ellipse","Lemniskate","Limacon","Cornoid","Trisec","Scarabeus","Folium","Talbot","Lissajous","Hypocycloid"});
+    configSwitch(CURVE_TYPE_PARAM,0,Computer<float>::NUM_CURVES-1,0,"Curve",{"Ellipse","Lemniskate","Limacon","Cornoid","Trisec","Scarabeus","Folium","Talbot","Lissajous","Hypocycloid","Rect"});
     configParam(ROT_PARAM,0.f,2.f*M_PI,0,"ROT");
     configParam(RX_PARAM,0.f,4.f,0.5f,"RX");
     configParam(RY_PARAM,0.f,4.f,0.5f,"RY");
@@ -118,10 +122,15 @@ struct GeneticTerrain : Module {
     configOutput(RIGHT_OUTPUT, "Right Out");
     configOutput(LEFT_OUTPUT, "Left Out");
 
+    configButton(SIMD_PARAM,"use simd");
 
     for(int k=0;k<4;k++) {
       osc[k].computer=&computer;
       oscBw[k].computer=&computer;
+    }
+    for(int k=0;k<16;k++) {
+      fosc[k].computer=&fcomputer;
+      foscBw[k].computer=&fcomputer;
     }
   }
 
@@ -171,12 +180,91 @@ struct GeneticTerrain : Module {
   }
 
   int getCurve() {
-    int curve = clamp(inputs[CURVE_TYPE_INPUT].getNormalVoltage(floorf(params[CURVE_TYPE_PARAM].getValue())),0.f,9.99f);
+    int curve = clamp(inputs[CURVE_TYPE_INPUT].getNormalVoltage(floorf(params[CURVE_TYPE_PARAM].getValue())),0.f,10.99f);
     getParamQuantity(CURVE_TYPE_PARAM)->setValue(curve);
     return curve;
   }
-
   void process(const ProcessArgs &args) override {
+    if(params[SIMD_PARAM].getValue()>0) {
+      processsimd(args);
+    } else {
+      processf(args);
+    }
+  }
+  void processf(const ProcessArgs &args) {
+    if(reset) {
+      reset = false;
+      for(int k=0;k<16;k++) {
+        fosc[k].reset();
+        foscBw[k].reset();
+      }
+      for(int k=0;k<16;k++) {
+        outputs[LEFT_OUTPUT].setVoltage(0.f,k);
+        outputs[RIGHT_OUTPUT].setVoltage(0.f,k);
+      }
+    }
+    genParam[0]=floorf(params[G1_PARAM].getValue());
+    genParam[1]=floorf(params[G2_PARAM].getValue());
+    genParam[2]=floorf(params[G3_PARAM].getValue());
+    genParam[3]=floorf(params[G4_PARAM].getValue());
+    changed();
+    int curve=getCurve();
+    float curveParam=params[CURVE_PARAM].getValue();
+    cx=xavg.process(params[X_PARAM].getValue());
+    cy=yavg.process(params[Y_PARAM].getValue());
+    //cx=params[X_PARAM].getValue();
+    //cy=params[Y_PARAM].getValue();
+    float rx=params[RX_PARAM].getValue();
+    float ry=params[RY_PARAM].getValue();
+    float rot=params[ROT_PARAM].getValue();
+    bool extMode = inputs[PHS_INPUT].isConnected();
+    int channels=std::max(extMode?inputs[PHS_INPUT].getChannels():inputs[VOCT_INPUT].getChannels(),1);
+    //int maxChannels = 0;
+    for(int c=0;c<channels;c++) {
+      auto *oscil=&fosc[c];
+      float gate=inputs[GATE_INPUT].getVoltage(c);
+      float gateOsc=params[GATE_OSC_PARAM].getValue();
+      if(gate>0||gateOsc==0.0f) {
+        float voct=inputs[VOCT_INPUT].getVoltage(c);
+        float cpIn=inputs[CURVE_PARAM_INPUT].getVoltage(c)*params[CP_SCL_PARAM].getValue()+curveParam;
+        float xIn=inputs[X_INPUT].getVoltage(c)*params[X_SCL_PARAM].getValue()+cx;
+        float yIn=inputs[Y_INPUT].getVoltage(c)*params[Y_SCL_PARAM].getValue()+cy;
+        float rxIn=inputs[RX_INPUT].getVoltage(c)*params[RX_SCL_PARAM].getValue()+rx;
+        float ryIn=inputs[RY_INPUT].getVoltage(c)*params[RY_SCL_PARAM].getValue()+ry;
+        float rotIn=inputs[ROT_INPUT].getVoltage(c)*params[ROT_SCL_PARAM].getValue()+rot;
+
+
+        if(extMode) {
+          oscil->updateExtPhase(inputs[PHS_INPUT].getVoltage(c)/5.f,false);
+        } else {
+          oscil->setPitch(voct);
+          oscil->updatePhase(args.sampleTime,false);
+        }
+        float outL=oscil->process(genParam,4,curve,cpIn,xIn,yIn,rxIn,ryIn,rotIn);
+        outputs[LEFT_OUTPUT].setVoltage(outL*5.f,c);
+        if(outputs[RIGHT_OUTPUT].isConnected()) {
+          auto *oscilBw=&foscBw[c];
+          if(extMode) {
+            oscilBw->updateExtPhase(inputs[PHS_INPUT].getVoltage(c)/5.f,true);
+          } else {
+            oscilBw->setPitch(voct);
+            oscilBw->updatePhase(args.sampleTime,true);
+          }
+          float outR=oscilBw->process(genParam,4,curve,cpIn,xIn,yIn,rxIn,ryIn,rotIn);
+          outputs[RIGHT_OUTPUT].setVoltage(outR*5.f,c);
+        }
+      } else {
+        outputs[LEFT_OUTPUT].setVoltage(0.f,c);
+        outputs[RIGHT_OUTPUT].setVoltage(0.f,c);
+      }
+    }
+    outputs[LEFT_OUTPUT].setChannels(channels);
+    if(outputs[RIGHT_OUTPUT].isConnected()) {
+      outputs[RIGHT_OUTPUT].setChannels(channels);
+    }
+  }
+
+  void processsimd(const ProcessArgs &args) {
     if(reset) {
       reset = false;
       for(int k=0;k<4;k++) {
@@ -597,6 +685,7 @@ struct GeneticTerrainWidget : ModuleWidget {
     addInput(createInputCentered<SmallPort>(mm2px(Vec(8,MHEIGHT-28)),module,GeneticTerrain::GATE_INPUT));
     addParam(createParam<SmallRoundButton>(mm2px(Vec(7,MHEIGHT-38)),module,GeneticTerrain::GATE_OSC_PARAM));
     addInput(createInputCentered<SmallPort>(mm2px(Vec(8,MHEIGHT-14)),module,GeneticTerrain::VOCT_INPUT));
+    addParam(createParam<SmallRoundButton>(mm2px(Vec(166,MHEIGHT-25.65f-3.2f)),module,GeneticTerrain::SIMD_PARAM));
 
   }
 };
@@ -608,7 +697,7 @@ Model *modelGeneticTerrain=createModel<GeneticTerrain,GeneticTerrainWidget>("Gen
 
 struct GeneticSuperTerrain : Module {
   enum ParamIds {
-    G1_PARAM,G2_PARAM,G3_PARAM,G4_PARAM,X_PARAM,Y_PARAM,RX_PARAM,RY_PARAM,ROT_PARAM,M0_PARAM,M1_PARAM,N1_PARAM,N1_SGN_PARAM,N2_PARAM,N3_PARAM,A_PARAM,B_PARAM,X_SCL_PARAM,Y_SCL_PARAM,RX_SCL_PARAM,RY_SCL_PARAM,ROT_SCL_PARAM,N1_SCL_PARAM,N2_SCL_PARAM,N3_SCL_PARAM,A_SCL_PARAM,B_SCL_PARAM,CENTER_PARAM,ZOOM_PARAM,GATE_OSC_PARAM,NUM_PARAMS
+    G1_PARAM,G2_PARAM,G3_PARAM,G4_PARAM,X_PARAM,Y_PARAM,RX_PARAM,RY_PARAM,ROT_PARAM,M0_PARAM,M1_PARAM,N1_PARAM,N1_SGN_PARAM,N2_PARAM,N3_PARAM,A_PARAM,B_PARAM,X_SCL_PARAM,Y_SCL_PARAM,RX_SCL_PARAM,RY_SCL_PARAM,ROT_SCL_PARAM,N1_SCL_PARAM,N2_SCL_PARAM,N3_SCL_PARAM,A_SCL_PARAM,B_SCL_PARAM,CENTER_PARAM,ZOOM_PARAM,GATE_OSC_PARAM,SIMD_PARAM,NUM_PARAMS
   };
   enum InputIds {
     VOCT_INPUT,GATE_INPUT,X_INPUT,Y_INPUT,RX_INPUT,RY_INPUT,ROT_INPUT,N1_INPUT,N2_INPUT,N3_INPUT,A_INPUT,B_INPUT,PHS_INPUT,NUM_INPUTS
@@ -624,6 +713,9 @@ struct GeneticSuperTerrain : Module {
   Computer<float_4> computer;
   GeneticTerrainOSC<float_4> osc[4];
   GeneticTerrainOSC<float_4> oscBw[4];
+  Computer<float> fcomputer;
+  GeneticTerrainOSC<float> fosc[16];
+  GeneticTerrainOSC<float> foscBw[16];
   Averager<64> xavg;
   Averager<64> yavg;
   float cx,cy;
@@ -685,11 +777,19 @@ struct GeneticSuperTerrain : Module {
     configOutput(LEFT_OUTPUT,"Left");
     configOutput(RIGHT_OUTPUT,"Right");
 
+    configButton(SIMD_PARAM,"use simd");
+
     for(int k=0;k<4;k++) {
       osc[k].computer=&computer;
       osc[k].phs=TWOPIF*2;
       oscBw[k].computer=&computer;
       oscBw[k].phs=TWOPIF*2;
+    }
+    for(int k=0;k<16;k++) {
+      fosc[k].computer=&fcomputer;
+      fosc[k].phs=TWOPIF*2;
+      foscBw[k].computer=&fcomputer;
+      foscBw[k].phs=TWOPIF*2;
     }
   }
 
@@ -736,8 +836,108 @@ struct GeneticSuperTerrain : Module {
     return gate[0]>0.f||gate[1]>0.f||gate[2]>0.f||gate[3]>0.f;
     //return true;
   }
-
   void process(const ProcessArgs &args) override {
+    if(params[SIMD_PARAM].getValue()>0) {
+      processimd(args);
+    } else {
+      processf(args);
+    }
+  }
+
+  void processf(const ProcessArgs &args) {
+    if(reset) {
+      reset = false;
+      for(int k=0;k<16;k++) {
+        fosc[k].reset();
+        foscBw[k].reset();
+      }
+      for(int k=0;k<16;k++) {
+        outputs[LEFT_OUTPUT].setVoltage(0.f,k);
+        outputs[RIGHT_OUTPUT].setVoltage(0.f,k);
+      }
+    }
+    genParam[0]=floorf(params[G1_PARAM].getValue());
+    genParam[1]=floorf(params[G2_PARAM].getValue());
+    genParam[2]=floorf(params[G3_PARAM].getValue());
+    genParam[3]=floorf(params[G4_PARAM].getValue());
+    changed();
+    float m0=floorf(params[M0_PARAM].getValue());
+    float m1=floorf(params[M1_PARAM].getValue());
+    float n1=params[N1_PARAM].getValue();
+    float n2=params[N2_PARAM].getValue();
+    float n3=params[N3_PARAM].getValue();
+    float a=params[A_PARAM].getValue();
+    float b=params[B_PARAM].getValue();
+    cx=xavg.process(params[X_PARAM].getValue());
+    cy=yavg.process(params[Y_PARAM].getValue());
+    float rx=params[RX_PARAM].getValue();
+    float ry=params[RY_PARAM].getValue();
+    float rot=params[ROT_PARAM].getValue();
+    bool extMode = inputs[PHS_INPUT].isConnected();
+    int channels=std::max(extMode?inputs[PHS_INPUT].getChannels():inputs[VOCT_INPUT].getChannels(),1);
+
+    for(int c=0;c<channels;c++) {
+      auto *oscil=&fosc[c];
+      float gate=inputs[GATE_INPUT].getVoltage(c);
+      float gateOsc=params[GATE_OSC_PARAM].getValue();
+      if(isOn(gate)||gateOsc==0.0f) {
+        float voct=inputs[VOCT_INPUT].getVoltage(c);
+
+        float n1In= inputs[N1_INPUT].getVoltage(c)*params[N1_SCL_PARAM].getValue()+n1;
+        n1In=clamp(n1In,0.05f,16.f);
+        float n1Ins=params[N1_SGN_PARAM].getValue()>0.f?-1.f*n1In:n1In;
+
+        float aIn=inputs[A_INPUT].getVoltage(c)*params[A_SCL_PARAM].getValue()+a;
+        aIn=clamp(aIn,0.05f,5.f);
+
+        float bIn=inputs[B_INPUT].getVoltage(c)*params[B_SCL_PARAM].getValue()+b;
+        bIn=clamp(bIn,0.05f,5.f);
+
+        float n2In=inputs[N2_INPUT].getVoltage(c)*params[N2_SCL_PARAM].getValue()+n2;
+        n2In=clamp(n2In,-5.f,5.f);
+        float n3In=inputs[N3_INPUT].getVoltage(c)*params[N3_SCL_PARAM].getValue()+n3;
+        n3In=clamp(n3In,-5.f,5.f);
+
+
+        float xIn=inputs[X_INPUT].getVoltage(c)*params[X_SCL_PARAM].getValue()+cx;
+        float yIn=inputs[Y_INPUT].getVoltage(c)*params[Y_SCL_PARAM].getValue()+cy;
+        float rxIn=inputs[RX_INPUT].getVoltage(c)*params[RX_SCL_PARAM].getValue()+rx;
+        float ryIn=inputs[RY_INPUT].getVoltage(c)*params[RY_SCL_PARAM].getValue()+ry;
+        float rotIn=inputs[ROT_INPUT].getVoltage(c)*params[ROT_SCL_PARAM].getValue()+rot;
+
+        oscil->setPitch(voct);
+        if(extMode) {
+          oscil->updateExtPhase(inputs[PHS_INPUT].getVoltage(c)/5.f,false);
+        } else {
+          oscil->updatePhase(args.sampleTime,false);
+        }
+        float outL=oscil->process(genParam,4,xIn,yIn,rxIn,ryIn,rotIn,m0,m1,n1Ins,n2In,n3In,aIn,bIn);
+        outputs[LEFT_OUTPUT].setVoltage(outL*5.f,c);
+
+        if(outputs[RIGHT_OUTPUT].isConnected()) {
+          auto *oscilBw=&foscBw[c];
+          oscilBw->setPitch(voct);
+          if(extMode) {
+            oscilBw->updateExtPhase(inputs[PHS_INPUT].getVoltage(c)/5.f,true);
+          } else {
+            oscilBw->updatePhase(args.sampleTime,true);
+          }
+          float outR=oscilBw->process(genParam,4,xIn,yIn,rxIn,ryIn,rotIn,m0,m1,n1Ins,n2In,n3In,aIn,bIn);
+          outputs[RIGHT_OUTPUT].setVoltage(outR*5.f,c);
+        } else {
+          outputs[RIGHT_OUTPUT].setVoltage(0.f,c);
+        }
+      } else {
+        outputs[LEFT_OUTPUT].setVoltage(0.f,c);
+        outputs[RIGHT_OUTPUT].setVoltage(0.f,c);
+      }
+    }
+    outputs[LEFT_OUTPUT].setChannels(channels);
+    outputs[RIGHT_OUTPUT].setChannels(channels);
+
+  }
+
+  void processimd(const ProcessArgs &args)  {
     if(reset) {
       reset = false;
       for(int k=0;k<4;k++) {
@@ -830,6 +1030,7 @@ struct GeneticSuperTerrain : Module {
     outputs[RIGHT_OUTPUT].setChannels(channels);
 
   }
+
 };
 
 struct SuperTerrainDisplay : TransparentWidget {
@@ -1162,6 +1363,7 @@ struct GeneticSuperTerrainWidget : ModuleWidget {
     addInput(createInput<SmallPort>(mm2px(Vec(169.33f,MHEIGHT-9.5f-6.287f)),module,GeneticSuperTerrain::B_INPUT));
     addParam(createParam<TrimbotWhite>(mm2px(Vec(180.f,MHEIGHT-9.5f-6.371f)),module,GeneticSuperTerrain::B_SCL_PARAM));
 
+    addParam(createParam<SmallRoundButton>(mm2px(Vec(149.f,MHEIGHT-22.f-3.2f)),module,GeneticSuperTerrain::SIMD_PARAM));
 
 
   }

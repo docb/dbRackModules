@@ -314,11 +314,18 @@ struct Computer {
     return {v[0],v[1],v[2],v[3]};
   }
 
-  T sinl(T v) {
+  float_4 sinl(float_4 v) {
+    return simd::sin(v);
+  }
+
+  float sinl(float v) {
     return lookup(v,0);
   }
 
-  T cosl(T v) {
+  float_4 cosl(float_4 v) {
+    return simd::cos(v);
+  }
+  float cosl(float v) {
     return lookup(mpih-v,0);
   }
 
@@ -567,7 +574,7 @@ struct Computer {
   }
 
   /************ CURVES ***************/
-  void rotate_point(T cx,T cy,T angle,T &x,T &y) {
+  int _rotate_point(T cx,T cy,T angle,T &x,T &y) {
     T s=sinl(angle);
     T c=cosl(angle);
     x-=cx;
@@ -576,8 +583,11 @@ struct Computer {
     T ynew=x*s+y*c;
     x=xnew+cx;
     y=ynew+cy;
+    return 0;
   }
-
+  void rotate_point(T cx,T cy,T angle,T &x,T &y) {
+    simd::ifelse(angle==0,0,_rotate_point(cx,cy,angle,x,y));
+  }
   void ellipse(T t,T kx,T ky,T krx,T kry,T kparam,T &outX,T &outY) {
     T x=t+kparam*sinl(t);
     outX=kx+krx*sinl(x);
@@ -655,8 +665,28 @@ struct Computer {
     outY=ky+kry*((1.f-a)*sinl(a*t*float(P))-a*kparam*sinl((1-a)*t*float(P)));
   }
 
+  float r[4][2]={{-.5f,-.5f},{.5f,-.5f},{.5f,.5f},{-.5f,.5f}};
+
+  void rect(float_4 t,float_4 kx,float_4 ky,float_4 krx,float_4 kry,float_4 kparam,float_4 &outX,float_4 &outY) {
+    float_4 tt = t/TWOPIF;
+    tt = simd::ifelse(tt<0,1-tt,tt);
+    float_4 s = simd::fmod(tt,0.25);
+    simd::int32_4 i = (tt - s)*4;
+    for(int k=0;k<4;k++) {
+      outX[k] = kx[k]+krx[k]*(r[(i[k])%4][0]+4*s[k]*(r[(i[k]+1)%4][0]-r[(i[k])%4][0]));
+      outY[k] = ky[k]+kry[k]*(r[(i[k])%4][1]+4*s[k]*(r[(i[k]+1)%4][1]-r[(i[k])%4][1]));
+    }
+  }
+  void rect(float t,float kx,float ky,float krx,float kry,float kparam,float &outX,float &outY) {
+    float tt = t/TWOPIF;
+    tt = tt<0?1-tt:tt;
+    float s = fmodf(tt,0.25);
+    auto i = int32_t((tt - s)*4);
+    outX = kx+krx*(r[i%4][0]+4*s*(r[(i+1)%4][0]-r[i%4][0]));
+    outY = ky+kry*(r[i%4][1]+4*s*(r[(i+1)%4][1]-r[i%4][1]));
+  }
   enum Curves {
-    ELLIPSE,LEMNISKATE,LIMACON,CORNOID,TRISEC,SCARABEUS,FOLIUM,TALBOT,LISSAJOUS,HYPOCYCLOID,NUM_CURVES
+    ELLIPSE,LEMNISKATE,LIMACON,CORNOID,TRISEC,SCARABEUS,FOLIUM,TALBOT,LISSAJOUS,HYPOCYCLOID,RECT,NUM_CURVES
   };
 
   void crv(int curve,T t,T cx,T cy,T rx,T ry,T curveParam,T &x,T &y) {
@@ -691,6 +721,8 @@ struct Computer {
       case HYPOCYCLOID:
         hypocycloid<2,5>(t,cx,cy,rx,ry,curveParam,x,y);
         break;
+      case RECT:
+        rect(t,cx,cy,rx,ry,curveParam,x,y);
     }
   }
 
