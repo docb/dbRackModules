@@ -154,9 +154,9 @@ struct RSC : Module {
     }
   }
   void onAdd(const AddEvent &e) override {
-    pm = params[PM_PARAM].getValue();
-    init(APP->engine->getSampleRate(),pm);
+    update=true;
   }
+
 	RSC() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
     configParam(CF_PARAM,7.f,14.f,14.f,"Frequency"," Hz",2,1);

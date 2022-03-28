@@ -81,11 +81,11 @@ struct HexSeqWidget : ModuleWidget {
     menu->addChild(new DensMenuItem<HexSeq>(module));
     auto* randomLengthFromItem = new IntSelectItem(&module->randomLengthFrom,1,16);
     randomLengthFromItem->text = "Random length from";
-    randomLengthFromItem->rightText = string::f("%d", module->randomLengthFrom) + "  " + RIGHT_ARROW;
+    randomLengthFromItem->rightText = rack::string::f("%d", module->randomLengthFrom) + "  " + RIGHT_ARROW;
     menu->addChild(randomLengthFromItem);
     auto* randomLengthToItem = new IntSelectItem(&module->randomLengthTo,1,16);
     randomLengthToItem->text = "Random length to";
-    randomLengthToItem->rightText = string::f("%d", module->randomLengthTo) + "  " + RIGHT_ARROW;
+    randomLengthToItem->rightText = rack::string::f("%d", module->randomLengthTo) + "  " + RIGHT_ARROW;
     menu->addChild(randomLengthToItem);
   }
 };
