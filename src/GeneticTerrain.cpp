@@ -1,5 +1,6 @@
 #include "dcb.h"
 #include "Computer.hpp"
+
 //#define USE_SIMD
 template<typename T>
 struct GeneticTerrainOSC {
@@ -19,13 +20,15 @@ struct GeneticTerrainOSC {
     //freq = 207.652f * simd::pow(2.0f, voct);
 
   }
-  void updateExtPhase(T extPhs, bool backWards) {
+
+  void updateExtPhase(T extPhs,bool backWards) {
     if(backWards) {
       phase=simd::fmod(-extPhs*phs,phs);
     } else {
       phase=simd::fmod(extPhs*phs,phs);
     }
   }
+
   void updatePhase(float oneSampleTime,bool backWards) {
     T dPhase=simd::clamp(freq*oneSampleTime*phs,0.f,0.5f);
     if(backWards) {
@@ -51,11 +54,9 @@ struct GeneticTerrainOSC {
 };
 
 
-
 struct GeneticTerrain : Module {
   enum ParamIds {
-    G1_PARAM,G2_PARAM,G3_PARAM,G4_PARAM,X_PARAM,Y_PARAM,RX_PARAM,RY_PARAM,ROT_PARAM,CURVE_PARAM,CURVE_TYPE_PARAM,
-    ZOOM_PARAM,X_SCL_PARAM,Y_SCL_PARAM,RX_SCL_PARAM,RY_SCL_PARAM,ROT_SCL_PARAM,CP_SCL_PARAM,GATE_OSC_PARAM,CENTER_PARAM,SIMD_PARAM,NUM_PARAMS
+    G1_PARAM,G2_PARAM,G3_PARAM,G4_PARAM,X_PARAM,Y_PARAM,RX_PARAM,RY_PARAM,ROT_PARAM,CURVE_PARAM,CURVE_TYPE_PARAM,ZOOM_PARAM,X_SCL_PARAM,Y_SCL_PARAM,RX_SCL_PARAM,RY_SCL_PARAM,ROT_SCL_PARAM,CP_SCL_PARAM,GATE_OSC_PARAM,CENTER_PARAM,SIMD_PARAM,NUM_PARAMS
   };
   enum InputIds {
     VOCT_INPUT,GATE_INPUT,X_INPUT,Y_INPUT,RX_INPUT,RY_INPUT,ROT_INPUT,CURVE_TYPE_INPUT,CURVE_PARAM_INPUT,PHS_INPUT,NUM_INPUTS
@@ -76,22 +77,28 @@ struct GeneticTerrain : Module {
   GeneticTerrainOSC<float> foscBw[16];
   Averager<16> xavg;
   Averager<16> yavg;
+  dsp::ClockDivider paramUpdaterDivider;
+
   float cx,cy;
+  float rx,ry,rot,curveParam;
+  float_4 voct,cpIn,xIn,yIn,rxIn,ryIn,rotIn;
+  float voctf,cpInf,xInf,yInf,rxInf,ryInf,rotInf;
+  int curve;
+
   bool state=false;
-  bool center = false;
+  bool center=false;
   bool reset;
   RND rnd;
-  std::vector<std::string> labels = {"NONE","sin(x)","cos(y)","sin(x+y)","cos(x-y)","sin(x*x)","cos(y*y)","sin(x*cos(y))","cos(y*sin(x)",
-                                      "sin(sqr(y+x))*x+sqr(sin(x)*cos(y))","Simplex Noise","Value Noise Uni","Value Noise Discrete 0.5","Value Noise Discrete 0.7",
-                                      "Value Noise Discrete 0.9","Value Noise Cauchy","Value Noise ArcSin","cos(x/y)","tri(x*x+y*y)","saw(x*x+y*y)","pls(x*x+y*y)",
-                                      "tri(x*x)*tri(y*y)","saw(x*x)*saw(y*y)","pls(x*x)*pls(y*y)","atan(((y)+tan((x+y)-sin(x+PI)-sin(x*y/PI)*sin((y*x+PI)))))","tanh(sin(sqr(y+x))*x+sqr(sin(x)*cos(y)))","Noise", "Weibull Noise"};
+  std::vector<std::string> labels={"NONE","sin(x)","cos(y)","sin(x+y)","cos(x-y)","sin(x*x)","cos(y*y)","sin(x*cos(y))","cos(y*sin(x)","sin(sqr(y+x))*x+sqr(sin(x)*cos(y))","Simplex Noise","Value Noise Uni","Value Noise Discrete 0.5","Value Noise Discrete 0.7","Value Noise Discrete 0.9","Value Noise Cauchy","Value Noise ArcSin","cos(x/y)","tri(x*x+y*y)","saw(x*x+y*y)","pls(x*x+y*y)","tri(x*x)*tri(y*y)","saw(x*x)*saw(y*y)","pls(x*x)*pls(y*y)",
+                                   "atan(((y)+tan((x+y)-sin(x+PI)-sin(x*y/PI)*sin((y*x+PI)))))","tanh(sin(sqr(y+x))*x+sqr(sin(x)*cos(y)))","Noise","Weibull Noise"};
+
 
   GeneticTerrain() {
     config(NUM_PARAMS,NUM_INPUTS,NUM_OUTPUTS,NUM_LIGHTS);
-    configSwitch(G1_PARAM,-1,Computer<float>::NUM_TERRAINS -1,0.f,"T1",labels);
-    configSwitch(G2_PARAM,-1,Computer<float>::NUM_TERRAINS -1,1.f,"T2",labels);
-    configSwitch(G3_PARAM,-1,Computer<float>::NUM_TERRAINS -1,-1.f,"T3",labels);
-    configSwitch(G4_PARAM,-1,Computer<float>::NUM_TERRAINS -1,-1.f,"T4",labels);
+    configSwitch(G1_PARAM,-1,Computer<float>::NUM_TERRAINS-1,0.f,"T1",labels);
+    configSwitch(G2_PARAM,-1,Computer<float>::NUM_TERRAINS-1,1.f,"T2",labels);
+    configSwitch(G3_PARAM,-1,Computer<float>::NUM_TERRAINS-1,-1.f,"T3",labels);
+    configSwitch(G4_PARAM,-1,Computer<float>::NUM_TERRAINS-1,-1.f,"T4",labels);
     configParam(X_PARAM,-20.f,20.f,0.f,"X");
     configParam(Y_PARAM,-20.f,20.f,0.f,"Y");
     configParam(CURVE_PARAM,-2.f,4.f,0,"CP");
@@ -109,20 +116,20 @@ struct GeneticTerrain : Module {
     configParam(GATE_OSC_PARAM,0.f,1.0f,0.0f,"GATE_OSC");
     configParam(CENTER_PARAM,0.f,1.0f,0.0f,"CENTER");
     configParam(ZOOM_PARAM,0.1f,10.f,5.f,"ZOOM");
-    configInput(VOCT_INPUT, "1V/oct pitch");
-    configInput(CURVE_TYPE_INPUT, "Curve (0-9V)");
-    configInput(GATE_INPUT, "Gate");
-    configInput(X_INPUT, "Modulation X");
-    configInput(Y_INPUT, "Modulation Y");
-    configInput(ROT_INPUT, "Modulation Rotation");
-    configInput(RX_INPUT, "Modulation Scale X");
-    configInput(RY_INPUT, "Modulation Scale Y");
-    configInput(CURVE_PARAM_INPUT, "Modulation Curve Parameter");
-    configInput(PHS_INPUT, "Ext Phase");
-    configOutput(RIGHT_OUTPUT, "Right Out");
-    configOutput(LEFT_OUTPUT, "Left Out");
+    configInput(VOCT_INPUT,"1V/oct pitch");
+    configInput(CURVE_TYPE_INPUT,"Curve (0-9V)");
+    configInput(GATE_INPUT,"Gate");
+    configInput(X_INPUT,"Modulation X");
+    configInput(Y_INPUT,"Modulation Y");
+    configInput(ROT_INPUT,"Modulation Rotation");
+    configInput(RX_INPUT,"Modulation Scale X");
+    configInput(RY_INPUT,"Modulation Scale Y");
+    configInput(CURVE_PARAM_INPUT,"Modulation Curve Parameter");
+    configInput(PHS_INPUT,"Ext Phase");
+    configOutput(RIGHT_OUTPUT,"Right Out");
+    configOutput(LEFT_OUTPUT,"Left Out");
 
-    configButton(SIMD_PARAM,"use simd");
+    //configButton(SIMD_PARAM,"use simd");
 
     for(int k=0;k<4;k++) {
       osc[k].computer=&computer;
@@ -132,22 +139,23 @@ struct GeneticTerrain : Module {
       fosc[k].computer=&fcomputer;
       foscBw[k].computer=&fcomputer;
     }
+    paramUpdaterDivider.setDivision(32);
   }
 
   void onReset(const ResetEvent &e) override {
     Module::onReset(e);
-    reset = true;
+    reset=true;
   }
 
-  void onRandomize(const RandomizeEvent& e) override {
+  void onRandomize(const RandomizeEvent &e) override {
 
     params[RX_PARAM].setValue((float)rnd.nextDouble());
     params[RY_PARAM].setValue((float)rnd.nextDouble());
     params[CURVE_PARAM].setValue((float)rnd.nextDouble());
-    int curve = (int)(rnd.nextDouble()*Computer<float>::NUM_CURVES);
-    params[CURVE_TYPE_PARAM].setValue((float)curve);
-    int cdist[20] = {1,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,4,4,4,4};
-    int count = cdist[(int)(rnd.nextDouble() * 20)];
+    int _curve=(int)(rnd.nextDouble()*Computer<float>::NUM_CURVES);
+    params[CURVE_TYPE_PARAM].setValue((float)_curve);
+    int cdist[20]={1,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,4,4,4,4};
+    int count=cdist[(int)(rnd.nextDouble()*20)];
     for(int k=0;k<4;k++) { // the first 4 params are the terrain parameters
       if(k<count) {
         params[k].setValue(rnd.nextDouble()*Computer<float>::NUM_TERRAINS);
@@ -159,7 +167,7 @@ struct GeneticTerrain : Module {
     params[Y_PARAM].setValue(((float)rnd.nextTri(12)-0.5f)*40.f);// approx gauss dist
 
     // tell the view it should be centered
-    center = true;
+    center=true;
   }
 
   void changed() {
@@ -180,93 +188,14 @@ struct GeneticTerrain : Module {
   }
 
   int getCurve() {
-    int curve = clamp(inputs[CURVE_TYPE_INPUT].getNormalVoltage(floorf(params[CURVE_TYPE_PARAM].getValue())),0.f,10.99f);
-    getParamQuantity(CURVE_TYPE_PARAM)->setValue(curve);
-    return curve;
+    int _curve=clamp(inputs[CURVE_TYPE_INPUT].getNormalVoltage(floorf(params[CURVE_TYPE_PARAM].getValue())),0.f,10.99f);
+    getParamQuantity(CURVE_TYPE_PARAM)->setValue(_curve);
+    return _curve;
   }
+
   void process(const ProcessArgs &args) override {
-    if(params[SIMD_PARAM].getValue()>0) {
-      processsimd(args);
-    } else {
-      processf(args);
-    }
-  }
-  void processf(const ProcessArgs &args) {
     if(reset) {
-      reset = false;
-      for(int k=0;k<16;k++) {
-        fosc[k].reset();
-        foscBw[k].reset();
-      }
-      for(int k=0;k<16;k++) {
-        outputs[LEFT_OUTPUT].setVoltage(0.f,k);
-        outputs[RIGHT_OUTPUT].setVoltage(0.f,k);
-      }
-    }
-    genParam[0]=floorf(params[G1_PARAM].getValue());
-    genParam[1]=floorf(params[G2_PARAM].getValue());
-    genParam[2]=floorf(params[G3_PARAM].getValue());
-    genParam[3]=floorf(params[G4_PARAM].getValue());
-    changed();
-    int curve=getCurve();
-    float curveParam=params[CURVE_PARAM].getValue();
-    cx=xavg.process(params[X_PARAM].getValue());
-    cy=yavg.process(params[Y_PARAM].getValue());
-    //cx=params[X_PARAM].getValue();
-    //cy=params[Y_PARAM].getValue();
-    float rx=params[RX_PARAM].getValue();
-    float ry=params[RY_PARAM].getValue();
-    float rot=params[ROT_PARAM].getValue();
-    bool extMode = inputs[PHS_INPUT].isConnected();
-    int channels=std::max(extMode?inputs[PHS_INPUT].getChannels():inputs[VOCT_INPUT].getChannels(),1);
-    //int maxChannels = 0;
-    for(int c=0;c<channels;c++) {
-      auto *oscil=&fosc[c];
-      float gate=inputs[GATE_INPUT].getVoltage(c);
-      float gateOsc=params[GATE_OSC_PARAM].getValue();
-      if(gate>0||gateOsc==0.0f) {
-        float voct=inputs[VOCT_INPUT].getVoltage(c);
-        float cpIn=inputs[CURVE_PARAM_INPUT].getVoltage(c)*params[CP_SCL_PARAM].getValue()+curveParam;
-        float xIn=inputs[X_INPUT].getVoltage(c)*params[X_SCL_PARAM].getValue()+cx;
-        float yIn=inputs[Y_INPUT].getVoltage(c)*params[Y_SCL_PARAM].getValue()+cy;
-        float rxIn=inputs[RX_INPUT].getVoltage(c)*params[RX_SCL_PARAM].getValue()+rx;
-        float ryIn=inputs[RY_INPUT].getVoltage(c)*params[RY_SCL_PARAM].getValue()+ry;
-        float rotIn=inputs[ROT_INPUT].getVoltage(c)*params[ROT_SCL_PARAM].getValue()+rot;
-
-
-        if(extMode) {
-          oscil->updateExtPhase(inputs[PHS_INPUT].getVoltage(c)/5.f,false);
-        } else {
-          oscil->setPitch(voct);
-          oscil->updatePhase(args.sampleTime,false);
-        }
-        float outL=oscil->process(genParam,4,curve,cpIn,xIn,yIn,rxIn,ryIn,rotIn);
-        outputs[LEFT_OUTPUT].setVoltage(outL*5.f,c);
-        if(outputs[RIGHT_OUTPUT].isConnected()) {
-          auto *oscilBw=&foscBw[c];
-          if(extMode) {
-            oscilBw->updateExtPhase(inputs[PHS_INPUT].getVoltage(c)/5.f,true);
-          } else {
-            oscilBw->setPitch(voct);
-            oscilBw->updatePhase(args.sampleTime,true);
-          }
-          float outR=oscilBw->process(genParam,4,curve,cpIn,xIn,yIn,rxIn,ryIn,rotIn);
-          outputs[RIGHT_OUTPUT].setVoltage(outR*5.f,c);
-        }
-      } else {
-        outputs[LEFT_OUTPUT].setVoltage(0.f,c);
-        outputs[RIGHT_OUTPUT].setVoltage(0.f,c);
-      }
-    }
-    outputs[LEFT_OUTPUT].setChannels(channels);
-    if(outputs[RIGHT_OUTPUT].isConnected()) {
-      outputs[RIGHT_OUTPUT].setChannels(channels);
-    }
-  }
-
-  void processsimd(const ProcessArgs &args) {
-    if(reset) {
-      reset = false;
+      reset=false;
       for(int k=0;k<4;k++) {
         osc[k].reset();
         oscBw[k].reset();
@@ -276,50 +205,50 @@ struct GeneticTerrain : Module {
         outputs[RIGHT_OUTPUT].setVoltage(0.f,k);
       }
     }
-    genParam[0]=floorf(params[G1_PARAM].getValue());
-    genParam[1]=floorf(params[G2_PARAM].getValue());
-    genParam[2]=floorf(params[G3_PARAM].getValue());
-    genParam[3]=floorf(params[G4_PARAM].getValue());
-    changed();
-    int curve=getCurve();
-    float curveParam=params[CURVE_PARAM].getValue();
-    cx=xavg.process(params[X_PARAM].getValue());
-    cy=yavg.process(params[Y_PARAM].getValue());
+    if(paramUpdaterDivider.process()) { // seems to save 0.5% CPU
+      genParam[0]=floorf(params[G1_PARAM].getValue());
+      genParam[1]=floorf(params[G2_PARAM].getValue());
+      genParam[2]=floorf(params[G3_PARAM].getValue());
+      genParam[3]=floorf(params[G4_PARAM].getValue());
+      changed();
+      curve=getCurve();
+      curveParam=params[CURVE_PARAM].getValue();
+      cx=xavg.process(params[X_PARAM].getValue());
+      cy=yavg.process(params[Y_PARAM].getValue());
 
-    float rx=params[RX_PARAM].getValue();
-    float ry=params[RY_PARAM].getValue();
-    float rot=params[ROT_PARAM].getValue();
-    bool extMode = inputs[PHS_INPUT].isConnected();
+      rx=params[RX_PARAM].getValue();
+      ry=params[RY_PARAM].getValue();
+      rot=params[ROT_PARAM].getValue();
+    }
+    bool extMode=inputs[PHS_INPUT].isConnected();
     int channels=std::max(extMode?inputs[PHS_INPUT].getChannels():inputs[VOCT_INPUT].getChannels(),1);
-    //int maxChannels = 0;
     for(int c=0;c<channels;c+=4) {
       auto *oscil=&osc[c/4];
       float_4 gate=inputs[GATE_INPUT].getVoltageSimd<float_4>(c);
       float gateOsc=params[GATE_OSC_PARAM].getValue();
       if(isOn(gate)||gateOsc==0.0f) {
-        //maxChannels = c+4;
-        float_4 voct=inputs[VOCT_INPUT].getVoltageSimd<float_4>(c);
-        float_4 cpIn=inputs[CURVE_PARAM_INPUT].getVoltageSimd<float_4>(c)*params[CP_SCL_PARAM].getValue()+curveParam;
-        float_4 xIn=inputs[X_INPUT].getVoltageSimd<float_4>(c)*params[X_SCL_PARAM].getValue()+cx;
-        float_4 yIn=inputs[Y_INPUT].getVoltageSimd<float_4>(c)*params[Y_SCL_PARAM].getValue()+cy;
-        float_4 rxIn=inputs[RX_INPUT].getVoltageSimd<float_4>(c)*params[RX_SCL_PARAM].getValue()+rx;
-        float_4 ryIn=inputs[RY_INPUT].getVoltageSimd<float_4>(c)*params[RY_SCL_PARAM].getValue()+ry;
-        float_4 rotIn=inputs[ROT_INPUT].getVoltageSimd<float_4>(c)*params[ROT_SCL_PARAM].getValue()+rot;
-
-        oscil->setPitch(voct);
+        voct=inputs[VOCT_INPUT].getVoltageSimd<float_4>(c);
+        cpIn=inputs[CURVE_PARAM_INPUT].getVoltageSimd<float_4>(c)*params[CP_SCL_PARAM].getValue()+curveParam;
+        xIn=inputs[X_INPUT].getVoltageSimd<float_4>(c)*params[X_SCL_PARAM].getValue()+cx;
+        yIn=inputs[Y_INPUT].getVoltageSimd<float_4>(c)*params[Y_SCL_PARAM].getValue()+cy;
+        rxIn=inputs[RX_INPUT].getVoltageSimd<float_4>(c)*params[RX_SCL_PARAM].getValue()+rx;
+        ryIn=inputs[RY_INPUT].getVoltageSimd<float_4>(c)*params[RY_SCL_PARAM].getValue()+ry;
+        rotIn=inputs[ROT_INPUT].getVoltageSimd<float_4>(c)*params[ROT_SCL_PARAM].getValue()+rot;
         if(extMode) {
           oscil->updateExtPhase(inputs[PHS_INPUT].getVoltageSimd<float_4>(c)/5.f,false);
         } else {
+          oscil->setPitch(voct);
           oscil->updatePhase(args.sampleTime,false);
         }
         float_4 outL=oscil->process(genParam,4,curve,cpIn,xIn,yIn,rxIn,ryIn,rotIn);
         outputs[LEFT_OUTPUT].setVoltageSimd(outL*5.f,c);
+        
         if(outputs[RIGHT_OUTPUT].isConnected()) {
           auto *oscilBw=&oscBw[c/4];
-          oscilBw->setPitch(voct);
           if(extMode) {
             oscilBw->updateExtPhase(inputs[PHS_INPUT].getVoltageSimd<float_4>(c)/5.f,true);
           } else {
+            oscilBw->setPitch(voct);
             oscilBw->updatePhase(args.sampleTime,true);
           }
           float_4 outR=oscilBw->process(genParam,4,curve,cpIn,xIn,yIn,rxIn,ryIn,rotIn);
@@ -541,16 +470,18 @@ struct TerrainDisplay : TransparentWidget {
     }
     nvgStroke(args.vg);
   }
-  void drawLayer(const DrawArgs& args, int layer) override {
-    if (layer == 1) {
+
+  void drawLayer(const DrawArgs &args,int layer) override {
+    if(layer==1) {
       _draw(args);
     }
-    Widget::drawLayer(args, layer);
+    Widget::drawLayer(args,layer);
   }
-  void _draw(const DrawArgs &args)  {
+
+  void _draw(const DrawArgs &args) {
     if(_module->center) {
       centerView();
-      _module->center = false;
+      _module->center=false;
     }
     nvgScissor(args.vg,0,0,_size.x,_size.y);
     float zoom=_module->params[GeneticTerrain::ZOOM_PARAM].getValue();
@@ -593,16 +524,20 @@ struct TerrainDisplay : TransparentWidget {
     }
   }
 };
+
 template<typename T>
 struct CenterButton : SvgSwitch {
   T *module;
+
   CenterButton() {
-    momentary = true;
-    addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/SmallButton0.svg")));
-    addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/SmallButton1.svg")));
+    momentary=true;
+    addFrame(APP->window->loadSvg(asset::plugin(pluginInstance,"res/SmallButton0.svg")));
+    addFrame(APP->window->loadSvg(asset::plugin(pluginInstance,"res/SmallButton1.svg")));
   }
-  void onChange(const ChangeEvent& e) override {
-    if(module) module->centerView();
+
+  void onChange(const ChangeEvent &e) override {
+    if(module)
+      module->centerView();
     SvgSwitch::onChange(e);
   }
 };
@@ -610,11 +545,14 @@ struct CenterButton : SvgSwitch {
 template<typename T>
 struct XYKnob : TrimbotWhite9 {
   T *td;
+
   XYKnob() : TrimbotWhite9() {
 
   }
-  void onChange(const ChangeEvent& e) override {
-    if(td) td->paramToCoord();
+
+  void onChange(const ChangeEvent &e) override {
+    if(td)
+      td->paramToCoord();
     TrimbotWhite9::onChange(e);
   }
 };
@@ -634,14 +572,14 @@ struct GeneticTerrainWidget : ModuleWidget {
       display->box.pos=mm2px(Vec(15,MHEIGHT-121.92f-2.5f));
       display->box.size=Vec(360,360);
       addChild(display);
-      auto cb = createParam<CenterButton<TerrainDisplay>>(mm2px(Vec(140.75,MHEIGHT-25.65f-3.2f)),module,GeneticTerrain::CENTER_PARAM);
-      cb->module = display;
+      auto cb=createParam<CenterButton<TerrainDisplay>>(mm2px(Vec(140.75,MHEIGHT-25.65f-3.2f)),module,GeneticTerrain::CENTER_PARAM);
+      cb->module=display;
       addChild(cb);
-      auto xparam = createParam<XYKnob<TerrainDisplay>>(mm2px(Vec(139.75f,MHEIGHT-112.5f-4.5f)),module,GeneticTerrain::X_PARAM);
-      xparam->td = display;
+      auto xparam=createParam<XYKnob<TerrainDisplay>>(mm2px(Vec(139.75f,MHEIGHT-112.5f-4.5f)),module,GeneticTerrain::X_PARAM);
+      xparam->td=display;
       addParam(xparam);
-      auto yparam = createParam<XYKnob<TerrainDisplay>>(mm2px(Vec(139.75f,MHEIGHT-100.f-4.5f)),module,GeneticTerrain::Y_PARAM);
-      yparam->td = display;
+      auto yparam=createParam<XYKnob<TerrainDisplay>>(mm2px(Vec(139.75f,MHEIGHT-100.f-4.5f)),module,GeneticTerrain::Y_PARAM);
+      yparam->td=display;
       addParam(yparam);
     }
     addParam(createParam<TrimbotWhite9Snap>(mm2px(Vec(3,MHEIGHT-108.f-9.f)),module,GeneticTerrain::G1_PARAM));
@@ -685,7 +623,7 @@ struct GeneticTerrainWidget : ModuleWidget {
     addInput(createInputCentered<SmallPort>(mm2px(Vec(8,MHEIGHT-28)),module,GeneticTerrain::GATE_INPUT));
     addParam(createParam<SmallRoundButton>(mm2px(Vec(7,MHEIGHT-38)),module,GeneticTerrain::GATE_OSC_PARAM));
     addInput(createInputCentered<SmallPort>(mm2px(Vec(8,MHEIGHT-14)),module,GeneticTerrain::VOCT_INPUT));
-    addParam(createParam<SmallRoundButton>(mm2px(Vec(166,MHEIGHT-25.65f-3.2f)),module,GeneticTerrain::SIMD_PARAM));
+    //addParam(createParam<SmallRoundButton>(mm2px(Vec(166,MHEIGHT-25.65f-3.2f)),module,GeneticTerrain::SIMD_PARAM));
 
   }
 };
@@ -720,20 +658,18 @@ struct GeneticSuperTerrain : Module {
   Averager<64> yavg;
   float cx,cy;
   bool state=false;
-  bool center = false;
-  bool reset = false;
+  bool center=false;
+  bool reset=false;
   RND rnd;
-  std::vector<std::string> labels = {"NONE","sin(x)","cos(y)","sin(x+y)","cos(x-y)","sin(x*x)","cos(y*y)","sin(x*cos(y))","cos(y*sin(x)",
-                                     "sin(sqr(y+x))*x+sqr(sin(x)*cos(y))","Simplex Noise","Value Noise Uni","Value Noise Discrete 0.5","Value Noise Discrete 0.7",
-                                     "Value Noise Discrete 0.9","Value Noise Cauchy","Value Noise ArcSin","cos(x/y)","tri(x*x+y*y)","saw(x*x+y*y)","pls(x*x+y*y)",
-                                     "tri(x*x)*tri(y*y)","saw(x*x)*saw(y*y)","pls(x*x)*pls(y*y)","atan(((y)+tan((x+y)-sin(x+PI)-sin(x*y/PI)*sin((y*x+PI)))))","tanh(sin(sqr(y+x))*x+sqr(sin(x)*cos(y)))","Noise", "Weibull Noise"};
+  std::vector<std::string> labels={"NONE","sin(x)","cos(y)","sin(x+y)","cos(x-y)","sin(x*x)","cos(y*y)","sin(x*cos(y))","cos(y*sin(x)","sin(sqr(y+x))*x+sqr(sin(x)*cos(y))","Simplex Noise","Value Noise Uni","Value Noise Discrete 0.5","Value Noise Discrete 0.7","Value Noise Discrete 0.9","Value Noise Cauchy","Value Noise ArcSin","cos(x/y)","tri(x*x+y*y)","saw(x*x+y*y)","pls(x*x+y*y)","tri(x*x)*tri(y*y)","saw(x*x)*saw(y*y)","pls(x*x)*pls(y*y)",
+                                   "atan(((y)+tan((x+y)-sin(x+PI)-sin(x*y/PI)*sin((y*x+PI)))))","tanh(sin(sqr(y+x))*x+sqr(sin(x)*cos(y)))","Noise","Weibull Noise"};
 
   GeneticSuperTerrain() {
     config(NUM_PARAMS,NUM_INPUTS,NUM_OUTPUTS,NUM_LIGHTS);
-    configSwitch(G1_PARAM,-1,Computer<float>::NUM_TERRAINS -1,0.f,"T1",labels);
-    configSwitch(G2_PARAM,-1,Computer<float>::NUM_TERRAINS -1,-1.f,"T2",labels);
-    configSwitch(G3_PARAM,-1,Computer<float>::NUM_TERRAINS -1,-1.f,"T3",labels);
-    configSwitch(G4_PARAM,-1,Computer<float>::NUM_TERRAINS -1,-1.f,"T4",labels);
+    configSwitch(G1_PARAM,-1,Computer<float>::NUM_TERRAINS-1,0.f,"T1",labels);
+    configSwitch(G2_PARAM,-1,Computer<float>::NUM_TERRAINS-1,-1.f,"T2",labels);
+    configSwitch(G3_PARAM,-1,Computer<float>::NUM_TERRAINS-1,-1.f,"T3",labels);
+    configSwitch(G4_PARAM,-1,Computer<float>::NUM_TERRAINS-1,-1.f,"T4",labels);
     configParam(M0_PARAM,0.f,16.f,4.f,"M0");
     configParam(M1_PARAM,0.f,16.f,4.f,"M1");
     configParam(X_PARAM,-10.f,10.f,0.f,"X");
@@ -795,16 +731,16 @@ struct GeneticSuperTerrain : Module {
 
   void onReset(const ResetEvent &e) override {
     Module::onReset(e);
-    reset = true;
+    reset=true;
   }
 
-  void onRandomize(const RandomizeEvent& e) override {
+  void onRandomize(const RandomizeEvent &e) override {
     //INFO("onRandomize");
     params[RX_PARAM].setValue((float)rnd.nextDouble());
     params[RY_PARAM].setValue((float)rnd.nextDouble());
 
-    int cdist[20] = {1,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,4,4,4,4};
-    int count = cdist[(int)(rnd.nextDouble() * 20)];
+    int cdist[20]={1,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,4,4,4,4};
+    int count=cdist[(int)(rnd.nextDouble()*20)];
     for(int k=0;k<4;k++) { // the first 4 params are the terrain parameters
       if(k<count) {
         params[k].setValue(rnd.nextDouble()*Computer<float>::NUM_TERRAINS);
@@ -816,7 +752,7 @@ struct GeneticSuperTerrain : Module {
     params[Y_PARAM].setValue(((float)rnd.nextTri(12)-0.5f)*40.f);// approx gauss dist
 
     // tell the view it should be centered
-    center = true;
+    center=true;
   }
 
   void changed() {
@@ -836,6 +772,7 @@ struct GeneticSuperTerrain : Module {
     return gate[0]>0.f||gate[1]>0.f||gate[2]>0.f||gate[3]>0.f;
     //return true;
   }
+
   void process(const ProcessArgs &args) override {
     if(params[SIMD_PARAM].getValue()>0) {
       processimd(args);
@@ -846,7 +783,7 @@ struct GeneticSuperTerrain : Module {
 
   void processf(const ProcessArgs &args) {
     if(reset) {
-      reset = false;
+      reset=false;
       for(int k=0;k<16;k++) {
         fosc[k].reset();
         foscBw[k].reset();
@@ -873,7 +810,7 @@ struct GeneticSuperTerrain : Module {
     float rx=params[RX_PARAM].getValue();
     float ry=params[RY_PARAM].getValue();
     float rot=params[ROT_PARAM].getValue();
-    bool extMode = inputs[PHS_INPUT].isConnected();
+    bool extMode=inputs[PHS_INPUT].isConnected();
     int channels=std::max(extMode?inputs[PHS_INPUT].getChannels():inputs[VOCT_INPUT].getChannels(),1);
 
     for(int c=0;c<channels;c++) {
@@ -883,7 +820,7 @@ struct GeneticSuperTerrain : Module {
       if(isOn(gate)||gateOsc==0.0f) {
         float voct=inputs[VOCT_INPUT].getVoltage(c);
 
-        float n1In= inputs[N1_INPUT].getVoltage(c)*params[N1_SCL_PARAM].getValue()+n1;
+        float n1In=inputs[N1_INPUT].getVoltage(c)*params[N1_SCL_PARAM].getValue()+n1;
         n1In=clamp(n1In,0.05f,16.f);
         float n1Ins=params[N1_SGN_PARAM].getValue()>0.f?-1.f*n1In:n1In;
 
@@ -937,9 +874,9 @@ struct GeneticSuperTerrain : Module {
 
   }
 
-  void processimd(const ProcessArgs &args)  {
+  void processimd(const ProcessArgs &args) {
     if(reset) {
-      reset = false;
+      reset=false;
       for(int k=0;k<4;k++) {
         osc[k].reset();
         oscBw[k].reset();
@@ -966,7 +903,7 @@ struct GeneticSuperTerrain : Module {
     float rx=params[RX_PARAM].getValue();
     float ry=params[RY_PARAM].getValue();
     float rot=params[ROT_PARAM].getValue();
-    bool extMode = inputs[PHS_INPUT].isConnected();
+    bool extMode=inputs[PHS_INPUT].isConnected();
     int channels=std::max(extMode?inputs[PHS_INPUT].getChannels():inputs[VOCT_INPUT].getChannels(),1);
 
     for(int c=0;c<channels;c+=4) {
@@ -977,7 +914,7 @@ struct GeneticSuperTerrain : Module {
         float_4 voct=inputs[VOCT_INPUT].getVoltageSimd<float_4>(c);
 
         //float_4 n1In=simd::fabs(inputs[N1_INPUT].getVoltageSimd<float_4>(c))*params[N1_SCL_PARAM].getValue()+n1;
-        float_4 n1In= inputs[N1_INPUT].getVoltageSimd<float_4>(c)*params[N1_SCL_PARAM].getValue()+n1;
+        float_4 n1In=inputs[N1_INPUT].getVoltageSimd<float_4>(c)*params[N1_SCL_PARAM].getValue()+n1;
         n1In=simd::clamp(n1In,0.05f,16.f);
         float_4 n1Ins=simd::ifelse(float_4(params[N1_SGN_PARAM].getValue())>0.f,-1.f*n1In,n1In);
 
@@ -1229,16 +1166,18 @@ struct SuperTerrainDisplay : TransparentWidget {
     }
     nvgStroke(args.vg);
   }
-  void drawLayer(const DrawArgs& args, int layer) override {
-    if (layer == 1) {
+
+  void drawLayer(const DrawArgs &args,int layer) override {
+    if(layer==1) {
       _draw(args);
     }
-    Widget::drawLayer(args, layer);
+    Widget::drawLayer(args,layer);
   }
+
   void _draw(const DrawArgs &args) {
     if(_module->center) {
       centerView();
-      _module->center = false;
+      _module->center=false;
     }
     nvgScissor(args.vg,0,0,_size.x,_size.y);
     float zoom=_module->params[GeneticSuperTerrain::ZOOM_PARAM].getValue();
@@ -1297,14 +1236,14 @@ struct GeneticSuperTerrainWidget : ModuleWidget {
       display->box.pos=mm2px(Vec(15,MHEIGHT-121.92f-2.5f));
       display->box.size=Vec(360,360);
       addChild(display);
-      auto cb = createParam<CenterButton<SuperTerrainDisplay>>(mm2px(Vec(141,MHEIGHT-22.f-3.2f)),module,GeneticSuperTerrain::CENTER_PARAM);
-      cb->module = display;
+      auto cb=createParam<CenterButton<SuperTerrainDisplay>>(mm2px(Vec(141,MHEIGHT-22.f-3.2f)),module,GeneticSuperTerrain::CENTER_PARAM);
+      cb->module=display;
       addChild(cb);
-      auto xparam = createParam<XYKnob<SuperTerrainDisplay>>(mm2px(Vec(140,MHEIGHT-78.f-9.f)),module,GeneticSuperTerrain::X_PARAM);
-      xparam->td = display;
+      auto xparam=createParam<XYKnob<SuperTerrainDisplay>>(mm2px(Vec(140,MHEIGHT-78.f-9.f)),module,GeneticSuperTerrain::X_PARAM);
+      xparam->td=display;
       addParam(xparam);
-      auto yparam = createParam<XYKnob<SuperTerrainDisplay>>(mm2px(Vec(140,MHEIGHT-47.5f-9.f)),module,GeneticSuperTerrain::Y_PARAM);
-      yparam->td = display;
+      auto yparam=createParam<XYKnob<SuperTerrainDisplay>>(mm2px(Vec(140,MHEIGHT-47.5f-9.f)),module,GeneticSuperTerrain::Y_PARAM);
+      yparam->td=display;
       addParam(yparam);
     }
     addParam(createParam<TrimbotWhite9Snap>(mm2px(Vec(3,MHEIGHT-108.f-9.f)),module,GeneticSuperTerrain::G1_PARAM));
