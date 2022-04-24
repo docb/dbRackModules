@@ -242,7 +242,7 @@ struct GeneticTerrain : Module {
         }
         float_4 outL=oscil->process(genParam,4,curve,cpIn,xIn,yIn,rxIn,ryIn,rotIn);
         outputs[LEFT_OUTPUT].setVoltageSimd(outL*5.f,c);
-        
+
         if(outputs[RIGHT_OUTPUT].isConnected()) {
           auto *oscilBw=&oscBw[c/4];
           if(extMode) {
@@ -648,14 +648,25 @@ struct GeneticSuperTerrain : Module {
   };
   int genParam[4];
   int lastParam[4];
+  float m0=4;
+  float m1=4;
+  float n1=1;
+  float n2=1;
+  float n3=1;
+  float a=1;
+  float b=1;
+  float rx=0.5;
+  float ry=0.5;
+  float rot=0;
   Computer<float_4> computer;
   GeneticTerrainOSC<float_4> osc[4];
   GeneticTerrainOSC<float_4> oscBw[4];
   Computer<float> fcomputer;
   GeneticTerrainOSC<float> fosc[16];
   GeneticTerrainOSC<float> foscBw[16];
-  Averager<64> xavg;
-  Averager<64> yavg;
+  Averager<16> xavg;
+  Averager<16> yavg;
+  dsp::ClockDivider paramUpdaterDivider;
   float cx,cy;
   bool state=false;
   bool center=false;
@@ -727,6 +738,7 @@ struct GeneticSuperTerrain : Module {
       foscBw[k].computer=&fcomputer;
       foscBw[k].phs=TWOPIF*2;
     }
+    paramUpdaterDivider.setDivision(32);
   }
 
   void onReset(const ResetEvent &e) override {
@@ -773,108 +785,8 @@ struct GeneticSuperTerrain : Module {
     //return true;
   }
 
+
   void process(const ProcessArgs &args) override {
-    if(params[SIMD_PARAM].getValue()>0) {
-      processimd(args);
-    } else {
-      processf(args);
-    }
-  }
-
-  void processf(const ProcessArgs &args) {
-    if(reset) {
-      reset=false;
-      for(int k=0;k<16;k++) {
-        fosc[k].reset();
-        foscBw[k].reset();
-      }
-      for(int k=0;k<16;k++) {
-        outputs[LEFT_OUTPUT].setVoltage(0.f,k);
-        outputs[RIGHT_OUTPUT].setVoltage(0.f,k);
-      }
-    }
-    genParam[0]=floorf(params[G1_PARAM].getValue());
-    genParam[1]=floorf(params[G2_PARAM].getValue());
-    genParam[2]=floorf(params[G3_PARAM].getValue());
-    genParam[3]=floorf(params[G4_PARAM].getValue());
-    changed();
-    float m0=floorf(params[M0_PARAM].getValue());
-    float m1=floorf(params[M1_PARAM].getValue());
-    float n1=params[N1_PARAM].getValue();
-    float n2=params[N2_PARAM].getValue();
-    float n3=params[N3_PARAM].getValue();
-    float a=params[A_PARAM].getValue();
-    float b=params[B_PARAM].getValue();
-    cx=xavg.process(params[X_PARAM].getValue());
-    cy=yavg.process(params[Y_PARAM].getValue());
-    float rx=params[RX_PARAM].getValue();
-    float ry=params[RY_PARAM].getValue();
-    float rot=params[ROT_PARAM].getValue();
-    bool extMode=inputs[PHS_INPUT].isConnected();
-    int channels=std::max(extMode?inputs[PHS_INPUT].getChannels():inputs[VOCT_INPUT].getChannels(),1);
-
-    for(int c=0;c<channels;c++) {
-      auto *oscil=&fosc[c];
-      float gate=inputs[GATE_INPUT].getVoltage(c);
-      float gateOsc=params[GATE_OSC_PARAM].getValue();
-      if(isOn(gate)||gateOsc==0.0f) {
-        float voct=inputs[VOCT_INPUT].getVoltage(c);
-
-        float n1In=inputs[N1_INPUT].getVoltage(c)*params[N1_SCL_PARAM].getValue()+n1;
-        n1In=clamp(n1In,0.05f,16.f);
-        float n1Ins=params[N1_SGN_PARAM].getValue()>0.f?-1.f*n1In:n1In;
-
-        float aIn=inputs[A_INPUT].getVoltage(c)*params[A_SCL_PARAM].getValue()+a;
-        aIn=clamp(aIn,0.05f,5.f);
-
-        float bIn=inputs[B_INPUT].getVoltage(c)*params[B_SCL_PARAM].getValue()+b;
-        bIn=clamp(bIn,0.05f,5.f);
-
-        float n2In=inputs[N2_INPUT].getVoltage(c)*params[N2_SCL_PARAM].getValue()+n2;
-        n2In=clamp(n2In,-5.f,5.f);
-        float n3In=inputs[N3_INPUT].getVoltage(c)*params[N3_SCL_PARAM].getValue()+n3;
-        n3In=clamp(n3In,-5.f,5.f);
-
-
-        float xIn=inputs[X_INPUT].getVoltage(c)*params[X_SCL_PARAM].getValue()+cx;
-        float yIn=inputs[Y_INPUT].getVoltage(c)*params[Y_SCL_PARAM].getValue()+cy;
-        float rxIn=inputs[RX_INPUT].getVoltage(c)*params[RX_SCL_PARAM].getValue()+rx;
-        float ryIn=inputs[RY_INPUT].getVoltage(c)*params[RY_SCL_PARAM].getValue()+ry;
-        float rotIn=inputs[ROT_INPUT].getVoltage(c)*params[ROT_SCL_PARAM].getValue()+rot;
-
-        oscil->setPitch(voct);
-        if(extMode) {
-          oscil->updateExtPhase(inputs[PHS_INPUT].getVoltage(c)/5.f,false);
-        } else {
-          oscil->updatePhase(args.sampleTime,false);
-        }
-        float outL=oscil->process(genParam,4,xIn,yIn,rxIn,ryIn,rotIn,m0,m1,n1Ins,n2In,n3In,aIn,bIn);
-        outputs[LEFT_OUTPUT].setVoltage(outL*5.f,c);
-
-        if(outputs[RIGHT_OUTPUT].isConnected()) {
-          auto *oscilBw=&foscBw[c];
-          oscilBw->setPitch(voct);
-          if(extMode) {
-            oscilBw->updateExtPhase(inputs[PHS_INPUT].getVoltage(c)/5.f,true);
-          } else {
-            oscilBw->updatePhase(args.sampleTime,true);
-          }
-          float outR=oscilBw->process(genParam,4,xIn,yIn,rxIn,ryIn,rotIn,m0,m1,n1Ins,n2In,n3In,aIn,bIn);
-          outputs[RIGHT_OUTPUT].setVoltage(outR*5.f,c);
-        } else {
-          outputs[RIGHT_OUTPUT].setVoltage(0.f,c);
-        }
-      } else {
-        outputs[LEFT_OUTPUT].setVoltage(0.f,c);
-        outputs[RIGHT_OUTPUT].setVoltage(0.f,c);
-      }
-    }
-    outputs[LEFT_OUTPUT].setChannels(channels);
-    outputs[RIGHT_OUTPUT].setChannels(channels);
-
-  }
-
-  void processimd(const ProcessArgs &args) {
     if(reset) {
       reset=false;
       for(int k=0;k<4;k++) {
@@ -886,23 +798,25 @@ struct GeneticSuperTerrain : Module {
         outputs[RIGHT_OUTPUT].setVoltage(0.f,k);
       }
     }
-    genParam[0]=floorf(params[G1_PARAM].getValue());
-    genParam[1]=floorf(params[G2_PARAM].getValue());
-    genParam[2]=floorf(params[G3_PARAM].getValue());
-    genParam[3]=floorf(params[G4_PARAM].getValue());
-    changed();
-    float m0=floorf(params[M0_PARAM].getValue());
-    float m1=floorf(params[M1_PARAM].getValue());
-    float n1=params[N1_PARAM].getValue();
-    float n2=params[N2_PARAM].getValue();
-    float n3=params[N3_PARAM].getValue();
-    float a=params[A_PARAM].getValue();
-    float b=params[B_PARAM].getValue();
-    cx=xavg.process(params[X_PARAM].getValue());
-    cy=yavg.process(params[Y_PARAM].getValue());
-    float rx=params[RX_PARAM].getValue();
-    float ry=params[RY_PARAM].getValue();
-    float rot=params[ROT_PARAM].getValue();
+    if(paramUpdaterDivider.process()) {
+      genParam[0]=floorf(params[G1_PARAM].getValue());
+      genParam[1]=floorf(params[G2_PARAM].getValue());
+      genParam[2]=floorf(params[G3_PARAM].getValue());
+      genParam[3]=floorf(params[G4_PARAM].getValue());
+      changed();
+      m0=floorf(params[M0_PARAM].getValue());
+      m1=floorf(params[M1_PARAM].getValue());
+      n1=params[N1_PARAM].getValue();
+      n2=params[N2_PARAM].getValue();
+      n3=params[N3_PARAM].getValue();
+      a=params[A_PARAM].getValue();
+      b=params[B_PARAM].getValue();
+      cx=xavg.process(params[X_PARAM].getValue());
+      cy=yavg.process(params[Y_PARAM].getValue());
+      rx=params[RX_PARAM].getValue();
+      ry=params[RY_PARAM].getValue();
+      rot=params[ROT_PARAM].getValue();
+    }
     bool extMode=inputs[PHS_INPUT].isConnected();
     int channels=std::max(extMode?inputs[PHS_INPUT].getChannels():inputs[VOCT_INPUT].getChannels(),1);
 
@@ -1302,7 +1216,7 @@ struct GeneticSuperTerrainWidget : ModuleWidget {
     addInput(createInput<SmallPort>(mm2px(Vec(169.33f,MHEIGHT-9.5f-6.287f)),module,GeneticSuperTerrain::B_INPUT));
     addParam(createParam<TrimbotWhite>(mm2px(Vec(180.f,MHEIGHT-9.5f-6.371f)),module,GeneticSuperTerrain::B_SCL_PARAM));
 
-    addParam(createParam<SmallRoundButton>(mm2px(Vec(149.f,MHEIGHT-22.f-3.2f)),module,GeneticSuperTerrain::SIMD_PARAM));
+    //addParam(createParam<SmallRoundButton>(mm2px(Vec(149.f,MHEIGHT-22.f-3.2f)),module,GeneticSuperTerrain::SIMD_PARAM));
 
 
   }
