@@ -214,19 +214,48 @@ struct Scale {
   }
 };
 struct UpdateOnReleaseKnob : TrimbotWhite {
-  //T *module;
-  bool *update;
+  bool *update=nullptr;
+  bool contextMenu;
   UpdateOnReleaseKnob() : TrimbotWhite() {
 
+  }
+
+  void onButton(const ButtonEvent& e) override {
+    if (e.action == GLFW_PRESS && e.button == GLFW_MOUSE_BUTTON_RIGHT && (e.mods & RACK_MOD_MASK) == 0) {
+      contextMenu=true;
+    } else {
+      contextMenu=false;
+    }
+    Knob::onButton(e);
+  }
+
+  void onChange(const ChangeEvent& e) override {
+    SvgKnob::onChange(e);
+    if(update!=nullptr) *update=contextMenu;
   }
 
   void onDragEnd(const DragEndEvent &e) override {
     SvgKnob::onDragEnd(e);
     if(e.button==GLFW_MOUSE_BUTTON_LEFT) {
-      //INFO("update");
-      *update=true;
+      if(update!=nullptr) *update=true;
     }
 
+  }
+};
+struct MLED : public SvgSwitch {
+  MLED() {
+    momentary=false;
+    //latch=true;
+    addFrame(Svg::load(asset::plugin(pluginInstance,"res/RButton0.svg")));
+    addFrame(Svg::load(asset::plugin(pluginInstance,"res/RButton1.svg")));
+  }
+};
+struct MLEDM : public SvgSwitch {
+  MLEDM() {
+    momentary=true;
+    //latch=true;
+    addFrame(Svg::load(asset::plugin(pluginInstance,"res/RButton0.svg")));
+    addFrame(Svg::load(asset::plugin(pluginInstance,"res/RButton1.svg")));
   }
 };
 
@@ -315,5 +344,6 @@ struct DensMenuItem : MenuItem {
 
 #define TWOPIF 6.2831853f
 #define MHEIGHT 128.5f
+#define TY(x) MHEIGHT-(x)-6.237
 
 #endif

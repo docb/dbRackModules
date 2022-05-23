@@ -217,6 +217,15 @@
       ]
     },
     {
+      "slug": "Pad2",
+      "name": "Pad2",
+      "description": "PadSynth with smooth control",
+      "tags": [
+        "Oscillator",
+        "Polyphonic"
+      ]
+    },
+    {
       "slug": "RndG",
       "name": "RndG",
       "description": "Random Gates",
