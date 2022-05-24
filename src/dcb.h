@@ -340,6 +340,26 @@ struct DensMenuItem : MenuItem {
   }
 };
 
+struct IntSelectItem : MenuItem {
+  int *value;
+  int min;
+  int max;
+
+  IntSelectItem(int *val,int _min,int _max) : value(val),min(_min),max(_max) {
+  }
+
+  Menu *createChildMenu() override {
+    Menu *menu=new Menu;
+    for(int c=min;c<=max;c++) {
+      menu->addChild(createCheckMenuItem(string::f("%d",c),"",[=]() {
+        return *value==c;
+      },[=]() {
+        *value=c;
+      }));
+    }
+    return menu;
+  }
+};
 
 
 #define TWOPIF 6.2831853f

@@ -54,7 +54,8 @@
       "name": "JTScaler",
       "description": "Tunes standard V/OCT pitches to Just Intonation Scales",
       "tags": [
-        "Utility","Polyphonic"
+        "Utility",
+        "Polyphonic"
       ]
     },
     {
@@ -96,7 +97,8 @@
       "name": "JTKeys",
       "description": "Just Intonation Keyboard",
       "tags": [
-        "Utility","Polyphonic"
+        "Utility",
+        "Polyphonic"
       ]
     },
     {
@@ -136,7 +138,8 @@
       "name": "HexSeqP",
       "description": "A 16x16x64 Trigger Sequencer",
       "tags": [
-        "Sequencer","Polyphonic"
+        "Sequencer",
+        "Polyphonic"
       ]
     },
     {
@@ -248,7 +251,8 @@
       "description": "2D LFO for superformula curves",
       "tags": [
         "Oscillator",
-        "Low-frequency Oscillator","Polyphonic"
+        "Low-frequency Oscillator",
+        "Polyphonic"
       ]
     },
     {
@@ -257,6 +261,51 @@
       "description": "Gate, clock and inverted outputs for HexSeq",
       "tags": [
         "Expander"
+      ]
+    },
+    {
+      "slug": "PHSR",
+      "name": "PHSR",
+      "description": "Phasor",
+      "tags": [
+        "Oscillator",
+        "Polyphonic"
+      ]
+    },
+    {
+      "slug": "PhS",
+      "name": "PhS",
+      "description": "Phase Shaper",
+      "tags": [
+        "Waveshaper",
+        "Polyphonic"
+      ]
+    },
+    {
+      "slug": "SPL",
+      "name": "SPL",
+      "description": "Spline wave oscillator with phase input",
+      "tags": [
+        "Oscillator",
+        "Polyphonic"
+      ]
+    },
+    {
+      "slug": "PhO",
+      "name": "PhO",
+      "description": "Phase driven additive oscillator",
+      "tags": [
+        "Oscillator",
+        "Polyphonic"
+      ]
+    },
+    {
+      "slug": "Faders",
+      "name": "Faders",
+      "description": "Three polyphonic slider banks with modulation and value grids",
+      "tags": [
+        "Controller",
+        "Polyphonic"
       ]
     }
   ]
