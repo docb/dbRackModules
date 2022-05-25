@@ -23,12 +23,24 @@ Here we take a wave shaper to modify the phase:
 
 
 
+https://user-images.githubusercontent.com/1134412/170362396-4b37066c-5c43-41a2-8a09-3e62775e7e72.mp4
+
+
+
 ### PhS
 ![](images/PhS.png?raw=true)
 
 This module provides the shaper extracted from Valley's Terrorform module for 
 shaping a phase. There are a lot of different shapes available as shown. 
 Each shape can be adjusted with the Amt parameter and input.
+
+Here an example:
+
+
+
+https://user-images.githubusercontent.com/1134412/170367214-95789be0-5650-4afd-9f26-70ebfc70dae6.mp4
+
+
 
 ### PHSR
 ![](images/PHSR.png?raw=true)
