@@ -1,15 +1,66 @@
 # dbRackModules
 
 Some VCVRack modules
+
+## Modular Phase Distortion
+The following modules are built for a modular phase distortion synthesis system which consists of:
+- A start module which delivers a phase. This can be anything outputting an audio wave, but
+  the most useful start phase is a clean saw wave e.g. the output of the VCV LFO Saw. Later also a sine wave or triangle wave can be considered.
+- A chain of modules which modify the phase. This also can be anything which has an input and an output.
+- A phase driven oscillator. This is the key point of the system. Such an oscillator is capable of taking an external phase
+  to produce its output. 
+
+Let's start with the last point:
+### PhO
+![](images/PhO.png?raw=true)
+
+A 16 harmonics additive phase driven oscillator. The harmonics are passed using the polyphonic input "Pts".
+When fed with a clean saw wave it outputs the additive wave.
+With the dmp parameter the harmonics can be attenuated with an exponential falling curve towards the higher harmonics.
+
+Now lets take a look what happens if the phase is modified somehow.
+Here we take a wave shaper to modify the phase:
+
+
+
+### PhS
+![](images/PhS.png?raw=true)
+
+This module provides the shaper extracted from Valley's Terrorform module for 
+shaping a phase. There are a lot of different shapes available as shown. 
+Each shape can be adjusted with the Amt parameter and input.
+
+### PHSR
+![](images/PHSR.png?raw=true)
+
+This module is a tiny Phasor module which can be used as start phase generator
+It provides a polyphonic V/Oct input, a reset input and outputs for a clean saw wave, a sinus wave and a clean triangle wave.
+
+### Other modules which can be phase driven
+There are several modules which can be phase driven:
+- SPL (new, see below): generates spline waveforms from up to 16 points
+- GeneticTerrain (updated, now with phase input)
+- Geneticsuperterrain (updated, now with phase input)
+- SuperLFO (updated, if the frequency is set to the lowest value)
+- Valley's Terrorform:
+  connect the phase to the FM input, set the attenuator to 0.5 and set "zero mode" on.
+
 ## Sound Generators
 ![](images/soundgen.png?raw=true)
+
+### SPL
+![](images/spl.png?raw=true)
+
+SPL takes up to 16 points through the polyphonic PTS input and generates a smooth spline wave.
+Additionally, it outputs the line segments and step sequence of the points through the Line/Step outputs.
+
+If SPL is fed with a phase i.e. the phase input is connected, then the V/Oct input is ignored.
 
 ### Geneticterrain
 
 Geneticterrain is a polyphonic oscillator using wave terrain synthesis.
-It is basically a port of my csound web instrument https://docb.io/geneticterrain to VCV-Rack v2.
 
-The 25 provided base terrains can be combined 4 times so each terrain is a "genetic" sequence
+The 27 provided base terrains can be combined 4 times so each terrain is a "genetic" sequence
 with length 4 (sums up to 390625 possible terrains but don't worry many of them are similar).
 There are 10 different curves available and each of it has a curve parameter. The curves can be moved on terrain
 via dragging the blue circle or the X/Y Knobs. The view of the terrains can be moved by dragging not on the blue circle.
@@ -26,8 +77,10 @@ in the image above.
 NOTE: There is no band-limiting implemented for different reasons, so you have to handle possible
 aliasing by yourself. In general: scale down the curves to cut down high frequencies.
 
-NOTE: There are a lot of performance improvements implemented, but it costs still about 4% CPU per Quad Voice
-so maximal about 16% when using 16 Voices also depending on how many and which Terrains are combined.
+NOTE: There are a lot of performance improvements implemented, but it costs still about 2% CPU per Quad Voice
+so maximal about 8% when using 16 Voices also depending on how many and which Terrains are combined.
+
+If the phs input is connected when driving it with an external phase the v/oct input is ignored.
 
 ### Geneticsuperterrain
 
@@ -54,6 +107,16 @@ If you still want to use it,
 I'd recommend to start with simple curves e.g. M1=M2  and avoid sharp,
 pointy curves. (use rather the red curve in the image above and not the yellow one).
 
+### SuperLFO
+The SuperLFO module outputs super formula curves (x and y).
+It can be used as LFO and as normal polyphonic Oscillator by moving the freq button to maximum (261.63 HZ).
+
+If the frequency is set to the lowest value it is treated as zero. Then it can act as phase driven oscillator
+by using the phs input.
+
+The current curve can be visualized by placing the plotter module on the right side of SuperLFO.
+![](images/SuperLFO.png?raw=true)
+
 ### AddSynth
 
 AddSynth is a monophonic two-dimensional additive synthesizer.
@@ -76,6 +139,25 @@ randomly generated (parameter seed) using different methods (parameter Mth).
 ### Gendy
 This is a port of Supercolliders gendy which is based on the work of Peter Hoffmann who has rebuild GENDYN
 from Iannis Xenakis.
+
+### PAD2
+![](images/PAD2.png?raw=true)
+
+This module makes pads using Paul Nascas PadSynth algorithm. It is maybe the first
+module implementing the PadSynth algorithm  which is capable of smooth handling every parameter change. The wave is computed
+completely in the background not affecting any CPU usage inside VCV Rack. But it may turn on the fan
+of your computer if a lot of parameter changes are made in short distances e.g. connecting an LFO to the BW input.
+The background processing may occupy another CPU with about 20-30%.
+
+Changes to PAD:
+- 48 Harmonics can be edited
+- The random function updates the faders and the sound can be adjusted afterwards
+- There are inputs for BW and SCL including CV attenuation.
+- Advanced: The phases for the IFFT are random generated. With the Phs-Seed parameter
+  the random seed can be changed, which does have a slight effect.
+- Advanced: The fundamental frequency is set to a low 32.7 HZ by default. This can be changed
+  with the Fund parameter. It matters if only high frequencies are played - then it may be useful to increase the fund parameter.
+  Or when experimenting with vocal frequencies ....
 
 ## Effects
 ![](images/effects.png?raw=true)
@@ -101,6 +183,8 @@ There is no equalizer on each delay line (would cause 1000 biquad filter operati
 The randomization of the mesh frequencies can be done by the frequency modulation inputs. 
 
 The standard presets are provided in the factory presets of the module. 
+
+
 
 ## Random
 ![](images/rnd.png?raw=true)
@@ -158,9 +242,6 @@ A polyphonic gaussian random trigger around a given frequency and deviation.
 The used random values can also be plugged in via the src input.
 If Chn > 1 then on each internal trigger the output channel is randomly chosen.
 
-### SuperLFO
-The SuperLFO module outputs super formula curves (x and y). 
-It can also used as normal polyphonic Oscillator by moving the freq button to maximum (261.63 HZ).
 
 ## Sequencing
 ![](images/seq.png?raw=true)
@@ -259,6 +340,18 @@ interesting sound it is best to filter out the 10K band a much as possible and p
 
 ## Others
 ![](images/other.png?raw=true)
+
+### Faders
+This module does the same as the unless towers module. But it provides some additional features:
+- It has three fader blocks
+- On click on a fader the value according to the mouse position is immediately set.
+- Adjustable voltage ranges {-10V,10V}, {-5V,5V}, {-3V,3V}, {-2V,2V}, {-1V,1V}, {0V,10V}, {0V,5V},
+  {0V,3V}, {0V,2V},{0V,1V} in the menu
+- Polyphonic channels configurable in the menu
+- Snap function: "None","Semi","0.1","Pat 32","0.5","Pat 16","1","Pat 8". If another value than None is selected in the menu,
+  the output value is quantized according to the given step value. 'Pat X' denotes 10V/X and is for CV addressing. 
+- Each block can be randomized separately in the menu.
+
 ### FLA and FFL
 FLA applies integer arithmetic to a CV signal.
 FLL applies integer bit operations to a CV signal.
@@ -272,6 +365,7 @@ However it turns out that also wired sounds can be made with this method.
 A polyphonic Schmitt Trigger module
 
 ### JTScaler
+
 JTScaler tunes a 12edo V/Oct standard input to a just intonation scale.
 
 The scales selectable via the scale knob are defined  in res/default_scales.json in the dbRackModules plugin directory.
@@ -280,6 +374,9 @@ If it can be read without errors it will be taken instead otherwise it falls bac
 (which should never be changed)
 
 ### JTKeys
+
+**DEPRECATED**   use JTChords of dbRackSequencer instead.
+
 Simulates a 31 Key Just Intonation keyboard.
 
 The scales selectable via the scale knob are defined  in res/default_scales_31.json in the dbRackModules plugin directory.
@@ -292,7 +389,7 @@ GenScale a polyphonic 16 note scale defined by the toggled buttons.
 
 ### Interface
 
-Interface is an utility to define an input/output interface for a group of modules or saved selections.
+Interface is a utility to define an input/output interface for a group of modules or saved selections.
 It does not apply anything to the inputs.
 
 ### Plotter
