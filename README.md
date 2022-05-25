@@ -22,10 +22,10 @@ Now lets take a look what happens if the phase is modified somehow.
 Here we take a wave shaper to modify the phase:
 
 
-
 https://user-images.githubusercontent.com/1134412/170362396-4b37066c-5c43-41a2-8a09-3e62775e7e72.mp4
 
 
+Other interesting possibilities are using all kind of filters (Fundamental VCF, VULT Tangents etc).
 
 ### PhS
 ![](images/PhS.png?raw=true)
