@@ -39,9 +39,12 @@ struct Frac : Module {
   int state;
   int sbase;
   int sd;
-  bool initialized = false;
   dsp::SchmittTrigger clockTrigger;
   dsp::SchmittTrigger rstTrigger;
+
+  int lastN=-1;
+  int lastD=-1;
+  int lastBase=-1;
 
   // the phenomenal two lines of code of the algorithm we learned at school on a piece of paper
   int next() {
@@ -65,14 +68,16 @@ struct Frac : Module {
     for(int k=0;k<ofs;k++) {
       next();
     }
-    initialized = true;
+    lastN=n;
+    lastD=d;
+    lastBase=base;
   }
   
   void process(const ProcessArgs& args) override {
     int n = floorf(params[N_PARAM].getValue());
     int d = floorf(params[D_PARAM].getValue());
     int base = floorf(params[BASE_PARAM].getValue());
-    if(!initialized) init(n,d,base);
+    if(n!=lastN||d!=lastD||base!=lastBase) init(n,d,base);
     if(rstTrigger.process(inputs[RST_INPUT].getVoltage())) {
       init(n,d,base);
     }

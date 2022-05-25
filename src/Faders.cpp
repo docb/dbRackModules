@@ -22,7 +22,7 @@ struct Faders : Module {
   float currentVoltages[3][16]={};
   std::string rowLabels[3]={"A","B","C"};
   RND rnd;
-  float snaps[7]={0,1.f/12.f,0.1,0.5,0.625,1,10.f/8.f};
+  float snaps[8]={0,1.f/12.f,0.1,10.f/32.f,0.5,0.625,1,10.f/8.f};
   unsigned int currentSnaps[3] = {0,0,0};
   dsp::ClockDivider divider;
   Faders() {
@@ -319,7 +319,7 @@ struct FadersWidget : ModuleWidget {
         }
       };
 
-      std::vector <std::string> labels={"None","Semi","0.1","0.5","Pat 16","1","Pat 8"};
+      std::vector <std::string> labels={"None","Semi","0.1","Pat 32","0.5","Pat 16","1","Pat 8"};
       auto snapSelectItem=new SnapSelectItem(module,labels,i);
       snapSelectItem->text="Snap Size";
       snapSelectItem->rightText=labels[module->currentSnaps[i]]+"  "+RIGHT_ARROW;
