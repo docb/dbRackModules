@@ -68,6 +68,15 @@ Additionally, it outputs the line segments and step sequence of the points throu
 
 If SPL is fed with a phase i.e. the phase input is connected, then the V/Oct input is ignored.
 
+Here an example. The spline wave is generated randomly and smoothly changed over time, and a bit strechted randomly over time with the PhS BEND shaper.
+
+
+
+https://user-images.githubusercontent.com/1134412/170430990-c7cdd08d-1266-4b39-a2af-182c86453245.mp4
+
+
+
+
 ### Geneticterrain
 
 Geneticterrain is a polyphonic oscillator using wave terrain synthesis.
