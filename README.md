@@ -228,6 +228,14 @@ Changes to PAD:
 - Advanced: The fundamental frequency is set to a low 32.7 HZ by default. This can be changed
   with the Fund parameter. It matters if only high frequencies are played - then it may be useful to increase the fund parameter.
   Or when experimenting with vocal frequencies ....
+  
+Here an example:
+
+
+
+https://user-images.githubusercontent.com/1134412/170457723-229e6355-6025-48f8-ace4-76526636806e.mp4
+
+
 
 ## Effects
 ![](images/effects.png?raw=true)
