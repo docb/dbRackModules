@@ -240,7 +240,8 @@ the min distribution or weibull.
 
 
 ![](images/rand2.png?raw=true)
-This image shows from left to right: weibull, min, tri with strength 15 and uniform.
+
+This image shows from left to right: min, weibull, tri with strength 10 and uniform.
 
 
 ### RndG
