@@ -2,6 +2,55 @@
 
 Some VCVRack modules
 
+![](images/allmodules.png?raw=true)
+
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**
+
+- [dbRackModules](#dbrackmodules)
+  - [Modular Phase Distortion](#modular-phase-distortion)
+    - [PhO](#pho)
+    - [PhS](#phs)
+    - [PHSR](#phsr)
+    - [Other modules which can be phase driven](#other-modules-which-can-be-phase-driven)
+  - [Sound Generators](#sound-generators)
+    - [SPL](#spl)
+    - [Geneticterrain](#geneticterrain)
+    - [Geneticsuperterrain](#geneticsuperterrain)
+    - [SuperLFO](#superlfo)
+    - [AddSynth](#addsynth)
+    - [PAD](#pad)
+    - [Gendy](#gendy)
+    - [PAD2](#pad2)
+  - [Effects](#effects)
+    - [DCBlock](#dcblock)
+    - [PS](#ps)
+    - [RSC](#rsc)
+    - [MVerb](#mverb)
+  - [Random](#random)
+    - [RndH,RndC](#rndhrndc)
+    - [RndG](#rndg)
+    - [RndHVS3](#rndhvs3)
+    - [RTrig](#rtrig)
+  - [Sequencing](#sequencing)
+  - [HexSeq](#hexseq)
+    - [HexSeqP](#hexseqp)
+    - [Frac and Hopa](#frac-and-hopa)
+  - [Others](#others)
+    - [Faders](#faders)
+    - [FLA and FFL](#fla-and-ffl)
+    - [STrg](#strg)
+    - [JTScaler](#jtscaler)
+    - [JTKeys](#jtkeys)
+    - [GenScale](#genscale)
+    - [Interface](#interface)
+    - [Plotter](#plotter)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+
+
 ## Modular Phase Distortion
 The following modules are built for a modular phase distortion synthesis system which consists of:
 - A start module which delivers a phase. This can be anything outputting an audio wave, but
