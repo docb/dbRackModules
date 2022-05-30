@@ -2,6 +2,9 @@
 
 Some VCVRack modules
 
+New modules in 2.1.0: [PAD2](#pad2), [PhO](#pho), [PhS](#phs), [PHSR](#phsr), [SPL](#spl), [YAC](#yac),[Faders](#faders),[PLC](#plc)
+
+
 ![](images/allmodules.png?raw=true)
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
@@ -27,6 +30,7 @@ Some VCVRack modules
   - [PS](#ps)
   - [RSC](#rsc)
   - [MVerb](#mverb)
+  - [YAC](#yac)
 - [Random](#random)
   - [RndH,RndC](#rndhrndc)
   - [RndG](#rndg)
@@ -38,6 +42,7 @@ Some VCVRack modules
   - [Frac and Hopa](#frac-and-hopa)
 - [Others](#others)
   - [Faders](#faders)
+  - [PLC](#plc)
   - [FLA and FFL](#fla-and-ffl)
   - [STrg](#strg)
   - [JTScaler](#jtscaler)
