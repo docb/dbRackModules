@@ -269,8 +269,9 @@ The standard presets are provided in the factory presets of the module.
 ### YAC
 Yet another chorus, this one can be modulated.
 
-Long time I wondered why chorus, flangers always only have an internal LFO with a sine wave. So I built this one.
-If the ModL and ModR inputs are connected they were taken instead of the internal LFO.
+Long time I wondered why chorus, flangers almost only have an internal LFO with a sine wave. So I built this one.
+If the ModL and ModR inputs are connected they were taken instead of the internal LFO. The rate parameter is ignored in this case
+and the depth parameter is used as attenuator for the incoming modulation signal.
 
 Here an example using Caudal from VULT as modulator. With intent a just chord is used to avoid
 'built in' chorus effects which occur in 12edo (de-)tuning.
