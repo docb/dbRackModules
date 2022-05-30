@@ -91,7 +91,7 @@ struct GenScaleWidget : ModuleWidget {
     menu->addChild(new MenuSeparator);
     auto channelSelect=new IntSelectItem(&module->maxChannels,1,PORT_MAX_CHANNELS);
     channelSelect->text="Polyphonic Channels";
-    channelSelect->rightText=string::f("%d",module->maxChannels)+"  "+RIGHT_ARROW;
+    channelSelect->rightText=rack::string::f("%d",module->maxChannels)+"  "+RIGHT_ARROW;
     menu->addChild(channelSelect);
   }
 };

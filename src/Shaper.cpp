@@ -49,7 +49,7 @@ Shaper::Shaper() {
   __eighth=_mm_set1_ps(1.f/8.f);
   __sixteenth=_mm_set1_ps(1.f/16.f);
 
-  std::srand(std::time(NULL));
+  //std::srand(std::time(NULL));
   for(auto i=0;i<4;++i) {
     _z[i]=std::rand();
     _w[i]=std::rand();

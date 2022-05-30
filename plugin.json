@@ -1,7 +1,7 @@
 {
   "slug": "dbRackModules",
   "name": "dbRackModules",
-  "version": "2.0.5",
+  "version": "2.1.0",
   "license": "GPL-3.0-or-later",
   "brand": "docB",
   "author": "docB",
@@ -305,6 +305,22 @@
       "description": "Three polyphonic slider banks with modulation and value grids",
       "tags": [
         "Controller",
+        "Polyphonic"
+      ]
+    },
+    {
+      "slug": "YAC",
+      "name": "YAC",
+      "description": "Yet another chorus, this one can be modulated",
+      "tags": [
+        "Chorus"
+      ]
+    },
+    {
+      "slug": "PLC",
+      "name": "PLC",
+      "description": "Poly Controller",
+      "tags": [
         "Polyphonic"
       ]
     }

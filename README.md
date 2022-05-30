@@ -261,6 +261,14 @@ The randomization of the mesh frequencies can be done by the frequency modulatio
 
 The standard presets are provided in the factory presets of the module. 
 
+### YAC
+Yet another chorus, this one can be modulated.
+
+Long time I wondered why chorus, flangers always only have an internal LFO with a sine wave. So I built this one.
+If the ModL and ModR inputs are connected they were taken instead of the internal LFO.
+
+Here an example using Caudal from VULT as modulator. With intent a just chord is used to avoid
+'built in' chorus effects which occur in 12edo (de-)tuning.
 
 
 ## Random
@@ -430,6 +438,13 @@ This module does the same as the unless towers module. But it provides some addi
   the output value is quantized according to the given step value. 'Pat X' denotes 10V/X and is for CV addressing. 
 - Each block can be randomized separately in the menu.
 
+### PLC
+This module does the same as PolyCon from Bogaudio but
+
+- It is thinner
+- The channels and ranges can be set in the menu.
+- The values stay the same if the range is changed and the values are still in the range.
+
 ### FLA and FFL
 FLA applies integer arithmetic to a CV signal.
 FLL applies integer bit operations to a CV signal.
@@ -453,7 +468,7 @@ If it can be read without errors it will be taken instead otherwise it falls bac
 
 ### JTKeys
 
-**DEPRECATED**   use JTChords of dbRackSequencer instead.
+**DEPRECATED** , will be removed - use JTChords of dbRackSequencer instead.
 
 Simulates a 31 Key Just Intonation keyboard.
 

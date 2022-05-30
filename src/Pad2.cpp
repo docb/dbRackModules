@@ -112,7 +112,7 @@ struct Pad2 : Module {
   };
 
   enum Methods {
-    HARMONIC_MIN,EVEN_MIN,ODD_MIN,HARMONIC_WB,EVEN_WB,ODD_WB,VOICE,NUM_METHODS
+    HARMONIC_MIN,EVEN_MIN,ODD_MIN,HARMONIC_WB,EVEN_WB,ODD_WB,NUM_METHODS
   };
 
   RND rnd;
@@ -164,7 +164,7 @@ struct Pad2 : Module {
     configParam(SCALE_CV_PARAM,0.0f,2.f,0.f,"Bandwidth Scale CV");
     configButton(GEN_PARAM,"Generate");
     configParam(PSEED_PARAM,0.f,1.f,0.5,"Phase Seed");
-    configParam(FUND_PARAM,4.f,9.f,5.03f,"Frequency"," Hz",2,1);
+    configParam(FUND_PARAM,4.f,11.f,5.03f,"Frequency"," Hz",2,1);
     configSwitch(MTH_PARAM,0.f,NUM_METHODS-1.01,0,"Method",{"Harmonic Min","Even Min","Odd Min","Harmonic Weibull","Even Weibull","Odd Weibull"});
     getParamQuantity(MTH_PARAM)->snapEnabled=true;
     configInput(VOCT_INPUT,"V/Oct");
@@ -308,7 +308,7 @@ struct Pad2 : Module {
     int channels=inputs[VOCT_INPUT].getChannels();
     for(int k=0;k<channels;k++) {
       float voct=inputs[VOCT_INPUT].getVoltage(k);
-      float freq = dsp::FREQ_C4 * dsp::approxExp2_taylor5(voct + 30.f) / std::pow(2.f, 30.f);
+      float freq = dsp::FREQ_C4 * dsp::approxExp2_taylor5((voct-1) + 30.f) / std::pow(2.f, 30.f);
       float oscFreq=(freq*args.sampleRate)/(float(LENGTH)*fund);
       float dPhase=oscFreq*args.sampleTime;
       phs[k]+=dPhase;
@@ -373,14 +373,14 @@ struct PartialFader : SliderKnob {
       }
       e.consume(this);
     }
-    Knob::onButton(e);
+    SliderKnob::onButton(e);
   }
 
   void onChange(const event::Change &e) override {
     if(module) {
       module->inputChanged=true;
     }
-    Knob::onChange(e);
+    SliderKnob::onChange(e);
   }
 
 };

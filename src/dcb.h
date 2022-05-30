@@ -242,6 +242,19 @@ struct UpdateOnReleaseKnob : TrimbotWhite {
 
   }
 };
+
+template<typename M>
+struct MKnob : TrimbotWhite {
+  M *module=nullptr;
+  void step() override {
+    if(module && module->dirty) {
+      ChangeEvent c;
+      SvgKnob::onChange(c);
+      module->dirty--;
+    }
+    SvgKnob::step();
+  }
+};
 struct MLED : public SvgSwitch {
   MLED() {
     momentary=false;
@@ -360,7 +373,32 @@ struct IntSelectItem : MenuItem {
     return menu;
   }
 };
+struct MinMaxRange {
+  float min;
+  float max;
+};
+template<typename M>
+struct RangeSelectItem : MenuItem {
+  M *module;
+  std::vector <MinMaxRange> ranges;
 
+  RangeSelectItem(M *_module,std::vector <MinMaxRange> _ranges) : module(_module),ranges(std::move(_ranges)) {
+  }
+
+  Menu *createChildMenu() override {
+    Menu *menu=new Menu;
+    for(unsigned int k=0;k<ranges.size();k++) {
+      menu->addChild(createCheckMenuItem(string::f("%d/%dV",(int)ranges[k].min,(int)ranges[k].max),"",[=]() {
+        return module->min==ranges[k].min&&module->max==ranges[k].max;
+      },[=]() {
+        module->min=ranges[k].min;
+        module->max=ranges[k].max;
+        module->reconfig();
+      }));
+    }
+    return menu;
+  }
+};
 
 #define TWOPIF 6.2831853f
 #define MHEIGHT 128.5f
