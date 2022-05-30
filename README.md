@@ -277,6 +277,11 @@ Here an example using Caudal from VULT as modulator. With intent a just chord is
 'built in' chorus effects which occur in 12edo (de-)tuning.
 
 
+
+https://user-images.githubusercontent.com/1134412/171022165-66ec0706-2f26-4b07-ad21-0d18babe37e1.mp4
+
+
+
 ## Random
 ![](images/rnd.png?raw=true)
 
