@@ -3,7 +3,7 @@
 #include <Gamma/Gamma.h>
 #include <Gamma/Delay.h>
 #include <Gamma/Filter.h>
-
+#include <thread>
 struct EarlyReturnPreset {
   std::string name;
   std::vector<float> tapsLeft;
@@ -126,16 +126,38 @@ struct MVerb : Module {
   Multitaps multiTapsRight;
   Data data;
   MeshNode m[25];
-  float inL=0;
-  float inR=0;
-  float aL=0.;
-  float aR=0.;
-  float reverbL=0.;
-  float reverbR=0.;
   float res[25];
   bool updateER;
-  int lastER=0;
+  float wet=0;
+  float fbIn=0;
+  float erAmp=0;
+  float sampleTime=1.f/48000;
+  bool useThread=true;
+  std::atomic<bool> run;
+  rack::dsp::RingBuffer<Vec,64> outBuffer;
+  rack::dsp::RingBuffer<Vec,64> inBuffer;
+  //rack::dsp::RingBuffer<float,64> outBuffer[2];
+  //rack::dsp::RingBuffer<float,64> inBuffer[2];
+  dsp::ClockDivider paramDivider;
+  std::thread thread=std::thread([this] {
+    run=true;
+    while(run) {
+      if(!outBuffer.full() && !inBuffer.empty()) {
+        Vec in=inBuffer.shift();
+        Vec out=_process(in.x,in.y);
+        outBuffer.push(out);
+      } else {
+        std::this_thread::sleep_for(std::chrono::duration<double>(sampleTime));
+      }
+    }
+  });
 
+  void onRemove() override {
+    run=false;
+    if(thread.joinable()) {
+      thread.join();
+    }
+  }
 
   void initializeER() {
     int er=params[ER_PRESET_PARAM].getValue();
@@ -166,6 +188,7 @@ struct MVerb : Module {
     configOutput(R_OUTPUT,"Right");
     configBypass(L_INPUT,L_OUTPUT);
     configBypass(R_INPUT,R_OUTPUT);
+    paramDivider.setDivision(32);
   }
   void onSampleRateChange(const SampleRateChangeEvent& e) override {
     gam::sampleRate(APP->engine->getSampleRate());
@@ -186,11 +209,56 @@ struct MVerb : Module {
     return p;
   }
 
+  Vec _process(float inL,float inR) {
+    float fb=tanhf(fbIn);
+    inL=blockDcINL((float)inL);
+    inR=blockDcINR((float)inR);
+    float aL=multiTapsLeft.process(inL,erAmp);
+    float aR=multiTapsRight.process(inR,erAmp);
+    for(int k=0;k<25;k++) {
+      m[k].dly=1.f/powf(2.0f,getRes(k));
+      m[k].fb = fb;
+    }
+    m[0].process(m[0].up,m[1].left,m[5].up,m[0].left);
+    m[1].process(m[1].up,m[2].left,m[6].up,m[0].right);
+    m[2].process(m[2].up,m[3].left,m[7].up,m[1].right);
+    m[3].process(m[3].up,m[4].left,m[8].up,m[2].right);
+    m[4].process(m[4].up,m[4].right,m[9].up,m[3].right);
+    m[5].process(m[0].down,m[6].left,m[10].up,m[5].left);
+    m[6].process(m[1].down,m[7].left,m[11].up,m[5].right);
+    m[7].process(m[2].down,m[8].left,m[12].up,m[6].right);
+    m[8].process(m[3].down,m[9].left,m[13].up,m[7].right);
+    m[9].process(m[4].down,m[9].right,m[14].up,m[8].right);
+    m[10].process(m[5].down,m[11].left,m[15].up,m[10].left);
+    m[11].process(inL+aL+m[6].down,m[12].left,m[16].up,m[10].right);
+    m[12].process(m[7].down,m[13].left,m[17].up,m[11].right);
+    m[13].process(inR+aR+m[8].down,m[14].left,m[18].up,m[12].right);
+    m[14].process(m[9].down,m[14].right,m[19].up,m[13].right);
+    m[15].process(m[10].down,m[16].left,m[20].up,m[15].left);
+    m[16].process(m[11].down,m[17].left,m[21].up,m[15].right);
+    m[17].process(m[12].down,m[18].left,m[22].up,m[16].right);
+    m[18].process(m[13].down,m[19].left,m[23].up,m[17].right);
+    m[19].process(m[14].down,m[19].right,m[24].up,m[18].right);
+    m[20].process(m[15].down,m[21].left,m[20].down,m[20].left);
+    m[21].process(m[16].down,m[22].left,m[21].down,m[20].right);
+    m[22].process(m[17].down,m[23].left,m[22].down,m[21].right);
+    m[23].process(m[18].down,m[24].left,m[23].down,m[22].right);
+    m[24].process(m[19].down,m[24].right,m[24].down,m[23].right);
+    float reverbL=blockDcOutL(m[6].left);
+    float reverbR=blockDcOutR(m[8].right);
+    float outL=(reverbL*wet)+(inL*(1-wet));
+    float outR=(reverbR*wet)+(inR*(1-wet));
+    return {outL,outR};
+  }
+
   void process(const ProcessArgs &args) override {
+    sampleTime=args.sampleTime;
     if(updateER) {
       updateER = false;
       initializeER();
     }
+    float inL=0;
+    float inR=0;
     if(inputs[L_INPUT].isConnected()) {
       inL=inputs[L_INPUT].getVoltage();
       if(inputs[R_INPUT].isConnected()) {
@@ -198,54 +266,28 @@ struct MVerb : Module {
       } else {
         inR=inL;
       }
-      float wet=inputs[WET_CV_INPUT].isConnected()?clamp(inputs[WET_CV_INPUT].getVoltage()*0.1f,0.f,1.f):params[WET_PARAM].getValue();
-      if(wet==0.f) {
-        outputs[L_OUTPUT].setVoltage(inL);
-        outputs[R_OUTPUT].setVoltage(inR);
-        return;
+      if(paramDivider.process()) {
+        wet=inputs[WET_CV_INPUT].isConnected()?clamp(inputs[WET_CV_INPUT].getVoltage()*0.1f,0.f,1.f):params[WET_PARAM].getValue();
+        if(wet==0.f) {
+          outputs[L_OUTPUT].setVoltage(inL);
+          outputs[R_OUTPUT].setVoltage(inR);
+          return;
+        }
+        fbIn=inputs[FB_CV_INPUT].isConnected()?clamp(inputs[FB_CV_INPUT].getVoltage(),0.f,10.f)*0.5f:params[FB_PARAM].getValue()*5.f;
+
+        erAmp=inputs[ERAMP_INPUT].isConnected()?inputs[ERAMP_INPUT].getVoltage()*0.1f:params[ER_AMP_PARAM].getValue();
       }
-      float fbIn=inputs[FB_CV_INPUT].isConnected()?clamp(inputs[FB_CV_INPUT].getVoltage(),0.f,10.f)*0.5f:params[FB_PARAM].getValue()*5.f;
-      float fb=tanhf(fbIn);
-      float erAmp=inputs[ERAMP_INPUT].isConnected()?inputs[ERAMP_INPUT].getVoltage()*0.1f:params[ER_AMP_PARAM].getValue();
-      inL=blockDcINL((float)inL);
-      inR=blockDcINR((float)inR);
-      aL=multiTapsLeft.process(inL,erAmp);
-      aR=multiTapsRight.process(inR,erAmp);
-      for(int k=0;k<25;k++) {
-        m[k].dly=1.f/powf(2.0f,getRes(k));
-        m[k].fb = fb;
+      Vec out={};
+      if(useThread) {
+        if(!inBuffer.full()) inBuffer.push({inL,inR});
+        if(!outBuffer.empty()) {
+          out=outBuffer.shift();
+        }
+      } else {
+        out =_process(inL,inR);
       }
-      m[0].process(m[0].up,m[1].left,m[5].up,m[0].left);
-      m[1].process(m[1].up,m[2].left,m[6].up,m[0].right);
-      m[2].process(m[2].up,m[3].left,m[7].up,m[1].right);
-      m[3].process(m[3].up,m[4].left,m[8].up,m[2].right);
-      m[4].process(m[4].up,m[4].right,m[9].up,m[3].right);
-      m[5].process(m[0].down,m[6].left,m[10].up,m[5].left);
-      m[6].process(m[1].down,m[7].left,m[11].up,m[5].right);
-      m[7].process(m[2].down,m[8].left,m[12].up,m[6].right);
-      m[8].process(m[3].down,m[9].left,m[13].up,m[7].right);
-      m[9].process(m[4].down,m[9].right,m[14].up,m[8].right);
-      m[10].process(m[5].down,m[11].left,m[15].up,m[10].left);
-      m[11].process(inL+aL+m[6].down,m[12].left,m[16].up,m[10].right);
-      m[12].process(m[7].down,m[13].left,m[17].up,m[11].right);
-      m[13].process(inR+aR+m[8].down,m[14].left,m[18].up,m[12].right);
-      m[14].process(m[9].down,m[14].right,m[19].up,m[13].right);
-      m[15].process(m[10].down,m[16].left,m[20].up,m[15].left);
-      m[16].process(m[11].down,m[17].left,m[21].up,m[15].right);
-      m[17].process(m[12].down,m[18].left,m[22].up,m[16].right);
-      m[18].process(m[13].down,m[19].left,m[23].up,m[17].right);
-      m[19].process(m[14].down,m[19].right,m[24].up,m[18].right);
-      m[20].process(m[15].down,m[21].left,m[20].down,m[20].left);
-      m[21].process(m[16].down,m[22].left,m[21].down,m[20].right);
-      m[22].process(m[17].down,m[23].left,m[22].down,m[21].right);
-      m[23].process(m[18].down,m[24].left,m[23].down,m[22].right);
-      m[24].process(m[19].down,m[24].right,m[24].down,m[23].right);
-      reverbL=blockDcOutL(m[6].left);
-      reverbR=blockDcOutR(m[8].right);
-      float outL=(reverbL*wet)+(inL*(1-wet));
-      float outR=(reverbR*wet)+(inR*(1-wet));
-      outputs[L_OUTPUT].setVoltage(outL);
-      outputs[R_OUTPUT].setVoltage(outR);
+      outputs[L_OUTPUT].setVoltage(out.x);
+      outputs[R_OUTPUT].setVoltage(out.y);
     }
 
   }
@@ -301,6 +343,14 @@ struct MVerbWidget : ModuleWidget {
     addOutput(createOutput<SmallPort>(mm2px(Vec(27.283f,MHEIGHT-30.287f)),module,MVerb::L_OUTPUT));
     addOutput(createOutput<SmallPort>(mm2px(Vec(27.283f,MHEIGHT-18.287f)),module,MVerb::R_OUTPUT));
 
+  }
+  void appendContextMenu(Menu* menu) override {
+    auto *module=dynamic_cast<MVerb *>(this->module);
+    assert(module);
+
+    menu->addChild(new MenuSeparator);
+
+    menu->addChild(createBoolPtrMenuItem("Use Thread","",&module->useThread));
   }
 };
 
