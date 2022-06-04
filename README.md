@@ -135,7 +135,7 @@ https://user-images.githubusercontent.com/1134412/170430990-c7cdd08d-1266-4b39-a
 Geneticterrain is a polyphonic oscillator using wave terrain synthesis.
 
 The 27 provided base terrains can be combined 4 times so each terrain is a "genetic" sequence
-with length 4 (sums up to 390625 possible terrains but don't worry many of them are similar).
+with length 4 (sums up to 531441 possible terrains but don't worry many of them are similar).
 There are 10 different curves available and each of it has a curve parameter. The curves can be moved on terrain
 via dragging the blue circle or the X/Y Knobs. The view of the terrains can be moved by dragging not on the blue circle.
 
@@ -265,6 +265,10 @@ There is no equalizer on each delay line (would cause 1000 biquad filter operati
 The randomization of the mesh frequencies can be done by the frequency modulation inputs. 
 
 The standard presets are provided in the factory presets of the module. 
+
+New in 2.1.0: The MVerb can now be run in a threaded mode (the default setting in the menu)
+which puts  the heavy computing into a background thread. It should now run  below 1-2% CPU.
+
 
 ### YAC
 Yet another chorus, this one can be modulated.
