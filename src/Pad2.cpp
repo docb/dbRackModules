@@ -8,10 +8,10 @@
  *  padsynth algorithm from Paul Nasca
  */
 #define SMOOTH_PERIOD 1028
-
+template<size_t S>
 struct Pad2Table {
   float *table[2];
-  float rndPhs[LENGTH];
+  float *rndPhs;
   float currentSeed;
   int currentTable=0;
   dsp::RealFFT _realFFT;
@@ -19,20 +19,22 @@ struct Pad2Table {
   int counter=0;
   double lastDuration;
 
-  Pad2Table() : _realFFT(LENGTH) {
-    table[0]=new float[LENGTH];
-    table[1]=new float[LENGTH];
+  Pad2Table() : _realFFT(S) {
+    table[0]=new float[S];
+    table[1]=new float[S];
+    rndPhs=new float[S];
     reset(0.5);
   }
 
   ~Pad2Table() {
     delete[] table[0];
     delete[] table[1];
+    delete[] rndPhs;
   }
 
   void reset(float pSeed) {
     rnd.reset((unsigned long long)(floor((double)pSeed*(double)ULONG_MAX)));
-    for(int k=0;k<LENGTH;k++) {
+    for(size_t k=0;k<S;k++) {
       rndPhs[k]=float(rnd.nextDouble()*M_PI*2);
     }
     currentSeed=pSeed;
@@ -47,9 +49,9 @@ struct Pad2Table {
   };
 
   void generate(const std::vector<float> &partials,float sampleRate,float fundFreq,float partialBW,float bwScale,float pSeed) {
-    auto input=new float[LENGTH*2];
-    auto work=new float[LENGTH*2];
-    memset(input,0,LENGTH*2*sizeof(float));
+    auto input=new float[S*2];
+    auto work=new float[S*2];
+    memset(input,0,S*2*sizeof(float));
     input[0]=0.f;
     input[1]=0.f;
     for(unsigned int k=1;k<partials.size();k++) {
@@ -58,8 +60,8 @@ struct Pad2Table {
         float freqIdx=partialHz/((float)sampleRate);
         float bandwidthHz=(std::pow(2.0f,partialBW/1200.0f)-1.0f)*fundFreq*std::pow(float(k),bwScale);
         float bandwidthSamples=bandwidthHz/(2.0f*sampleRate);
-        for(int i=0;i<LENGTH;i++) {
-          float fttIdx=((float)i)/((float)LENGTH*2);
+        for(unsigned i=0;i<S;i++) {
+          float fttIdx=((float)i)/((float)S*2);
           float profileIdx=fttIdx-freqIdx;
           float profileSample=profile(profileIdx,bandwidthSamples);
           input[i*2]+=(profileSample*partials[k]);
@@ -68,11 +70,12 @@ struct Pad2Table {
     }
     if(currentSeed!=pSeed)
       reset(pSeed);
-    for(int k=0;k<LENGTH;k++) {
+    for(unsigned k=0;k<S;k++) {
       auto randomPhase=rndPhs[k];
       input[k*2]=(input[k*2]*cosf(randomPhase));
       input[k*2+1]=(input[k*2]*sinf(randomPhase));
     };
+
     int idx=(currentTable+1)%2;
     pffft_transform_ordered(_realFFT.setup,input,table[idx],work,PFFFT_BACKWARD);
     _realFFT.scale(table[idx]);
@@ -85,13 +88,13 @@ struct Pad2Table {
   float lookup(float phs) {
     if(counter>0) {
       float mix=float(counter)/float(SMOOTH_PERIOD);
-      float future=table[currentTable][int(phs*float(LENGTH))&(LENGTH-1)];
+      float future=table[currentTable][int(phs*float(S))&(S-1)];
       int lastTable=currentTable==0?1:0;
-      float last=table[lastTable][int(phs*float(LENGTH))&(LENGTH-1)];
+      float last=table[lastTable][int(phs*float(S))&(S-1)];
       counter--;
       return future*(1-mix)+last*mix;
     }
-    return table[currentTable][int(phs*float(LENGTH))&(LENGTH-1)];
+    return table[currentTable][int(phs*float(S))&(S-1)];
   }
 
 
@@ -102,7 +105,7 @@ struct Pad2 : Module {
     BW_PARAM,BW_CV_PARAM,SCALE_PARAM,SCALE_CV_PARAM,PSEED_PARAM,MTH_PARAM,GEN_PARAM,FUND_PARAM,PARTIAL_PARAM,PARAMS_LEN=PARTIAL_PARAM+48
   };
   enum InputId {
-    VOCT_INPUT,BW_INPUT,SCALE_INPUT,INPUTS_LEN
+    VOCT_INPUT,BW_INPUT,SCALE_INPUT,PARTIALS_INPUT,RND_TRIGGER_INPUT=PARTIALS_INPUT+3,INPUTS_LEN
   };
   enum OutputId {
     L_OUTPUT,R_OUTPUT,OUTPUTS_LEN
@@ -116,20 +119,30 @@ struct Pad2 : Module {
   };
 
   RND rnd;
-  Pad2Table pt;
+  Pad2Table<LENGTH> pt;
+  Pad2Table<LENGTH*2> pt2;
+  Pad2Table<LENGTH*4> pt4;
+  Pad2Table<LENGTH*8> pt8;
+  enum PTSR {LESS_88K,LESS_176K,LESS_352K,GT_352K};
+  PTSR currentPTSR=LESS_88K;
   std::vector<float> partials;
   std::mutex mutex;
   dsp::ClockDivider divider;
   dsp::ClockDivider logDivider;
 
   dsp::SchmittTrigger rndTrigger;
+  dsp::SchmittTrigger manualRndTrigger;
   float phs[16]={};
   float lastFund=0;
   float lastBw=0;
   float lastScale=0;
   bool inputChanged=false;
   bool updateFund=false;
+  bool partialInputConnected=false;
   float fund=32.7;
+  float currentFund=32.7;
+  float lastPitch;
+  bool adjustFund=false;
 
 #define WORKER_THREAD
 
@@ -145,8 +158,21 @@ struct Pad2 : Module {
   std::thread thread=std::thread([this] {
     while(!exiting) {
       if(changed) {
-        pt.generate(_partials,_sr,_fund,_bw,_scl,_pSeed);
+        switch(currentPTSR) {
+          case GT_352K:
+            pt8.generate(_partials,_sr,_fund,_bw,_scl,_pSeed);
+            break;
+          case LESS_352K:
+            pt4.generate(_partials,_sr,_fund,_bw,_scl,_pSeed);
+            break;
+          case LESS_176K:
+            pt2.generate(_partials,_sr,_fund,_bw,_scl,_pSeed);
+            break;
+          default:
+            pt.generate(_partials,_sr,_fund,_bw,_scl,_pSeed);
+        }
         changed=false;
+        currentFund=_fund;
       }
       std::this_thread::sleep_for(std::chrono::duration<double>(SMOOTH_PERIOD*2.f/_sr));
     }
@@ -168,6 +194,10 @@ struct Pad2 : Module {
     configSwitch(MTH_PARAM,0.f,NUM_METHODS-1.01,0,"Method",{"Harmonic Min","Even Min","Odd Min","Harmonic Weibull","Even Weibull","Odd Weibull"});
     getParamQuantity(MTH_PARAM)->snapEnabled=true;
     configInput(VOCT_INPUT,"V/Oct");
+    configInput(PARTIALS_INPUT,"Partials 2-17");
+    configInput(RND_TRIGGER_INPUT,"Rnd Trigger");
+    configInput(PARTIALS_INPUT+1,"Partials 18-33");
+    configInput(PARTIALS_INPUT+2,"Partials 34-49");
     configOutput(L_OUTPUT,"Left");
     configOutput(R_OUTPUT,"Right");
     divider.setDivision(SMOOTH_PERIOD*2);
@@ -266,9 +296,53 @@ struct Pad2 : Module {
     }
   }
 
+  void updatePTSR(float sr) {
+    if(sr<88000.f) {
+      currentPTSR=LESS_88K;
+    } else if(sr<176000.f) {
+      currentPTSR=LESS_176K;
+    } else if(sr<352000.f) {
+      currentPTSR=LESS_352K;
+    } else {
+      currentPTSR=GT_352K;
+    }
+  }
 
+  float getLength() {
+    switch(currentPTSR) {
+      case LESS_88K: return LENGTH;
+      case LESS_176K: return LENGTH*2.f;
+      case LESS_352K: return LENGTH*4.f;
+      default:
+      return LENGTH*8.f;
+    }
+  }
+
+  float lookup(float phs) {
+    switch(currentPTSR) {
+      case LESS_88K: return pt.lookup(phs);
+      case LESS_176K: return pt2.lookup(phs);
+      case LESS_352K: return pt4.lookup(phs);
+      default:
+        return pt8.lookup(phs);
+    }
+  }
 
   void update(float sr) {
+    updatePTSR(sr);
+    for(int k=0;k<3;k++) {
+      if(inputs[PARTIALS_INPUT+k].isConnected()) {
+        for(int chn=0;chn<16;chn++) {
+          float oldParam=params[PARTIAL_PARAM+k*16+chn].getValue();
+          float newParam=clamp(inputs[PARTIALS_INPUT+k].getVoltage(chn),0.f,10.f)/10.f;
+          if(oldParam!=newParam) inputChanged=true;
+          getParamQuantity(PARTIAL_PARAM+k*16+chn)->setValue(newParam);
+        }
+        partialInputConnected=true;
+      } else {
+        if(k==0) break;
+      }
+    }
     float bw=params[BW_PARAM].getValue();
     if(inputs[BW_INPUT].isConnected()) {
       bw+=inputs[BW_INPUT].getVoltage()*params[BW_CV_PARAM].getValue();
@@ -285,7 +359,7 @@ struct Pad2 : Module {
     if(inputChanged) {
       generatePartials();
     }
-    if(bw!=lastBw||scale!=lastScale||pSeed!=pt.currentSeed||inputChanged||lastFund!=fund) {
+    if(bw!=lastBw||scale!=lastScale||pSeed!=pt.currentSeed||inputChanged||lastFund!=fund||_sr!=sr) {
       doWork(partials,bw,scale,sr,pSeed,fund);
     }
     inputChanged=false;
@@ -295,27 +369,42 @@ struct Pad2 : Module {
 
   }
 
+  float lowestPitch(int channels) {
+    int min=10;
+    for(int k=0;k<channels;k++) {
+      float voltage=inputs[VOCT_INPUT].getVoltage(k);
+      if(voltage<min) min=voltage;
+    }
+    return min;
+  }
+
   void process(const ProcessArgs &args) override {
-    if(divider.process())
-      update(args.sampleRate);
-    if(rndTrigger.process(params[GEN_PARAM].getValue())) {
-      randomizePartials(params[MTH_PARAM].getValue());
-    }
-    if(updateFund) {
-      fund = dsp::approxExp2_taylor5(params[FUND_PARAM].getValue() + 30.f) / std::pow(2.f, 30.f);
-      updateFund=false;
-    }
     int channels=inputs[VOCT_INPUT].getChannels();
+    if(divider.process()) {
+      float minPitch=lowestPitch(channels);
+      if(adjustFund) {
+        fund=dsp::FREQ_C4 * dsp::approxExp2_taylor5(minPitch-1+30.f)/std::pow(2.f,30.f);
+      } else if(updateFund) {
+        fund=dsp::approxExp2_taylor5(params[FUND_PARAM].getValue()+30.f)/std::pow(2.f,30.f);
+        updateFund=false;
+      }
+      update(args.sampleRate);
+    }
+    if(rndTrigger.process(inputs[RND_TRIGGER_INPUT].getVoltage()) || manualRndTrigger.process(params[GEN_PARAM].getValue())) {
+      if(!partialInputConnected) randomizePartials(params[MTH_PARAM].getValue());
+    }
+
+
     for(int k=0;k<channels;k++) {
       float voct=inputs[VOCT_INPUT].getVoltage(k);
       float freq = dsp::FREQ_C4 * dsp::approxExp2_taylor5((voct-1) + 30.f) / std::pow(2.f, 30.f);
-      float oscFreq=(freq*args.sampleRate)/(float(LENGTH)*fund);
+      float oscFreq=(freq*args.sampleRate)/(getLength()*currentFund);
       float dPhase=oscFreq*args.sampleTime;
       phs[k]+=dPhase;
       phs[k]-=floorf(phs[k]);
 
-      float outL=pt.lookup(phs[k]);
-      float outR=pt.lookup(phs[k]+0.5);
+      float outL=lookup(phs[k]);
+      float outR=lookup(phs[k]+0.5);
       outputs[L_OUTPUT].setVoltage(outL/2.5f,k);
       outputs[R_OUTPUT].setVoltage(outR/2.5f,k);
     }
@@ -403,23 +492,26 @@ struct Pad2Widget : ModuleWidget {
     addInput(createInput<SmallPort>(mm2px(Vec(12.9,TY(98))),module,Pad2::SCALE_INPUT));
     addParam(createParam<TrimbotWhite>(mm2px(Vec(12.9,TY(88))),module,Pad2::SCALE_CV_PARAM));
 
-    addParam(createParam<TrimbotWhite>(mm2px(Vec(3,TY(66))),module,Pad2::MTH_PARAM));
-    addParam(createParam<MLEDM>(mm2px(Vec(12.9,TY(66))),module,Pad2::GEN_PARAM));
+    addParam(createParam<TrimbotWhite>(mm2px(Vec(3,56)),module,Pad2::MTH_PARAM));
+    addParam(createParam<MLEDM>(mm2px(Vec(13,56)),module,Pad2::GEN_PARAM));
+    addInput(createInput<SmallPort>(mm2px(Vec(8,64)),module,Pad2::RND_TRIGGER_INPUT));
 
-    auto fundParam=createParam<UpdateOnReleaseKnob>(mm2px(Vec(8,TY(54))),module,Pad2::FUND_PARAM);
+    auto fundParam=createParam<UpdateOnReleaseKnob>(mm2px(Vec(8,82)),module,Pad2::FUND_PARAM);
     fundParam->update=&module->updateFund;
     addParam(fundParam);
 
-    addParam(createParam<TrimbotWhite>(mm2px(Vec(8,TY(42))),module,Pad2::PSEED_PARAM));
+    addParam(createParam<TrimbotWhite>(mm2px(Vec(8,94)),module,Pad2::PSEED_PARAM));
 
 
-    addInput(createInput<SmallPort>(mm2px(Vec(8,TY(28))),module,Pad2::VOCT_INPUT));
-    addOutput(createOutput<SmallPort>(mm2px(Vec(3,TY(8))),module,Pad2::L_OUTPUT));
-    addOutput(createOutput<SmallPort>(mm2px(Vec(12.9,TY(8))),module,Pad2::R_OUTPUT));
+    addInput(createInput<SmallPort>(mm2px(Vec(8,106)),module,Pad2::VOCT_INPUT));
+    for(int k=0;k<3;k++)
+      addInput(createInput<SmallPort>(mm2px(Vec(25+k*10,119)),module,Pad2::PARTIALS_INPUT+k));
+    addOutput(createOutput<SmallPort>(mm2px(Vec(78,119)),module,Pad2::L_OUTPUT));
+    addOutput(createOutput<SmallPort>(mm2px(Vec(88,119)),module,Pad2::R_OUTPUT));
 
     for(int i=0;i<3;i++) {
       for(int k=0;k<16;k++) {
-        auto faderParam=createParam<PartialFader>(mm2px(Vec(24+k*4.5,MHEIGHT-(9+38*(2-i))-33)),module,Pad2::PARTIAL_PARAM+(i*16+k));
+        auto faderParam=createParam<PartialFader>(mm2px(Vec(24+k*4.5,5+38*i)),module,Pad2::PARTIAL_PARAM+(i*16+k));
         faderParam->module=module;
         addParam(faderParam);
       }
