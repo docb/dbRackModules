@@ -1,6 +1,6 @@
 #include "dcb.h"
 #include "rnd.h"
-
+extern Model *modelPad2;
 struct Faders : Module {
   enum ParamId {
     FADERS_A,FADERS_B=16,FADERS_C=32,MOD_CV_A=48,MOD_CV_B,MOD_CV_C,PARAMS_LEN
@@ -25,6 +25,8 @@ struct Faders : Module {
   float snaps[8]={0,1.f/12.f,0.1,10.f/32.f,0.5,0.625,1,10.f/8.f};
   unsigned int currentSnaps[3] = {0,0,0};
   dsp::ClockDivider divider;
+  Module *padModule=nullptr;
+
   Faders() {
     config(PARAMS_LEN,INPUTS_LEN,OUTPUTS_LEN,LIGHTS_LEN);
     divider.setDivision(32);
@@ -46,8 +48,19 @@ struct Faders : Module {
     }
     return value;
   }
-
+  void copyFromPad2() {
+    for(int k=0;k<48;k++) {
+      getParamQuantity(k)->setValue(padModule->params[k+8].getValue()*10.f);
+    }
+  }
   void process(const ProcessArgs &args) override {
+    if(leftExpander.module) {
+      if(leftExpander.module->model==modelPad2) {
+        padModule=leftExpander.module;
+      } else {
+        padModule=nullptr;
+      }
+    }
     if(divider.process()) {
       _process(args);
     }
@@ -328,6 +341,15 @@ struct FadersWidget : ModuleWidget {
       auto rpMenu = new RandomizeRow(module,i);
       rpMenu->text = "Randomize";
       menu->addChild(rpMenu);
+    }
+  }
+
+  void onHoverKey(const event::HoverKey &e) override {
+    if(e.action==GLFW_PRESS) {
+      if(e.keyName=="f") {
+        auto *fadersModule=dynamic_cast<Faders *>(this->module);
+        fadersModule->copyFromPad2();
+      }
     }
   }
 };

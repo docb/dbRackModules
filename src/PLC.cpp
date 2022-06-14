@@ -1,5 +1,5 @@
 #include "dcb.h"
-
+extern Model *modelFaders;
 
 struct PLC : Module {
   enum ParamId {
@@ -20,6 +20,8 @@ struct PLC : Module {
   float max=10;
   int dirty=0;
   dsp::ClockDivider divider;
+  Module *fadersModule=nullptr;
+
   PLC() {
     config(PARAMS_LEN,INPUTS_LEN,OUTPUTS_LEN,LIGHTS_LEN);
     for(int k=0;k<16;k++) {
@@ -29,7 +31,22 @@ struct PLC : Module {
     divider.setDivision(64);
   }
 
+  void copyFromFaders(int row) {
+    if(fadersModule) {
+      for(int k=0;k<16;k++) {
+        getParamQuantity(k)->setValue(fadersModule->params[row*16+k].getValue());
+      }
+    }
+  }
+
   void process(const ProcessArgs &args) override {
+    if(leftExpander.module) {
+      if(leftExpander.module->model==modelFaders) {
+        fadersModule=leftExpander.module;
+      } else {
+        fadersModule=nullptr;
+      }
+    }
     if(divider.process()) {
       for(int k=0;k<16;k++) {
         outputs[CV_OUTPUT].setVoltage(k<maxChannels?params[k].getValue():0.f,k);
@@ -109,7 +126,15 @@ struct PLCWidget : ModuleWidget {
     rangeSelectItem->rightText=string::f("%d/%dV",(int)module->min,(int)module->max)+"  "+RIGHT_ARROW;
     menu->addChild(rangeSelectItem);
   }
-
+  void onHoverKey(const event::HoverKey &e) override {
+    if(e.action==GLFW_PRESS) {
+      int k=e.key-48;
+      if(k>=1 && k<4) {
+        auto *plcModule=dynamic_cast<PLC *>(this->module);
+        plcModule->copyFromFaders(k-1);
+      }
+    }
+  }
 };
 
 

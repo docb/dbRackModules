@@ -7,7 +7,7 @@
 /**
  *  padsynth algorithm from Paul Nasca
  */
-#define SMOOTH_PERIOD 1028
+#define SMOOTH_PERIOD 1024
 template<size_t S>
 struct Pad2Table {
   float *table[2];
@@ -55,8 +55,8 @@ struct Pad2Table {
     input[0]=0.f;
     input[1]=0.f;
     for(unsigned int k=1;k<partials.size();k++) {
-      if(partials[k]>0.f) {
-        float partialHz=fundFreq*float(k);
+      float partialHz=fundFreq*float(k);
+      if(partials[k]>0.f /*&& partialHz<sampleRate/2.f*/) {
         float freqIdx=partialHz/((float)sampleRate);
         float bandwidthHz=(std::pow(2.0f,partialBW/1200.0f)-1.0f)*fundFreq*std::pow(float(k),bwScale);
         float bandwidthSamples=bandwidthHz/(2.0f*sampleRate);
@@ -370,7 +370,7 @@ struct Pad2 : Module {
   }
 
   float lowestPitch(int channels) {
-    int min=10;
+    float min=10;
     for(int k=0;k<channels;k++) {
       float voltage=inputs[VOCT_INPUT].getVoltage(k);
       if(voltage<min) min=voltage;
@@ -390,7 +390,7 @@ struct Pad2 : Module {
       }
       update(args.sampleRate);
     }
-    if(rndTrigger.process(inputs[RND_TRIGGER_INPUT].getVoltage()) || manualRndTrigger.process(params[GEN_PARAM].getValue())) {
+    if(rndTrigger.process(inputs[RND_TRIGGER_INPUT].getVoltage()) | manualRndTrigger.process(params[GEN_PARAM].getValue())) {
       if(!partialInputConnected) randomizePartials(params[MTH_PARAM].getValue());
     }
 
