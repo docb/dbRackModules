@@ -54,11 +54,11 @@ struct Pad2Table {
     memset(input,0,S*2*sizeof(float));
     input[0]=0.f;
     input[1]=0.f;
-    for(unsigned int k=1;k<partials.size();k++) {
-      float partialHz=fundFreq*float(k);
+    for(unsigned int k=0;k<partials.size();k++) {
+      float partialHz=fundFreq*float(k+1);
       if(partials[k]>0.f /*&& partialHz<sampleRate/2.f*/) {
         float freqIdx=partialHz/((float)sampleRate);
-        float bandwidthHz=(std::pow(2.0f,partialBW/1200.0f)-1.0f)*fundFreq*std::pow(float(k),bwScale);
+        float bandwidthHz=(std::pow(2.0f,partialBW/1200.0f)-1.0f)*fundFreq*std::pow(float(k+1),bwScale);
         float bandwidthSamples=bandwidthHz/(2.0f*sampleRate);
         for(unsigned i=0;i<S;i++) {
           float fttIdx=((float)i)/((float)S*2);
@@ -85,7 +85,7 @@ struct Pad2Table {
     delete[] work;
   }
 
-  float lookup(float phs) {
+  float lookup(double phs) {
     if(counter>0) {
       float mix=float(counter)/float(SMOOTH_PERIOD);
       float future=table[currentTable][int(phs*float(S))&(S-1)];
@@ -132,7 +132,7 @@ struct Pad2 : Module {
 
   dsp::SchmittTrigger rndTrigger;
   dsp::SchmittTrigger manualRndTrigger;
-  float phs[16]={};
+  double phs[16]={};
   float lastFund=0;
   float lastBw=0;
   float lastScale=0;
@@ -220,8 +220,8 @@ struct Pad2 : Module {
 
   void generatePartials() {
     partials.clear();
-    partials.push_back(0.f);
-    partials.push_back(1.f);
+    //partials.push_back(0.f);
+    //partials.push_back(0.5f);
     for(int k=0;k<48;k++) {
       partials.push_back(params[PARTIAL_PARAM+k].getValue());
     }
@@ -318,13 +318,13 @@ struct Pad2 : Module {
     }
   }
 
-  float lookup(float phs) {
+  float lookup(double _phs) {
     switch(currentPTSR) {
-      case LESS_88K: return pt.lookup(phs);
-      case LESS_176K: return pt2.lookup(phs);
-      case LESS_352K: return pt4.lookup(phs);
+      case LESS_88K: return pt.lookup(_phs);
+      case LESS_176K: return pt2.lookup(_phs);
+      case LESS_352K: return pt4.lookup(_phs);
       default:
-        return pt8.lookup(phs);
+        return pt8.lookup(_phs);
     }
   }
 
@@ -385,7 +385,7 @@ struct Pad2 : Module {
       if(adjustFund) {
         fund=dsp::FREQ_C4 * dsp::approxExp2_taylor5(minPitch-1+30.f)/std::pow(2.f,30.f);
       } else if(updateFund) {
-        fund=dsp::approxExp2_taylor5(params[FUND_PARAM].getValue()+30.f)/std::pow(2.f,30.f);
+        fund=dsp::approxExp2_taylor5(params[FUND_PARAM].getValue()-1+30.f)/std::pow(2.f,30.f);
         updateFund=false;
       }
       update(args.sampleRate);
@@ -396,12 +396,12 @@ struct Pad2 : Module {
 
 
     for(int k=0;k<channels;k++) {
-      float voct=inputs[VOCT_INPUT].getVoltage(k);
-      float freq = dsp::FREQ_C4 * dsp::approxExp2_taylor5((voct-1) + 30.f) / std::pow(2.f, 30.f);
-      float oscFreq=(freq*args.sampleRate)/(getLength()*currentFund);
-      float dPhase=oscFreq*args.sampleTime;
+      double voct=inputs[VOCT_INPUT].getVoltage(k)-1;
+      double freq = dsp::FREQ_C4 * dsp::approxExp2_taylor5(float(voct) + 30.f) / std::pow(2.f, 30.f);
+      double oscFreq=(freq*args.sampleRate)/(getLength()*currentFund);
+      double dPhase=oscFreq*args.sampleTime;
       phs[k]+=dPhase;
-      phs[k]-=floorf(phs[k]);
+      phs[k]-=floor(phs[k]);
 
       float outL=lookup(phs[k]);
       float outR=lookup(phs[k]+0.5);

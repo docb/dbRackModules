@@ -95,6 +95,15 @@ struct Faders : Module {
     }
   }
 
+  void fromJson(json_t *root) override {
+    min[0]=min[1]=min[2]=-10.f;
+    max[0]=max[1]=max[2]=10.f;
+    reconfig(0);
+    reconfig(1);
+    reconfig(2);
+    Module::fromJson(root);
+  }
+
   json_t *dataToJson() override {
     json_t *root=json_object();
     for(int i=0;i<3;i++) {
