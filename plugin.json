@@ -323,6 +323,14 @@
       "tags": [
         "Polyphonic"
       ]
+    },
+    {
+      "slug": "MPad2",
+      "name": "MPad2",
+      "description": "Micro Pad2",
+      "tags": [
+        "Oscillator"
+      ]
     }
   ]
 }

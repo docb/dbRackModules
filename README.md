@@ -210,6 +210,14 @@ This module makes pads using Paul Nascas PadSynth algorithm. Simply checkout the
 with the for parameters after connecting a polyphonic v/oct source. Hint: the partials amps used for the IFFT are
 randomly generated (parameter seed) using different methods (parameter Mth).
 
+New in 2.1.0: 
+- The amp of the first partial can now be controlled with the amp knob - was 1.0 before.
+- Presets will be applied directly without clicking on a knob.
+- In the menu there can be set a fade time which causes that on every change the sound changes smoothly to the new.
+- There is new method "static" which produces a descending partial sequence. If the seed is 0.5 all partials are part of the sequence.
+  If the seed is zero only odd partials are used and if the seed is one than only even partials are used. 
+  Every seed in between will be interpolated. 
+
 ### Gendy
 This is a port of Supercolliders gendy which is based on the work of Peter Hoffmann who has rebuild GENDYN
 from Iannis Xenakis.
@@ -224,7 +232,8 @@ of your computer if a lot of parameter changes are made in short distances e.g. 
 The background processing may occupy another CPU with about 20-30%.
 
 Changes to PAD:
-- 48 Harmonics can be edited
+- 48 partials can be edited
+- There are polyphonic inputs for the controlling the partials.
 - The random function updates the faders and the sound can be adjusted afterwards
 - There are inputs for BW and SCL including CV attenuation.
 - Advanced: The phases for the IFFT are random generated. With the Phs-Seed parameter

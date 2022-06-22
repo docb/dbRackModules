@@ -27,3 +27,45 @@ void SelectButton::onDragEnter(const event::DragEnter &e) {
   }
   Widget::onDragEnter(e);
 }
+void UpButtonWidget::onButton(const ButtonEvent& e) {
+
+  if(e.action == GLFW_PRESS && e.button==GLFW_MOUSE_BUTTON_LEFT) {
+    pressed = true;
+    auto paramWidget=getAncestorOfType<ParamWidget>();
+    assert(paramWidget);
+    engine::ParamQuantity *pq=paramWidget->getParamQuantity();
+    if(pq) {
+      if(pq->getValue()<pq->getMaxValue()) {
+        pq->setValue(pq->getValue()+1);
+        ChangeEvent c;
+        paramWidget->onChange(c);
+      }
+    } else {
+      INFO("no pq");
+    }
+    e.consume(this);
+  }
+  if(e.action == GLFW_RELEASE && e.button==GLFW_MOUSE_BUTTON_LEFT) {
+    pressed = false;
+  }
+}
+
+void DownButtonWidget::onButton(const ButtonEvent& e) {
+  if(e.action == GLFW_PRESS && e.button==GLFW_MOUSE_BUTTON_LEFT) {
+    pressed = true;
+    auto paramWidget=getAncestorOfType<ParamWidget>();
+    assert(paramWidget);
+    engine::ParamQuantity *pq=paramWidget->getParamQuantity();
+    if(pq) {
+      if(pq->getValue()>pq->getMinValue()) {
+        pq->setValue(pq->getValue()-1);
+        ChangeEvent c;
+        paramWidget->onChange(c);
+      }
+    }
+    e.consume(this);
+  }
+  if(e.action == GLFW_RELEASE && e.button==GLFW_MOUSE_BUTTON_LEFT) {
+    pressed = false;
+  }
+}
