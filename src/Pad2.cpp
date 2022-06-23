@@ -244,9 +244,6 @@ struct Pad2 : Module {
           if(oldParam!=newParam) inputChanged=true;
           getParamQuantity(PARTIAL_PARAM+k*16+chn)->setValue(newParam);
         }
-        partialInputConnected=true;
-      } else {
-        if(k==0) break;
       }
     }
     float bw=params[BW_PARAM].getValue();
@@ -297,7 +294,7 @@ struct Pad2 : Module {
       update(args.sampleRate);
     }
     if(rndTrigger.process(inputs[RND_TRIGGER_INPUT].getVoltage()) | manualRndTrigger.process(params[GEN_PARAM].getValue())) {
-      if(!partialInputConnected) randomizePartials(params[MTH_PARAM].getValue());
+      randomizePartials(params[MTH_PARAM].getValue());
     }
 
 

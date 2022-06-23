@@ -80,6 +80,7 @@ struct PadTable {
 
   float lookupS(double phs,float mix) {
     float future=table[currentTable][int(phs*float(S))&(S-1)];
+    if(mix==0.f) return future;
     int lastTable=currentTable==0?1:0;
     float last=table[lastTable][int(phs*float(S))&(S-1)];
     return future*(1-mix)+last*mix;
@@ -91,7 +92,7 @@ struct Pad : Module {
     BW_PARAM,SCALE_PARAM,SEED_PARAM,MTH_PARAM,FUND_PARAM,AMP_PARAM,PARAMS_LEN
   };
   enum InputId {
-    VOCT_INPUT,INPUTS_LEN
+    VOCT_INPUT,TRIG_INPUT,INPUTS_LEN
   };
   enum OutputId {
     L_OUTPUT,R_OUTPUT,OUTPUTS_LEN
@@ -212,6 +213,7 @@ struct Pad : Module {
   double phs[16]={};
   float fund=32.7f;
   std::mutex mutex;
+  dsp::SchmittTrigger trigger;
 
   Pad() {
     config(PARAMS_LEN,INPUTS_LEN,OUTPUTS_LEN,LIGHTS_LEN);
@@ -240,6 +242,9 @@ struct Pad : Module {
   }
 
   void process(const ProcessArgs &args) override {
+    if(trigger.process(inputs[TRIG_INPUT].getVoltage())) {
+      generateThreaded();
+    }
     int channels=inputs[VOCT_INPUT].getChannels();
     float mix=0;
     if(pt.counter>0) {
@@ -248,7 +253,7 @@ struct Pad : Module {
     }
     for(int k=0;k<channels;k++) {
       float voct=inputs[VOCT_INPUT].getVoltage(k);
-      float freq=261.626f*powf(2.0f,voct-1);
+      float freq=dsp::FREQ_C4 * dsp::approxExp2_taylor5(float(voct-1) + 30.f) / std::pow(2.f, 30.f);
       double oscFreq=double(freq*args.sampleRate)/double(LENGTH*double(fund));
       double dPhase=oscFreq*args.sampleTime;
       phs[k]+=dPhase;
@@ -265,19 +270,23 @@ struct Pad : Module {
 
   void regenerateSave(float bw,float scale,float sr,float fund,float fade) {
     if(mutex.try_lock()) {
-      generatePartials();
       pt.generate(partials,sr,fund,bw,scale,fade);
       mutex.unlock();
     }
   }
 
-  void fromJson(json_t *rootJ) override {
-    Module::fromJson(rootJ);
+  void generateThreaded() {
     bw=params[BW_PARAM].getValue();
     scl=params[SCALE_PARAM].getValue();
     sr=APP->engine->getSampleRate();
+    generatePartials();
     std::thread t1(&Pad::regenerateSave,this,bw,scl,sr,fund,fade);
     t1.detach();
+  }
+
+  void fromJson(json_t *rootJ) override {
+    Module::fromJson(rootJ);
+    generateThreaded();
   }
 };
 
@@ -408,6 +417,7 @@ struct PadWidget : ModuleWidget {
     auto amp=createParam<UpdatePartialsKnob<Pad>>(mm2px(Vec(xpos,MHEIGHT-67.f)),module,Pad::AMP_PARAM);
     amp->module=module;
     addParam(amp);
+    addInput(createInput<SmallPort>(mm2px(Vec(xpos,MHEIGHT-55.f)),module,Pad::TRIG_INPUT));
     addInput(createInput<SmallPort>(mm2px(Vec(xpos,MHEIGHT-43.f)),module,Pad::VOCT_INPUT));
     addOutput(createOutput<SmallPort>(mm2px(Vec(xpos,MHEIGHT-31.f)),module,Pad::L_OUTPUT));
     addOutput(createOutput<SmallPort>(mm2px(Vec(xpos,MHEIGHT-19.f)),module,Pad::R_OUTPUT));

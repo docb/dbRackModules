@@ -3,11 +3,32 @@
 
 extern Model *modelPad2;
 #define MAX_PATS 16
+struct SlewLimiter {
+  float delta=0;
+  float last=0;
+  float target=0;
 
+  void setParams(float sampleTime,float seconds,float to) {
+    if(seconds==0)
+      delta=0;
+    else
+      delta=(to-last)*sampleTime/seconds;
+    //last=from;
+    target=to;
+  }
+
+  float process() {
+    if(delta==0) return target;
+    if(delta<0)
+      return last=std::max(last+delta,target);
+    return last=std::min(last+delta,target);
+  }
+};
+#define MAX_KNOBS 2
 struct FadersPreset {
   float faderValues[48]={};
-  float knob1=0;
-  float knob2=0;
+  float knobValues[MAX_KNOBS]={};
+
   int maxChannels[3]={16,16,16};
   float min[3]={-10,-10,-10};
   float max[3]={10,10,10};
@@ -23,6 +44,9 @@ struct FadersPreset {
       max[k]=10;
       snaps[k]=0;
     }
+    for(int k=0;k<MAX_KNOBS;k++) {
+      knobValues[k]=0.f;
+    }
   }
 
   void setValue(int row,int nr,float value) {
@@ -33,8 +57,9 @@ struct FadersPreset {
     for(int k=0;k<48;k++) {
       faderValues[k]=other.faderValues[k];
     }
-    knob1=other.knob1;
-    knob2=other.knob2;
+    for(int k=0;k<MAX_KNOBS;k++) {
+       knobValues[k]=other.knobValues[k];
+    }
     for(int k=0;k<3;k++) {
       min[k]=other.min[k];
       max[k]=other.max[k];
@@ -71,8 +96,12 @@ struct FadersPreset {
       json_array_append_new(snapList,json_integer(snaps[k]));
     }
     json_object_set_new(data,"snaps",snapList);
-    json_object_set_new(data,"knob1",json_real(knob1));
-    json_object_set_new(data,"knob2",json_real(knob2));
+
+    json_t *knobValueList=json_array();
+    for(int k=0;k<MAX_KNOBS;k++) {
+      json_array_append_new(knobValueList,json_real(knobValues[k]));
+    }
+    json_object_set_new(data,"knobValues",knobValueList);
     return data;
   }
 
@@ -102,22 +131,31 @@ struct FadersPreset {
       json_t *jValue=json_array_get(snapList,k);
       snaps[k]=json_integer_value(jValue);
     }
+    json_t *knobValueList=json_object_get(data,"knobValues");
+    for(int k=0;k<MAX_KNOBS;k++) {
+      json_t *jValue=json_array_get(knobValueList,k);
+      knobValues[k]=json_integer_value(jValue);
+    }
     json_t *jKnob1=json_object_get(data,"knob1");
-    knob1=json_real_value(jKnob1);
+    if(jKnob1) {
+      knobValues[0]=json_real_value(jKnob1);
+    }
     json_t *jKnob2=json_object_get(data,"knob2");
-    knob2=json_real_value(jKnob2);
+    if(jKnob2) {
+      knobValues[1]=json_real_value(jKnob2);
+    }
   }
 };
 
 struct Faders : Module {
   enum ParamId {
-    FADERS_A,FADERS_B=16,FADERS_C=32,MOD_CV_A=48,MOD_CV_B,MOD_CV_C,PAT_PARAM,EDIT_PARAM,COPY_PARAM,PASTE_PARAM,KNOB1_PARAM,KNOB2_PARAM,GLIDE_PARAM,PARAMS_LEN
+    FADERS_A,FADERS_B=16,FADERS_C=32,MOD_CV_A=48,MOD_CV_B,MOD_CV_C,PAT_PARAM,EDIT_PARAM,COPY_PARAM,PASTE_PARAM,GLIDE_PARAM,KNOB_PARAMS,PARAMS_LEN=KNOB_PARAMS+MAX_KNOBS
   };
   enum InputId {
     MOD_A_INPUT,MOD_B_INPUT,MOD_C_INPUT,PAT_INPUT,INPUTS_LEN
   };
   enum OutputId {
-    OUT_A_OUTPUT,MOD_B_OUTPUT,MOD_C_OUTPUT,KNOB1_OUTPUT,KNOB2_OUTPUT,OUTPUTS_LEN
+    OUT_A_OUTPUT,MOD_B_OUTPUT,MOD_C_OUTPUT,KNOB_OUTPUTS,OUTPUTS_LEN=KNOB_OUTPUTS+MAX_KNOBS
   };
   enum LightId {
     LIGHTS_LEN
@@ -132,9 +170,8 @@ struct Faders : Module {
   float snaps[8]={0,1.f/12.f,0.1,10.f/32.f,0.5,0.625,1,10.f/8.f};
   dsp::ClockDivider divider;
   Module *padModule=nullptr;
-  int lastPat=0;
-  unsigned long counter=0;
-  unsigned long period=0;
+  SlewLimiter faderSlews[48]={};
+  SlewLimiter knobSlews[MAX_KNOBS]={};
 
   Faders() {
     config(PARAMS_LEN,INPUTS_LEN,OUTPUTS_LEN,LIGHTS_LEN);
@@ -154,14 +191,10 @@ struct Faders : Module {
     configParam(PAT_PARAM,0,MAX_PATS-1,0,"Preset Selection");
     configInput(PAT_INPUT,"Preset Select (0.1V per step)");
     configParam(GLIDE_PARAM,0.f,10.f,0,"Glide");
-    configParam(KNOB1_PARAM,-10.f,10,0,"Knob1");
-    //configParam(KNOB1_CV_PARAM,0.0f,1,0,"Knob1 CV");
-    configParam(KNOB2_PARAM,-10.f,10,0,"Knob2");
-    //configParam(KNOB2_CV_PARAM,0.0f,1,0,"Knob2 CV");
-    //configInput(KNOB1_INPUT,"Knob1");
-    //configInput(KNOB2_INPUT,"Knob2");
-    configOutput(KNOB1_OUTPUT,"Knob1");
-    configOutput(KNOB2_OUTPUT,"Knob2");
+    for(int k=0;k<MAX_KNOBS;k++) {
+      configParam(KNOB_PARAMS+k,-10.f,10,0,"Knob " + std::to_string(k+1));
+      configOutput(KNOB_OUTPUTS+k,"Knob "+ std::to_string(k+1));
+    }
   }
 
   void setValue(int row,int nr,float value) {
@@ -191,13 +224,12 @@ struct Faders : Module {
     for(int k=0;k<48;k++) {
       getParamQuantity(k)->setValue(presets[pat].faderValues[k]);
     }
-    getParamQuantity(KNOB1_PARAM)->setValue(presets[pat].knob1);
-    getParamQuantity(KNOB2_PARAM)->setValue(presets[pat].knob2);
+    for(int k=0;k<MAX_KNOBS;k++) {
+      getParamQuantity(KNOB_PARAMS+k)->setValue(presets[pat].knobValues[k]);
+    }
   }
 
   void onAdd(const AddEvent &e) override {
-    //setCurrentPattern();
-    lastPat=params[PAT_PARAM].getValue();
   }
 
   void onReset(const ResetEvent &e) override {
@@ -226,9 +258,9 @@ struct Faders : Module {
     }
     for(int k=0;k<48;k++) {
       presets[pat].faderValues[k]=padModule->params[k+8].getValue()*10.f;
-      presets[pat].knob1=rescale(padModule->params[0].getValue(),0.5f,60.f,0.f,10.f);
-      presets[pat].knob2=rescale(padModule->params[2].getValue(),0.5f,4.f,0.f,10.f);
     }
+    presets[pat].knobValues[0]=rescale(padModule->params[0].getValue(),0.5f,60.f,0.f,10.f);
+    presets[pat].knobValues[1]=rescale(padModule->params[2].getValue(),0.5f,4.f,0.f,10.f);
     setCurrentPattern();
   }
 
@@ -275,29 +307,16 @@ struct Faders : Module {
 
   void setKnob(int nr) {
     int pat=params[PAT_PARAM].getValue();
-    if(nr) {
-      presets[pat].knob2=params[KNOB2_PARAM].getValue();
-    } else {
-      presets[pat].knob1=params[KNOB1_PARAM].getValue();
-    }
+    presets[pat].knobValues[nr]=params[KNOB_PARAMS+nr].getValue();
   }
 
   float getValue(int pat,int nr) {
-    if(counter>0) {
-      float pct=float(counter)/float(period);
-      return presets[pat].faderValues[nr]*(1-pct)+presets[lastPat].faderValues[nr]*pct;
-    } else {
-      return presets[pat].faderValues[nr];
-    }
+    return faderSlews[nr].process();
   }
   float getKnobValue(int pat,int nr) {
-    if(counter>0) {
-      float pct=float(counter)/float(period);
-      return (nr?presets[pat].knob2:presets[pat].knob1)*(1-pct)+(nr?presets[lastPat].knob2:presets[lastPat].knob1)*pct;
-    } else {
-      return (nr?presets[pat].knob2:presets[pat].knob1);
-    }
+    return knobSlews[nr].process();
   }
+
   void process(const ProcessArgs &args) override {
     if(leftExpander.module) {
       if(leftExpander.module->model==modelPad2) {
@@ -306,27 +325,25 @@ struct Faders : Module {
         padModule=nullptr;
       }
     }
+
+    if(divider.process()) {
+      _process(args);
+    }
+  }
+
+  void _process(const ProcessArgs &args) {
     if(inputs[PAT_INPUT].isConnected() && params[EDIT_PARAM].getValue() == 0) {
       int c=clamp(inputs[PAT_INPUT].getVoltage(),0.f,9.99f)*float(MAX_PATS)/10.f;
       getParamQuantity(PAT_PARAM)->setValue(c);
     }
     int pat=params[PAT_PARAM].getValue();
-    if(pat!=lastPat) {
-      if(counter==0) {
-        period=counter=uint32_t(args.sampleRate*params[GLIDE_PARAM].getValue());
-      } else {
-        counter--;
-        if(counter==0)
-          lastPat=pat;
-      }
+    float glide=params[GLIDE_PARAM].getValue();
+    for(int k=0;k<48;k++) {
+      faderSlews[k].setParams(args.sampleTime,glide/32.f,presets[pat].faderValues[k]);
     }
-    if(divider.process()) {
-      _process(args,pat);
+    for(int k=0;k<MAX_KNOBS;k++) {
+      knobSlews[k].setParams(args.sampleTime,glide/32.f,presets[pat].knobValues[k]);
     }
-  }
-
-  void _process(const ProcessArgs &args,int pat) {
-
     for(int i=0;i<3;i++) {
       if(outputs[i].isConnected()) {
         for(int c=0;c<presets[pat].maxChannels[i];c++) {
@@ -337,19 +354,9 @@ struct Faders : Module {
         outputs[i].setChannels(presets[pat].maxChannels[i]);
       }
     }
-    float k1=getKnobValue(pat,0);
-    //if(inputs[KNOB1_INPUT].isConnected()) {
-    //  k1+=inputs[KNOB1_INPUT].getVoltage()*params[KNOB1_CV_PARAM].getValue();
-    //  k1=clamp(bw,-10.f,10.f);
-    //}
-    outputs[KNOB1_OUTPUT].setVoltage(k1);
-
-    float k2=getKnobValue(pat,1);
-    //if(inputs[KNOB1_INPUT].isConnected()) {
-    //  k2+=inputs[KNOB1_INPUT].getVoltage()*params[KNOB1_CV_PARAM].getValue();
-    //  k2=clamp(bw,-10.f,10.f);
-    //}
-    outputs[KNOB2_OUTPUT].setVoltage(k2);
+    for(int k=0;k<MAX_KNOBS;k++) {
+      outputs[KNOB_OUTPUTS+k].setVoltage(knobSlews[k].process());
+    }
   }
 
   float getCurrentVoltagePct(int row,int c) {
@@ -638,20 +645,15 @@ struct FadersWidget : ModuleWidget {
     pasteButton->module=module;
     addParam(pasteButton);
     y+=12;
-    auto knob1=createParam<SingleKnob>(mm2px(Vec(x,y)),module,Faders::KNOB1_PARAM);
-    knob1->module=module;
-    knob1->nr=0;
-    addParam(knob1);
-    y+=8;
-    addOutput(createOutput<SmallPort>(mm2px(Vec(x,y)),module,Faders::KNOB1_OUTPUT));
-    y+=12;
-    auto knob2=createParam<SingleKnob>(mm2px(Vec(x,y)),module,Faders::KNOB2_PARAM);
-    knob2->module=module;
-    knob2->nr=1;
-    addParam(knob2);
-    y+=8;
-    addOutput(createOutput<SmallPort>(mm2px(Vec(x,y)),module,Faders::KNOB2_OUTPUT));
-    y+=12;
+    for(int k=0;k<MAX_KNOBS;k++) {
+      auto knob=createParam<SingleKnob>(mm2px(Vec(x,y)),module,Faders::KNOB_PARAMS+k);
+      knob->module=module;
+      knob->nr=k;
+      addParam(knob);
+      y+=8;
+      addOutput(createOutput<SmallPort>(mm2px(Vec(x,y)),module,Faders::KNOB_OUTPUTS+k));
+      y+=12;
+    }
     addParam(createParam<TrimbotWhite>(mm2px(Vec(x,y)),module,Faders::GLIDE_PARAM));
 
   }
