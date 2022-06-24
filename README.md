@@ -213,11 +213,17 @@ randomly generated (parameter seed) using different methods (parameter Mth).
 New in 2.1.0: 
 - The amp of the first partial can now be controlled with the amp knob - was 1.0 before.
 - Presets will be applied directly without clicking on a knob.
-- External parameter changes (e.g. from µMap) can be applied by sending a trigger signal to the new trig input.  
+- External parameter changes (e.g. from µMap) can be applied by sending a trigger signal to the new trig input (sse example below).  
 - In the menu there can be set a fade time which causes that on every change the sound changes smoothly to the new.
 - There is new method "static" which produces a descending partial sequence. If the seed is 0.5 all partials are part of the sequence (saw like wave).
   If the seed is zero only odd partials (pulse wave) are used and if the seed is one than only even partials are used. 
   Every seed in between will be interpolated.
+
+
+
+https://user-images.githubusercontent.com/1134412/175531007-b2eea729-f7a9-4a7a-b85f-fd39fe1a0094.mp4
+
+
 
 
 ### PAD2
@@ -242,6 +248,12 @@ Changes to PAD:
   
 Here an example:
 
+
+
+https://user-images.githubusercontent.com/1134412/175530867-e04047da-146c-4667-b8dc-3d69b7ba6382.mp4
+
+
+
 Thanks to Paul Piko and Dave Benham for testing and feature requests.
 
 ### µPad2
@@ -251,6 +263,10 @@ This is a small version of PAD2. It has to be fully controlled by the partial in
 The [Faders](#Faders) module can be used for controlling  µPad2. The following example shows how to transfer
 a sound from PAD2 to µPad2 using the Fader module. The Fader module has a special function for fetching the values of PAD2
 by placing it on the right side of PAD2, placing the mouse cursor over the Faders module and pressing 'f'.
+
+
+
+https://user-images.githubusercontent.com/1134412/175530919-0f10c530-6997-4db3-b431-832ff227e617.mp4
 
 
 
