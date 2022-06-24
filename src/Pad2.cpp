@@ -91,9 +91,9 @@ struct Pad2 : Module {
       configParam(PARTIAL_PARAM+k,0,1,0,"Partial "+std::to_string(k+2));
     }
     configParam(BW_PARAM,0.5f,60,10,"Bandwidth");
-    configParam(BW_CV_PARAM,0.0f,3,0,"Bandwidth CV");
+    configParam(BW_CV_PARAM,0.0f,1,0,"Bandwidth CV","%",0,100);
     configParam(SCALE_PARAM,0.5f,4.f,1,"Bandwidth Scale");
-    configParam(SCALE_CV_PARAM,0.0f,2.f,0.f,"Bandwidth Scale CV");
+    configParam(SCALE_CV_PARAM,0.0f,1.f,0.f,"Bandwidth Scale CV","%",0,100);
     configButton(GEN_PARAM,"Generate");
     configParam(PSEED_PARAM,0.f,1.f,0.5,"Phase Seed");
     configParam(FUND_PARAM,4.f,11.f,5.03f,"Frequency"," Hz",2,1);
@@ -158,7 +158,7 @@ struct Pad2 : Module {
     switch(method) {
       case EVEN_MIN:
         for(int k=0;k<48;k++) {
-          if(k%2==0)
+          if(k%2==1)
             getParamQuantity(PARTIAL_PARAM+k)->setValue(rnd.nextMin(k/4));
           else
             getParamQuantity(PARTIAL_PARAM+k)->setValue(0);
@@ -166,7 +166,7 @@ struct Pad2 : Module {
         break;
       case ODD_MIN:
         for(int k=0;k<48;k++) {
-          if(k%2==1)
+          if(k%2==0)
             getParamQuantity(PARTIAL_PARAM+k)->setValue(rnd.nextMin(k/4));
           else
             getParamQuantity(PARTIAL_PARAM+k)->setValue(0);
@@ -179,7 +179,7 @@ struct Pad2 : Module {
         break;
       case EVEN_WB:
         for(int k=0;k<48;k++) {
-          if(k%2==0)
+          if(k%2==1)
             getParamQuantity(PARTIAL_PARAM+k)->setValue(rnd.nextWeibull(k/4.f));
           else
             getParamQuantity(PARTIAL_PARAM+k)->setValue(0);
@@ -187,7 +187,7 @@ struct Pad2 : Module {
         break;
       case ODD_WB:
         for(int k=0;k<48;k++) {
-          if(k%2==1)
+          if(k%2==0)
             getParamQuantity(PARTIAL_PARAM+k)->setValue(rnd.nextWeibull(k/4.f));
           else
             getParamQuantity(PARTIAL_PARAM+k)->setValue(0);
@@ -248,12 +248,12 @@ struct Pad2 : Module {
     }
     float bw=params[BW_PARAM].getValue();
     if(inputs[BW_INPUT].isConnected()) {
-      bw+=inputs[BW_INPUT].getVoltage()*params[BW_CV_PARAM].getValue();
+      bw+=inputs[BW_INPUT].getVoltage()*params[BW_CV_PARAM].getValue()*3;
       bw=clamp(bw,0.5f,60.f);
     }
     float scale=params[SCALE_PARAM].getValue();
     if(inputs[SCALE_INPUT].isConnected()) {
-      scale+=inputs[SCALE_INPUT].getVoltage()*params[SCALE_CV_PARAM].getValue()*0.1f;
+      scale+=inputs[SCALE_INPUT].getVoltage()*params[SCALE_CV_PARAM].getValue()*0.2f;
       scale=clamp(scale,0.5f,4.f);
     }
 

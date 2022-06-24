@@ -111,7 +111,7 @@ struct Pad : Module {
   float sr=48000.f;
   float bw=10.f;
   float scl=1.f;
-
+  int counter=-1;
   float fade=0;
 
   void generatePartials() {
@@ -243,7 +243,14 @@ struct Pad : Module {
 
   void process(const ProcessArgs &args) override {
     if(trigger.process(inputs[TRIG_INPUT].getVoltage())) {
+      counter=10;
+    }
+    if(counter>0) {
+      counter--;
+    }
+    if(counter==0) {
       generateThreaded();
+      counter=-1;
     }
     int channels=inputs[VOCT_INPUT].getChannels();
     float mix=0;

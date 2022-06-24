@@ -213,14 +213,12 @@ randomly generated (parameter seed) using different methods (parameter Mth).
 New in 2.1.0: 
 - The amp of the first partial can now be controlled with the amp knob - was 1.0 before.
 - Presets will be applied directly without clicking on a knob.
+- External parameter changes (e.g. from µMap) can be applied by sending a trigger signal to the new trig input.  
 - In the menu there can be set a fade time which causes that on every change the sound changes smoothly to the new.
-- There is new method "static" which produces a descending partial sequence. If the seed is 0.5 all partials are part of the sequence.
-  If the seed is zero only odd partials are used and if the seed is one than only even partials are used. 
-  Every seed in between will be interpolated. 
+- There is new method "static" which produces a descending partial sequence. If the seed is 0.5 all partials are part of the sequence (saw like wave).
+  If the seed is zero only odd partials (pulse wave) are used and if the seed is one than only even partials are used. 
+  Every seed in between will be interpolated.
 
-### Gendy
-This is a port of Supercolliders gendy which is based on the work of Peter Hoffmann who has rebuild GENDYN
-from Iannis Xenakis.
 
 ### PAD2
 ![](images/PAD2.png?raw=true)
@@ -244,10 +242,21 @@ Changes to PAD:
   
 Here an example:
 
+Thanks to Paul Piko and Dave Benham for testing and feature requests.
+
+### µPad2
+
+This is a small version of PAD2. It has to be fully controlled by the partial inputs and inputs for BW and Scl.
+
+The [Faders](#Faders) module can be used for controlling  µPad2. The following example shows how to transfer
+a sound from PAD2 to µPad2 using the Fader module. The Fader module has a special function for fetching the values of PAD2
+by placing it on the right side of PAD2, placing the mouse cursor over the Faders module and pressing 'f'.
 
 
-https://user-images.githubusercontent.com/1134412/170457723-229e6355-6025-48f8-ace4-76526636806e.mp4
 
+### Gendy
+This is a port of Supercolliders gendy which is based on the work of Peter Hoffmann who has rebuild GENDYN
+from Iannis Xenakis.
 
 
 ## Effects
@@ -449,11 +458,15 @@ interesting sound it is best to filter out the 10K band a much as possible and p
 
 
 ## Others
-![](images/other.png?raw=true)
+![](images/others.png?raw=true)
 
 ### Faders
-This module does the same as the unless towers module. But it provides some additional features:
-- It has three fader blocks
+![](images/Faders.png?raw=true)
+
+This module is kind of similar to the unless towers module. It provides the following features:
+- It has three fader blocks and three knobs
+- There are 100 voltage addressable slots controlled by the Pat parameter and input
+- There is a glide parameter which causes morphing from one slot to another
 - On click on a fader the value according to the mouse position is immediately set.
 - Adjustable voltage ranges {-10V,10V}, {-5V,5V}, {-3V,3V}, {-2V,2V}, {-1V,1V}, {0V,10V}, {0V,5V},
   {0V,3V}, {0V,2V},{0V,1V} in the menu

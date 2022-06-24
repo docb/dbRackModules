@@ -2,7 +2,7 @@
 #include "rnd.h"
 
 extern Model *modelPad2;
-#define MAX_PATS 16
+#define MAX_PATS 100
 struct SlewLimiter {
   float delta=0;
   float last=0;
@@ -11,10 +11,10 @@ struct SlewLimiter {
   void setParams(float sampleTime,float seconds,float to) {
     if(seconds==0)
       delta=0;
-    else
+    else if(target!=to) {
       delta=(to-last)*sampleTime/seconds;
-    //last=from;
-    target=to;
+      target=to;
+    }
   }
 
   float process() {
@@ -24,7 +24,7 @@ struct SlewLimiter {
     return last=std::min(last+delta,target);
   }
 };
-#define MAX_KNOBS 2
+#define MAX_KNOBS 3
 struct FadersPreset {
   float faderValues[48]={};
   float knobValues[MAX_KNOBS]={};
@@ -134,7 +134,8 @@ struct FadersPreset {
     json_t *knobValueList=json_object_get(data,"knobValues");
     for(int k=0;k<MAX_KNOBS;k++) {
       json_t *jValue=json_array_get(knobValueList,k);
-      knobValues[k]=json_integer_value(jValue);
+      if(jValue)
+        knobValues[k]=json_integer_value(jValue);
     }
     json_t *jKnob1=json_object_get(data,"knob1");
     if(jKnob1) {
@@ -228,16 +229,6 @@ struct Faders : Module {
       getParamQuantity(KNOB_PARAMS+k)->setValue(presets[pat].knobValues[k]);
     }
   }
-
-  void onAdd(const AddEvent &e) override {
-  }
-
-  void onReset(const ResetEvent &e) override {
-    for(int k=0;k<MAX_PATS;k++) {
-      presets[k].reset();
-    }
-  }
-
 
   float getSnapped(float value,int row,int c) {
     int pat=params[PAT_PARAM].getValue();
@@ -404,6 +395,22 @@ struct Faders : Module {
       int id=nr*16+k;
       getParamQuantity(id)->setValue(math::rescale(float(rnd.nextDouble()),0.f,1.f,presets[pat].min[nr],presets[pat].max[nr]));
     }
+  }
+
+  void onRandomize(const RandomizeEvent &e) override {
+    for(int k=0;k<3;k++) {
+      randomizeValues(k);
+      getParamQuantity(KNOB_PARAMS+k)->setValue(math::rescale(float(rnd.nextDouble()),0.f,1.f,-10.f,10.f));
+    }
+  }
+  void onAdd(const AddEvent &e) override {
+  }
+
+  void onReset(const ResetEvent &e) override {
+    for(int k=0;k<MAX_PATS;k++) {
+      presets[k].reset();
+    }
+    setCurrentPattern();
   }
 
 };
@@ -608,11 +615,11 @@ struct FadersWidget : ModuleWidget {
   FadersWidget(Faders *module) {
     setModule(module);
     setPanel(createPanel(asset::plugin(pluginInstance,"res/Faders.svg")));
+    addChild(createWidget<ScrewSilver>(Vec(0, 0)));
+    addChild(createWidget<ScrewSilver>(Vec(box.size.x - 15, 0)));
+    addChild(createWidget<ScrewSilver>(Vec(0, 365)));
+    addChild(createWidget<ScrewSilver>(Vec(box.size.x - 15, 365)));
 
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH,0)));
-    addChild(createWidget<ScrewSilver>(Vec(box.size.x-2*RACK_GRID_WIDTH,0)));
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH,RACK_GRID_HEIGHT-RACK_GRID_WIDTH)));
-    addChild(createWidget<ScrewSilver>(Vec(box.size.x-2*RACK_GRID_WIDTH,RACK_GRID_HEIGHT-RACK_GRID_WIDTH)));
     for(int i=0;i<3;i++) {
       for(int k=0;k<16;k++) {
         auto faderParam=createParam<Fader>(mm2px(Vec(3+k*4.5,MHEIGHT-(9+38*(2-i))-33)),module,i*16+k);
@@ -654,7 +661,7 @@ struct FadersWidget : ModuleWidget {
       addOutput(createOutput<SmallPort>(mm2px(Vec(x,y)),module,Faders::KNOB_OUTPUTS+k));
       y+=12;
     }
-    addParam(createParam<TrimbotWhite>(mm2px(Vec(x,y)),module,Faders::GLIDE_PARAM));
+    addParam(createParam<TrimbotWhite>(mm2px(Vec(x,113.213f)),module,Faders::GLIDE_PARAM));
 
   }
 
