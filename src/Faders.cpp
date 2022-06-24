@@ -4,22 +4,22 @@
 extern Model *modelPad2;
 #define MAX_PATS 100
 struct SlewLimiter {
-  float delta=0;
-  float last=0;
-  float target=0;
+  float delta=0.f;
+  float last=0.f;
+  float target=0.f;
 
   void setParams(float sampleTime,float seconds,float to) {
     if(seconds==0)
       delta=0;
     else if(target!=to) {
       delta=(to-last)*sampleTime/seconds;
-      target=to;
     }
+    target=to;
   }
 
   float process() {
-    if(delta==0) return target;
-    if(delta<0)
+    if(delta==0.f) return target;
+    if(delta<0.f)
       return last=std::max(last+delta,target);
     return last=std::min(last+delta,target);
   }
