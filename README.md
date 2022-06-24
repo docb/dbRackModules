@@ -2,7 +2,7 @@
 
 Some VCVRack modules
 
-New modules in 2.1.0: [PAD2](#pad2), [PhO](#pho), [PhS](#phs), [PHSR](#phsr), [SPL](#spl), [YAC](#yac),[Faders](#faders),[PLC](#plc)
+New modules in 2.1.0: [PAD2](#pad2),[µPad2](#%C2%B5pad2),[PhO](#pho), [PhS](#phs), [PHSR](#phsr), [SPL](#spl), [YAC](#yac),[Faders](#faders),[PLC](#plc)
 
 
 ![](images/allmodules.png?raw=true)
@@ -23,8 +23,9 @@ New modules in 2.1.0: [PAD2](#pad2), [PhO](#pho), [PhS](#phs), [PHSR](#phsr), [S
   - [SuperLFO](#superlfo)
   - [AddSynth](#addsynth)
   - [PAD](#pad)
-  - [Gendy](#gendy)
   - [PAD2](#pad2)
+  - [µPad2](#%C2%B5pad2)
+  - [Gendy](#gendy)
 - [Effects](#effects)
   - [DCBlock](#dcblock)
   - [PS](#ps)
