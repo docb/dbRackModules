@@ -135,7 +135,7 @@ struct FadersPreset {
     for(int k=0;k<MAX_KNOBS;k++) {
       json_t *jValue=json_array_get(knobValueList,k);
       if(jValue)
-        knobValues[k]=json_integer_value(jValue);
+        knobValues[k]=json_real_value(jValue);
     }
     json_t *jKnob1=json_object_get(data,"knob1");
     if(jKnob1) {
@@ -216,7 +216,6 @@ struct Faders : Module {
 
   void setCurrentPattern() {
     int pat=params[PAT_PARAM].getValue();
-    INFO("set current pattern %d",pat);
     for(int nr=0;nr<3;nr++) {
       for(int k=0;k<16;k++) {
         configParam(nr*16+k,presets[pat].min[nr],presets[pat].max[nr],0,"chn "+std::to_string(k+1));
@@ -385,8 +384,9 @@ struct Faders : Module {
         json_t *jPreset=json_array_get(data,k);
         presets[k].fromJson(jPreset);
       }
+      setCurrentPattern();
     }
-    setCurrentPattern();
+
   }
 
   void randomizeValues(int nr) {
