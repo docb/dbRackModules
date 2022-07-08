@@ -19,6 +19,7 @@ struct RndH : Module {
   RND rnd;
   dsp::SchmittTrigger clockTrigger;
   dsp::SchmittTrigger rstTrigger;
+  bool roundSeed = false;
 
   RndH() {
     config(NUM_PARAMS,NUM_INPUTS,NUM_OUTPUTS,NUM_LIGHTS);
@@ -111,9 +112,14 @@ struct RndH : Module {
 
     if(rstTrigger.process(inputs[RST_INPUT].getVoltage())) {
       float seedParam=0;
-      if(inputs[SEED_INPUT].isConnected())
-        seedParam=inputs[SEED_INPUT].getVoltage()/10.f;
-      rnd.reset((unsigned long long)(floor((double)seedParam*(double)ULONG_MAX)));
+      if(inputs[SEED_INPUT].isConnected()) {
+        seedParam=inputs[SEED_INPUT].getVoltage();
+        if(roundSeed) seedParam = floorf(seedParam*10000)/10000;
+        seedParam/=10.f;
+      }
+      auto seedInput = (unsigned long long)(floor((double)seedParam*(double)ULONG_MAX));
+      INFO("%.8f %lld",seedParam,seedInput);
+      rnd.reset(seedInput);
       next(bi>0.f);
     }
     if(inputs[CLOCK_INPUT].isConnected()) {
@@ -124,6 +130,17 @@ struct RndH : Module {
       next(true);
     }
   }
+
+  json_t *dataToJson() override {
+    json_t *data=json_object();
+    json_object_set_new(data,"roundSeed",json_boolean(roundSeed));
+    return data;
+  }
+  void dataFromJson(json_t *rootJ) override {
+    json_t *jRoundSeed = json_object_get(rootJ,"roundSeed");
+    if(jRoundSeed!=nullptr) roundSeed = json_boolean_value(jRoundSeed);
+  }
+
 };
 
 
@@ -152,6 +169,16 @@ struct RndHWidget : ModuleWidget {
     addParam(createParam<TrimbotWhite>(mm2px(Vec(2,MHEIGHT-19.f)),module,RndH::CHANNELS_PARAM));
 
   }
+
+  void appendContextMenu(Menu* menu) override {
+    RndH *module=dynamic_cast<RndH *>(this->module);
+    assert(module);
+
+    menu->addChild(new MenuSeparator);
+
+    menu->addChild(createBoolPtrMenuItem("Round Seed","",&module->roundSeed));
+  }
+
 };
 
 

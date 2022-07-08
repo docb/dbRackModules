@@ -1,5 +1,5 @@
 #include "dcb.h"
-
+#include "hexutil.h"
 
 struct GenScale : Module {
   enum ParamIds {
@@ -14,6 +14,8 @@ struct GenScale : Module {
   enum LightIds {
     NUM_LIGHTS
   };
+
+  int maxChannels=8;
 
   GenScale() {
     config(NUM_PARAMS,NUM_INPUTS,NUM_OUTPUTS,NUM_LIGHTS);
@@ -46,7 +48,7 @@ struct GenScale : Module {
     if(sum==0)
       return;
 
-    for(int k=0;k<16;k++) {
+    for(int k=0;k<maxChannels;k++) {
       while(params[SCALE_PARAM+pos%12].getValue()==0.f) {
         pos++;
       };
@@ -57,9 +59,23 @@ struct GenScale : Module {
       outputs[VOCT_OUTPUT].setVoltage(out,k);
       pos++;
     }
-    outputs[VOCT_OUTPUT].setChannels(16);
+    outputs[VOCT_OUTPUT].setChannels(maxChannels);
 
   }
+
+  json_t *dataToJson() override {
+    json_t *root=json_object();
+    json_object_set_new(root,"channels",json_integer(maxChannels));
+    return root;
+  }
+
+  void dataFromJson(json_t *root) override {
+    json_t *jChannels=json_object_get(root,"channels");
+    if(jChannels) {
+      maxChannels=json_integer_value(jChannels);
+    }
+  }
+
 };
 
 
@@ -82,6 +98,16 @@ struct GenScaleWidget : ModuleWidget {
 
     addOutput(createOutput<SmallPort>(Vec(12,320),module,GenScale::VOCT_OUTPUT));
 
+  }
+
+  void appendContextMenu(Menu *menu) override {
+    GenScale *module=dynamic_cast<GenScale *>(this->module);
+    assert(module);
+    menu->addChild(new MenuSeparator);
+    auto channelSelect=new IntSelectItem(&module->maxChannels,1,PORT_MAX_CHANNELS);
+    channelSelect->text="Polyphonic Channels";
+    channelSelect->rightText=rack::string::f("%d",module->maxChannels)+"  "+RIGHT_ARROW;
+    menu->addChild(channelSelect);
   }
 };
 

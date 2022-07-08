@@ -31,6 +31,15 @@ extern Model* modelRndG;
 extern Model* modelPlotter;
 extern Model* modelSuperLFO;
 extern Model* modelHexSeqExp;
+extern Model* modelPad2;
+extern Model* modelPHSR;
+extern Model* modelPhS;
+extern Model* modelSPL;
+extern Model* modelPhO;
+extern Model* modelFaders;
+extern Model* modelYC;
+extern Model* modelPLC;
+extern Model* modelMPad2;
 
 void init(Plugin* p) {
 	pluginInstance = p;
@@ -52,8 +61,6 @@ void init(Plugin* p) {
 	p->addModel(modelHexSeqP);
 	p->addModel(modelMVerb);
 	p->addModel(modelPShift);
-	//p->addModel(modelInt);
-	//p->addModel(modelIntA);
 	p->addModel(modelFLA);
   p->addModel(modelFLL);
 	p->addModel(modelGendy);
@@ -65,5 +72,13 @@ void init(Plugin* p) {
 	p->addModel(modelPlotter);
 	p->addModel(modelSuperLFO);
 	p->addModel(modelHexSeqExp);
-
+  p->addModel(modelPad2);
+	p->addModel(modelPHSR);
+	p->addModel(modelPhS);
+	p->addModel(modelSPL);
+	p->addModel(modelPhO);
+	p->addModel(modelFaders);
+	p->addModel(modelYC);
+  p->addModel(modelPLC);
+	p->addModel(modelMPad2);
 }

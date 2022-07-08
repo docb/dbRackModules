@@ -23,6 +23,7 @@ struct RndHvs3 : Module {
   float cube[7][7][7][32];
   dsp::BooleanTrigger trigger;
   dsp::SchmittTrigger clockTrigger;
+  dsp::ClockDivider divider;
   RND rnd;
   std::mutex mutex;
   float lastDens,lastSeed;
@@ -44,6 +45,8 @@ struct RndHvs3 : Module {
     configInput(Z_INPUT,"Z");
     configOutput(CV_POLY_1,"CV 0-15");
     configOutput(CV_POLY_2,"CV 16-31");
+    divider.setDivision(1028);
+
   }
 
   void onAdd(const AddEvent &e) override {
@@ -221,11 +224,12 @@ struct RndHvs3 : Module {
     return mustUpdate;
   }
   void process(const ProcessArgs &args) override {
-
-    if(mustUpdateCube()) {
-      INFO("refilling cube %d %f %f",lastDist,lastDens,lastSeed);
-      std::thread t1(&RndHvs3::fillCubeSave,this,lastDist,lastDens,lastSeed);
-      t1.detach();
+    if(divider.process()) {
+      if(mustUpdateCube()) {
+        //INFO("refilling cube %d %f %f",lastDist,lastDens,lastSeed);
+        std::thread t1(&RndHvs3::fillCubeSave,this,lastDist,lastDens,lastSeed);
+        t1.detach();
+      }
     }
 
     float x=clamp(inputs[X_INPUT].getVoltage(),0.f,9.99999f);

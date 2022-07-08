@@ -1,9 +1,11 @@
 #include "dcb.h"
-#include "hexfield.h"
-#include "hexutil.h"
+//#include "hexfield.h"
+//#include "hexutil.h"
+#include "HexSeq.hpp"
+#undef NUMSEQ
 #define NUMSEQ 16
 #define NUMPAT 16
-
+extern Model *modelHexSeq;
 
 struct HexSeqP : Module {
   enum ParamId {
@@ -38,6 +40,9 @@ struct HexSeqP : Module {
   int randomLengthFrom = 8;
   int randomLengthTo = 8;
   RND rnd;
+  HexSeq *hexSeq = nullptr;
+  Module *CMGate16 = nullptr;
+  Module *EuclidSeq = nullptr;
   void setDirty(int nr,bool _dirty) {
     dirty[nr]=_dirty;
   }
@@ -105,6 +110,50 @@ struct HexSeqP : Module {
     songpos++;
   }
 
+  void copyFromHexSeq() {
+    INFO("copy from hexSeq");
+    if(hexSeq) {
+      for(int k=0;k<hexSeq->numSeq;k++) {
+        hexs[currentPattern][k] = hexSeq->hexs[k];
+        dirty[k]=true;
+      }
+    }
+  }
+
+  void copyFromEuclid(int field) {
+    EuclideanAlgorithm euclid;
+    if(EuclidSeq) {
+      int length = EuclidSeq->params[0].getValue();
+      if(length%4!=0 || length>64) return;
+      float _hits = (float)length * (EuclidSeq->params[1].getValue());
+      int hits = clamp((int)_hits, 0, length);
+      int shift = EuclidSeq->params[2].getValue();
+      shift = clamp(shift, 0, length);
+      INFO("%d %d %d",length,hits,shift);
+      euclid.set(hits,length,-shift);
+      hexs[currentPattern][field] = euclid.getPattern();
+      dirty[field]=true;
+    }
+  }
+
+  void copyFromCMGateSeq16() {
+    if(CMGate16) {
+      for(int r=0;r<8;r++) {
+        long value = 0;
+        for(int c=0;c<16;c++) {
+          value |=  ((CMGate16->params[(r * 16) + c].getValue() > 0.5f) << (15-c));
+        }
+        std::stringstream stream;
+        stream<<std::uppercase<<std::setfill('0')<<std::setw(4)<<std::hex<<(value);
+        INFO("%s",stream.str().c_str());
+        hexs[currentPattern][r] =stream.str().c_str();
+        dirty[r]=true;
+        //std::string str=stream.str().substr(0,text.size());
+      }
+
+    }
+  }
+
   void copy() {
     for(int k=0;k<NUMSEQ;k++) {
       clipBoard[k] = hexs[currentPattern][k];
@@ -119,6 +168,27 @@ struct HexSeqP : Module {
   }
 
   void process(const ProcessArgs &args) override {
+    if(leftExpander.module) {
+      if(leftExpander.module->model==modelHexSeq) {
+        hexSeq=reinterpret_cast<HexSeq *>(leftExpander.module);
+      } else {
+        hexSeq = nullptr;
+      }
+      if(leftExpander.module->model->slug == "GateSequencer16") {
+          CMGate16 = leftExpander.module;
+      } else {
+          CMGate16 = nullptr;
+      }
+      if(leftExpander.module->model->slug == "Euclid") {
+        EuclidSeq = leftExpander.module;
+      } else {
+        EuclidSeq = nullptr;
+      }
+    } else {
+      hexSeq =nullptr;
+      CMGate16 = nullptr;
+      EuclidSeq = nullptr;
+    }
     if(rstTrigger.process(inputs[RST_INPUT].getVoltage())) {
       for(int k=0;k<NUMSEQ;k++) {
         songpos=0;
@@ -363,10 +433,24 @@ struct HexSeqPWidget : ModuleWidget {
     //addParam(createParam<TrimbotWhiteSnap>(mm2px(Vec(51.5f,MHEIGHT-19.5f)),module,HexSeqP::DELAY_PARAM));
   }
   void onHoverKey(const event::HoverKey &e) override {
-    int k = e.key - 48;
-    if(k>=1 && k<10) {
-      fields[k-1]->onWidgetSelect = true;
-      APP->event->setSelectedWidget(fields[k-1]);
+    if (e.action == GLFW_PRESS) {
+      int k=e.key-48;
+      if(k>=1&&k<10) {
+        fields[k-1]->onWidgetSelect=true;
+        APP->event->setSelectedWidget(fields[k-1]);
+      }
+      if(e.keyName=="f") {
+        auto *hexSeqModule=dynamic_cast<HexSeqP *>(this->module);
+        hexSeqModule->copyFromHexSeq();
+        if(hexSeqModule->CMGate16) {
+          INFO("CM found");
+          hexSeqModule->copyFromCMGateSeq16();
+        }
+        if(hexSeqModule->EuclidSeq) {
+          INFO("EuclidSeq found");
+          hexSeqModule->copyFromEuclid(0);
+        }
+      }
     }
     ModuleWidget::onHoverKey(e);
   }
@@ -405,7 +489,7 @@ struct HexSeqPWidget : ModuleWidget {
       Menu* createChildMenu() override {
         Menu* menu = new Menu;
         for (unsigned int c = 0; c <= 10; c++) {
-          menu->addChild(createCheckMenuItem(string::f("%d", c), "",
+          menu->addChild(createCheckMenuItem(rack::string::f("%d", c), "",
                                              [=]() {return module->delay == c;},
                                              [=]() {module->delay = c;}
           ));
@@ -415,17 +499,17 @@ struct HexSeqPWidget : ModuleWidget {
     };
     auto* delayItem = new DelayItem;
     delayItem->text = "Clock In Delay";
-    delayItem->rightText = string::f("%d", module->delay) + "  " + RIGHT_ARROW;
+    delayItem->rightText = rack::string::f("%d", module->delay) + "  " + RIGHT_ARROW;
     delayItem->module = module;
     menu->addChild(delayItem);
     menu->addChild(new DensMenuItem<HexSeqP>(module));
     auto* randomLengthFromItem = new IntSelectItem(&module->randomLengthFrom,1,16);
     randomLengthFromItem->text = "Random length from";
-    randomLengthFromItem->rightText = string::f("%d", module->randomLengthFrom) + "  " + RIGHT_ARROW;
+    randomLengthFromItem->rightText = rack::string::f("%d", module->randomLengthFrom) + "  " + RIGHT_ARROW;
     menu->addChild(randomLengthFromItem);
     auto* randomLengthToItem = new IntSelectItem(&module->randomLengthTo,1,16);
     randomLengthToItem->text = "Random length to";
-    randomLengthToItem->rightText = string::f("%d", module->randomLengthTo) + "  " + RIGHT_ARROW;
+    randomLengthToItem->rightText = rack::string::f("%d", module->randomLengthTo) + "  " + RIGHT_ARROW;
     menu->addChild(randomLengthToItem);
     struct RandomizePattern : ui::MenuItem {
       HexSeqP *module;

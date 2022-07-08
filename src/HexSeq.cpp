@@ -40,10 +40,12 @@ struct HexSeqWidget : ModuleWidget {
     addChild(createWidget<Widget>(mm2px(Vec(-0.0,14.585))));
   }
   void onHoverKey(const event::HoverKey &e) override {
-    int k = e.key - 48;
-    if(k>=1 && k<10) {
-      fields[k-1]->onWidgetSelect = true;
-      APP->event->setSelectedWidget(fields[k-1]);
+    if (e.action == GLFW_PRESS) {
+      int k=e.key-48;
+      if(k>=1&&k<10) {
+        fields[k-1]->onWidgetSelect=true;
+        APP->event->setSelectedWidget(fields[k-1]);
+      }
     }
     ModuleWidget::onHoverKey(e);
   }
@@ -79,11 +81,11 @@ struct HexSeqWidget : ModuleWidget {
     menu->addChild(new DensMenuItem<HexSeq>(module));
     auto* randomLengthFromItem = new IntSelectItem(&module->randomLengthFrom,1,16);
     randomLengthFromItem->text = "Random length from";
-    randomLengthFromItem->rightText = string::f("%d", module->randomLengthFrom) + "  " + RIGHT_ARROW;
+    randomLengthFromItem->rightText = rack::string::f("%d", module->randomLengthFrom) + "  " + RIGHT_ARROW;
     menu->addChild(randomLengthFromItem);
     auto* randomLengthToItem = new IntSelectItem(&module->randomLengthTo,1,16);
     randomLengthToItem->text = "Random length to";
-    randomLengthToItem->rightText = string::f("%d", module->randomLengthTo) + "  " + RIGHT_ARROW;
+    randomLengthToItem->rightText = rack::string::f("%d", module->randomLengthTo) + "  " + RIGHT_ARROW;
     menu->addChild(randomLengthToItem);
   }
 };

@@ -4,7 +4,9 @@
 
 #ifndef DOCB_VCV_COMPUTER_HPP
 #define DOCB_VCV_COMPUTER_HPP
+
 #include "rnd.h"
+
 using simd::float_4;
 
 // =============================================================================
@@ -227,12 +229,14 @@ struct Computer {
   const float mpih=M_PI/2;
   SimplexNoise simplex;
   ValueNoise noise;
+  RND rnd;
 
   Computer() {
     genTable(0,{1.f});//SIN
     genTable(1,{1.f,0.5f,1/3.f,1/4.f,1/5.f,1/6.f,1/7.f,1/8.f,1/9.f,1/10.f,1/11.f});//SAW
     genTable(2,{1.f,0.f,1/3.f,0.f,1/5.f,0.f,1/7.f,0.f,1/9.f,0.f,1/11.f}); //PULSE
     genTable(3,{1,0.5f,0.f,0.25f,0.f,1/6.f,0.f,1/8.f,0.f,1/10.f});//TRI
+    rnd.reset(10000);
   }
 
   void genTable(int tblNr,std::initializer_list<float> list) {
@@ -264,28 +268,28 @@ struct Computer {
     return (float)sign*table[tblNr][(sign*phs)&0xFFFF];
   }
 
-  double fastPrecisePow(double a, const double b) {
+  double fastPrecisePow(double a,const double b) {
     // calculate approximation with just the fraction of the exponent
-    int exp = (int) b;
+    int exp=(int)b;
     union {
       double d;
       int x[2];
-    } u = { a };
-    u.x[1] = (int)((b - exp) * (u.x[1] - 1072632447) + 1072632447);
-    u.x[0] = 0;
+    }u={a};
+    u.x[1]=(int)((b-exp)*(u.x[1]-1072632447)+1072632447);
+    u.x[0]=0;
 
     // exponentiation by squaring with the exponent's integer part
     // double r = u.d makes everything much slower, not sure why
-    double r = 1.0;
-    while (exp) {
-      if (exp & 1) {
-        r *= a;
+    double r=1.0;
+    while(exp) {
+      if(exp&1) {
+        r*=a;
       }
-      a *= a;
-      exp >>= 1;
+      a*=a;
+      exp>>=1;
     }
 
-    return r * u.d;
+    return r*u.d;
   }
 
   double fastPow(double a,double b) {
@@ -310,11 +314,18 @@ struct Computer {
     return {v[0],v[1],v[2],v[3]};
   }
 
-  T sinl(T v) {
+  float_4 sinl(float_4 v) {
+    return simd::sin(v);
+  }
+
+  float sinl(float v) {
     return lookup(v,0);
   }
 
-  T cosl(T v) {
+  float_4 cosl(float_4 v) {
+    return simd::cos(v);
+  }
+  float cosl(float v) {
     return lookup(mpih-v,0);
   }
 
@@ -339,8 +350,9 @@ struct Computer {
   }
 
   enum Terrains {
-    SINX,COSY,SINXPY,COSXMY,SINX2,COSY2,SINXCOSY,COSYSINX,SINSQR,SIMPLEX,VALUE_NOISE_UNI,VALUE_NOISE_DISCRETE_05,VALUE_NOISE_DISCRETE_07,VALUE_NOISE_DISCRETE_09,VALUE_NOISE_DIST1,VALUE_NOISE_DIST2,COS_DIV,TRIADD,SAWADD,PLSADD,TRI2,SAW2,PLS2,TANTER,SINSQRTANH,NUM_TERRAINS
+    SINX,COSY,SINXPY,COSXMY,SINX2,COSY2,SINXCOSY,COSYSINX,SINSQR,SIMPLEX,VALUE_NOISE_UNI,VALUE_NOISE_DISCRETE_05,VALUE_NOISE_DISCRETE_07,VALUE_NOISE_DISCRETE_09,VALUE_NOISE_DIST1,VALUE_NOISE_DIST2,COS_DIV,TRIADD,SAWADD,PLSADD,TRI2,SAW2,PLS2,TANTER,SINSQRTANH,NOISE,WNOISE,NUM_TERRAINS
   };
+
   float_4 vnoise(int n,float_4 x,float_4 y) {
     float v[4];
     for(int k=0;k<4;k++) {
@@ -366,6 +378,29 @@ struct Computer {
     return (float)simplex.noise(x,y);
   }
 
+  float_4 rnoise(float_4 v,float_4 x,float_4 y, float x1, float y1, float x2, float y2) {
+    //double dens = 1.0/20.0;
+    // how can it be done better?
+    return simd::ifelse(x>x1,simd::ifelse(y>y1,simd::ifelse(x<x2,simd::ifelse(y<y2,v*float_4(float(rnd.nextDouble()),float(rnd.nextDouble()),float(rnd.nextDouble()),float(rnd.nextDouble())),v),v),v),v);
+    //return simd::ifelse(x>x1,simd::ifelse(y>y1,simd::ifelse(x<x2,simd::ifelse(y<y2,v*float_4(float(rnd.nextWeibull(dens)),float(rnd.nextWeibull(dens)),float(rnd.nextWeibull(dens)),float(rnd.nextWeibull(dens))),v),v),v),v);
+  }
+
+  float rnoise(float v,float x,float y, float x1, float y1, float x2, float y2) {
+    return (x>x1&&x<x2&&y>y1&&y<y2)?v*float(rnd.nextDouble()):v;
+    //return (x>x1&&x<x2&&y>y1&&y<y2)?v*float(rnd.nextWeibull(1.0/20.0)):v;
+  }
+  float_4 wnoise(float_4 v,float_4 x,float_4 y, float x1, float y1, float x2, float y2) {
+    double dens = 20.0;
+    // how can it be done better?
+    //return simd::ifelse(x>x1,simd::ifelse(y>y1,simd::ifelse(x<x2,simd::ifelse(y<y2,v*float_4(float(rnd.nextDouble()),float(rnd.nextDouble()),float(rnd.nextDouble()),float(rnd.nextDouble())),v),v),v),v);
+    return simd::ifelse(x>x1,simd::ifelse(y>y1,simd::ifelse(x<x2,simd::ifelse(y<y2,v*float_4(float(rnd.nextWeibull(dens)),float(rnd.nextWeibull(dens)),float(rnd.nextWeibull(dens)),float(rnd.nextWeibull(dens))),v),v),v),v);
+  }
+
+  float wnoise(float v,float x,float y, float x1, float y1, float x2, float y2) {
+    //return (x>x1&&x<x2&&y>y1&&y<y2)?v*float(rnd.nextDouble()):v;
+    return (x>x1&&x<x2&&y>y1&&y<y2)?v*float(rnd.nextWeibull(20.0)):v;
+  }
+
   T simplexNoise(T value,T x,T y) {
     return value*snoise(x,y);
   }
@@ -377,6 +412,7 @@ struct Computer {
   T sinxpy(T value,T x,T y) {
     return value*sinl(4*(x+y));
   }
+
   T cosxmy(T value,T x,T y) {
     return value*cosl(4*(x-y));
   }
@@ -392,6 +428,7 @@ struct Computer {
   T sinxcosy(T value,T x,T y) {
     return value*sinl(2*x*cosl(y));
   }
+
   T cosysinx(T value,T x,T y) {
     return value*cosl(2*y*sinl(x));
   }
@@ -431,9 +468,10 @@ struct Computer {
   } //C
 
   T mtanh(T x) {
-    T ex = simd::exp(2*x);
+    T ex=simd::exp(2*x);
     return (ex-1)/(ex+1);
   }
+
 
   T genomFunc(const int *gen,int len,T x,T y) {
     T v=1;
@@ -518,13 +556,25 @@ struct Computer {
         case PLS2:
           v=pls2(v,x,y);
           break;
+        case NOISE:
+          v=rnoise(v,x,y,0,0,1,1);
+          v=rnoise(v,x,y,-3,1,-1,3);
+          v=rnoise(v,x,y,-5,-4,-2,-1);
+          v=rnoise(v,x,y,2,-6,6,-2);
+          break;
+        case WNOISE:
+          v=wnoise(v,x,y,0,0,1,1);
+          v=wnoise(v,x,y,-3,1,-1,3);
+          v=wnoise(v,x,y,-5,-4,-2,-1);
+          v=wnoise(v,x,y,2,-6,6,-2);
+          break;
       }
     }
     return v;
   }
 
   /************ CURVES ***************/
-  void rotate_point(T cx,T cy,T angle,T &x,T &y) {
+  int _rotate_point(T cx,T cy,T angle,T &x,T &y) {
     T s=sinl(angle);
     T c=cosl(angle);
     x-=cx;
@@ -533,8 +583,11 @@ struct Computer {
     T ynew=x*s+y*c;
     x=xnew+cx;
     y=ynew+cy;
+    return 0;
   }
-
+  void rotate_point(T cx,T cy,T angle,T &x,T &y) {
+    simd::ifelse(angle==0,0,_rotate_point(cx,cy,angle,x,y));
+  }
   void ellipse(T t,T kx,T ky,T krx,T kry,T kparam,T &outX,T &outY) {
     T x=t+kparam*sinl(t);
     outX=kx+krx*sinl(x);
@@ -598,20 +651,42 @@ struct Computer {
     outX=kx+krx*cost*(1+kparam*sint*sint);
     outY=ky+kry*sint*(1-kparam-kparam*cost*cost);
   }
+
   template<int A>
   void lissajous(T t,T kx,T ky,T krx,T kry,T kparam,T &outX,T &outY) {
-    outX = kx+krx*sinl(t);
-    outY = ky+kry*sinl(A*t + kparam);
-  }
-  template<int N, int P>
-  void hypocycloid(T t,T kx,T ky,T krx,T kry,T kparam,T &outX,T &outY) {
-    float a = float(N)/float(P);
-    outX = kx+krx*((1.f-a)*cosl(a*t*float(P))+a*kparam*cosl((1-a)*t*float(P)));
-    outY = ky+kry*((1.f-a)*sinl(a*t*float(P))-a*kparam*sinl((1-a)*t*float(P)));
+    outX=kx+krx*sinl(t);
+    outY=ky+kry*sinl(A*t+kparam);
   }
 
+  template<int N,int P>
+  void hypocycloid(T t,T kx,T ky,T krx,T kry,T kparam,T &outX,T &outY) {
+    float a=float(N)/float(P);
+    outX=kx+krx*((1.f-a)*cosl(a*t*float(P))+a*kparam*cosl((1-a)*t*float(P)));
+    outY=ky+kry*((1.f-a)*sinl(a*t*float(P))-a*kparam*sinl((1-a)*t*float(P)));
+  }
+
+  float r[4][2]={{-.5f,-.5f},{.5f,-.5f},{.5f,.5f},{-.5f,.5f}};
+
+  void rect(float_4 t,float_4 kx,float_4 ky,float_4 krx,float_4 kry,float_4 kparam,float_4 &outX,float_4 &outY) {
+    float_4 tt = t/TWOPIF;
+    tt = simd::ifelse(tt<0,1-tt,tt);
+    float_4 s = simd::fmod(tt,0.25);
+    simd::int32_4 i = (tt - s)*4;
+    for(int k=0;k<4;k++) {
+      outX[k] = kx[k]+krx[k]*(r[(i[k])%4][0]+4*s[k]*(r[(i[k]+1)%4][0]-r[(i[k])%4][0]));
+      outY[k] = ky[k]+kry[k]*(r[(i[k])%4][1]+4*s[k]*(r[(i[k]+1)%4][1]-r[(i[k])%4][1]));
+    }
+  }
+  void rect(float t,float kx,float ky,float krx,float kry,float kparam,float &outX,float &outY) {
+    float tt = t/TWOPIF;
+    tt = tt<0?1-tt:tt;
+    float s = fmodf(tt,0.25);
+    auto i = int32_t((tt - s)*4);
+    outX = kx+krx*(r[i%4][0]+4*s*(r[(i+1)%4][0]-r[i%4][0]));
+    outY = ky+kry*(r[i%4][1]+4*s*(r[(i+1)%4][1]-r[i%4][1]));
+  }
   enum Curves {
-    ELLIPSE,LEMNISKATE,LIMACON,CORNOID,TRISEC,SCARABEUS,FOLIUM,TALBOT,LISSAJOUS,HYPOCYCLOID,NUM_CURVES
+    ELLIPSE,LEMNISKATE,LIMACON,CORNOID,TRISEC,SCARABEUS,FOLIUM,TALBOT,LISSAJOUS,HYPOCYCLOID,RECT,NUM_CURVES
   };
 
   void crv(int curve,T t,T cx,T cy,T rx,T ry,T curveParam,T &x,T &y) {
@@ -646,6 +721,8 @@ struct Computer {
       case HYPOCYCLOID:
         hypocycloid<2,5>(t,cx,cy,rx,ry,curveParam,x,y);
         break;
+      case RECT:
+        rect(t,cx,cy,rx,ry,curveParam,x,y);
     }
   }
 

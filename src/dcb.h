@@ -159,35 +159,6 @@ struct DBSmallLight : TSvgLight<TBase> {
   }
 };
 
-struct NumberDisplayWidget : TransparentWidget {
-  float *value = nullptr;
-  float size = 10;
-  std::string fontPath;
-  NumberDisplayWidget() {
-    fontPath = asset::plugin(pluginInstance, "res/FreeMonoBold.ttf");
-  };
-
-  void draw(const DrawArgs &args) override {
-    if (!value) {
-      return;
-    }
-    std::shared_ptr<Font> font =  APP->window->loadFont(fontPath);
-
-    nvgFontSize(args.vg, size);
-    nvgFontFaceId(args.vg, font->handle);
-    nvgTextLetterSpacing(args.vg, 0);
-
-    std::stringstream to_display;
-    to_display.precision(4);
-    to_display << std::setw(4) << *value;
-
-    Vec textPos = Vec(4.0f, size-1.f);
-    NVGcolor textColor = nvgRGB(0x4e, 0xC4, 0x88);
-    nvgFillColor(args.vg, textColor);
-    nvgText(args.vg, textPos.x, textPos.y, to_display.str().c_str(), NULL);
-  }
-};
-
 template<int S>
 struct Scale {
   std::string name;
@@ -214,21 +185,282 @@ struct Scale {
   }
 };
 struct UpdateOnReleaseKnob : TrimbotWhite {
-  //T *module;
-  bool *update;
+  bool *update=nullptr;
+  bool contextMenu;
   UpdateOnReleaseKnob() : TrimbotWhite() {
 
+  }
+
+  void onButton(const ButtonEvent& e) override {
+    if (e.action == GLFW_PRESS && e.button == GLFW_MOUSE_BUTTON_RIGHT && (e.mods & RACK_MOD_MASK) == 0) {
+      contextMenu=true;
+    } else {
+      contextMenu=false;
+    }
+    Knob::onButton(e);
+  }
+
+  void onChange(const ChangeEvent& e) override {
+    SvgKnob::onChange(e);
+    if(update!=nullptr) *update=contextMenu;
   }
 
   void onDragEnd(const DragEndEvent &e) override {
     SvgKnob::onDragEnd(e);
     if(e.button==GLFW_MOUSE_BUTTON_LEFT) {
-      //INFO("update");
-      *update=true;
+      if(update!=nullptr) *update=true;
     }
 
   }
 };
+
+template<typename M>
+struct MKnob : TrimbotWhite {
+  M *module=nullptr;
+  void step() override {
+    if(module && module->dirty) {
+      ChangeEvent c;
+      SvgKnob::onChange(c);
+      module->dirty--;
+    }
+    SvgKnob::step();
+  }
+};
+struct MLED : public SvgSwitch {
+  MLED() {
+    momentary=false;
+    //latch=true;
+    addFrame(Svg::load(asset::plugin(pluginInstance,"res/RButton0.svg")));
+    addFrame(Svg::load(asset::plugin(pluginInstance,"res/RButton1.svg")));
+  }
+};
+struct MLEDM : public SvgSwitch {
+  MLEDM() {
+    momentary=true;
+    //latch=true;
+    addFrame(Svg::load(asset::plugin(pluginInstance,"res/RButton0.svg")));
+    addFrame(Svg::load(asset::plugin(pluginInstance,"res/RButton1.svg")));
+  }
+};
+
+
+template<typename M>
+struct MCopyButton : SmallButtonWithLabel {
+  M *module;
+
+  MCopyButton() : SmallButtonWithLabel() {
+    momentary=true;
+  }
+
+  void onChange(const ChangeEvent &e) override {
+    SvgSwitch::onChange(e);
+    if(module) {
+      if(module->params[M::COPY_PARAM].getValue()>0)
+        module->copy();
+    }
+  }
+};
+
+template<typename M>
+struct MPasteButton : SmallButtonWithLabel {
+  M *module;
+
+  MPasteButton() : SmallButtonWithLabel() {
+    momentary=true;
+  }
+
+  void onChange(const ChangeEvent &e) override {
+    SvgSwitch::onChange(e);
+    if(module) {
+      if(module->params[M::PASTE_PARAM].getValue()>0)
+        module->paste();
+    }
+
+  }
+};
+
+struct UpButtonWidget : Widget {
+  bool pressed=false;
+
+  void draw(const DrawArgs &args) override {
+    nvgFillColor(args.vg,pressed?nvgRGB(126,200,211):nvgRGB(126,166,211));
+    nvgStrokeColor(args.vg,nvgRGB(196,201,104));
+    nvgBeginPath(args.vg);
+    nvgMoveTo(args.vg,2,box.size.y);
+    nvgLineTo(args.vg,box.size.x/2.f,2);
+    nvgLineTo(args.vg,box.size.x-2,box.size.y);
+    nvgClosePath(args.vg);
+    nvgFill(args.vg);
+    nvgStroke(args.vg);
+  }
+
+  void onDragHover(const event::DragHover &e) override {
+    if(e.button==GLFW_MOUSE_BUTTON_LEFT) {
+      e.consume(this);
+    }
+    Widget::onDragHover(e);
+  }
+
+  void onButton(const ButtonEvent &e) override;
+
+
+};
+
+struct DownButtonWidget : Widget {
+  bool pressed=false;
+
+  void draw(const DrawArgs &args) override {
+
+    nvgFillColor(args.vg,pressed?nvgRGB(126,200,211):nvgRGB(126,166,211));
+    nvgStrokeColor(args.vg,nvgRGB(196,201,104));
+    nvgBeginPath(args.vg);
+    nvgMoveTo(args.vg,2,0);
+    nvgLineTo(args.vg,box.size.x/2.f,box.size.y-2);
+    nvgLineTo(args.vg,box.size.x-2,0);
+    nvgClosePath(args.vg);
+    nvgFill(args.vg);
+    nvgStroke(args.vg);
+  }
+
+  void onDragHover(const event::DragHover &e) override {
+    if(e.button==GLFW_MOUSE_BUTTON_LEFT) {
+      e.consume(this);
+    }
+    Widget::onDragHover(e);
+  }
+
+  void onButton(const ButtonEvent &e) override;
+};
+
+struct NumberDisplayWidget : Widget {
+  std::basic_string<char> fontPath;
+  bool highLight = false;
+
+  NumberDisplayWidget() : Widget() {
+    fontPath=asset::plugin(pluginInstance,"res/FreeMonoBold.ttf");
+  }
+
+  void drawLayer(const DrawArgs &args,int layer) override {
+    if(layer==1) {
+      _draw(args);
+    }
+    Widget::drawLayer(args,layer);
+  }
+
+  void onDoubleClick(const DoubleClickEvent &e) override {
+    INFO("double click - does not work");
+    auto paramWidget=getAncestorOfType<ParamWidget>();
+    assert(paramWidget);
+    paramWidget->resetAction();
+    e.consume(this);
+  }
+
+  void onButton(const ButtonEvent &e) override {
+    INFO("display on button");
+    e.unconsume();
+  }
+
+  void _draw(const DrawArgs &args) {
+    std::shared_ptr<Font> font=APP->window->loadFont(fontPath);
+    auto paramWidget=getAncestorOfType<ParamWidget>();
+    assert(paramWidget);
+    engine::ParamQuantity *pq=paramWidget->getParamQuantity();
+    nvgBeginPath(args.vg);
+    nvgRect(args.vg,0,0,box.size.x,box.size.y);
+    nvgStrokeColor(args.vg,nvgRGB(128,128,128));
+    nvgStroke(args.vg);
+
+    if(pq) {
+      std::stringstream stream;
+      stream<<std::setfill('0')<<std::setw(2)<<int(pq->getValue());
+      nvgFillColor(args.vg,highLight?nvgRGB(255,255,128):nvgRGB(0,255,0));
+      nvgFontFaceId(args.vg,font->handle);
+      nvgFontSize(args.vg,10);
+      nvgTextAlign(args.vg,NVG_ALIGN_CENTER|NVG_ALIGN_MIDDLE);
+      nvgText(args.vg,box.size.x/2,box.size.y/2,stream.str().c_str(),NULL);
+    }
+  }
+};
+
+struct SpinParamWidget : ParamWidget {
+  bool pressed=false;
+  int start;
+  float dragY;
+  UpButtonWidget *up;
+  DownButtonWidget *down;
+  NumberDisplayWidget *text;
+  void init() {
+    box.size.x=20;
+    box.size.y=30;
+    up=new UpButtonWidget();
+    up->box.pos=Vec(0,0);
+    up->box.size=Vec(20,10);
+    addChild(up);
+    text=new NumberDisplayWidget();
+    text->box.pos=Vec(0,10);
+    text->box.size=Vec(20,10);
+    addChild(text);
+    down=new DownButtonWidget();
+    down->box.pos=Vec(0,20);
+    down->box.size=Vec(20,10);
+    addChild(down);
+  }
+
+  void onButton(const ButtonEvent &e) override {
+    ParamWidget::onButton(e);
+    if(e.action==GLFW_PRESS&&e.button==GLFW_MOUSE_BUTTON_LEFT) {
+      engine::ParamQuantity *pq=getParamQuantity();
+      start=pq->getValue();
+      pressed=true;
+    }
+    if(e.action==GLFW_RELEASE&&e.button==GLFW_MOUSE_BUTTON_LEFT) {
+      pressed=false;
+    }
+    e.consume(this);
+  }
+
+  void onDoubleClick(const DoubleClickEvent &e) override {
+
+  }
+
+  void onDragStart(const event::DragStart &e) override {
+    if(pressed) {
+      dragY=APP->scene->rack->getMousePos().y;
+      text->highLight = true;
+    }
+  }
+
+  void onDragEnd(const event::DragEnd& e) override {
+    up->pressed = false;
+    down->pressed = false;
+    text->highLight = false;
+  }
+
+  void onDragMove(const event::DragMove &e) override {
+    if(pressed) {
+      float diff=dragY-APP->scene->rack->getMousePos().y;
+      engine::ParamQuantity *pq=getParamQuantity();
+      float newValue=float(start)+diff/4.0f;
+      if(newValue>pq->getMaxValue()) pq->setValue(pq->getMaxValue());
+      else if(newValue<pq->getMinValue()) pq->setValue(pq->getMinValue());
+      else pq->setValue(newValue);
+    }
+  }
+
+  void draw(const DrawArgs &args) override {
+    // Background
+    nvgBeginPath(args.vg);
+    nvgRect(args.vg,0,0,box.size.x,box.size.y);
+    nvgFillColor(args.vg,nvgRGB(0,0,0));
+    nvgStrokeColor(args.vg,nvgRGB(128,128,128));
+    nvgFill(args.vg);
+    nvgStroke(args.vg);
+
+    ParamWidget::draw(args);
+  }
+
+};
+
 
 template<typename T>
 struct DCBlocker {
@@ -238,6 +470,10 @@ struct DCBlocker {
     y = v - x + y * 0.99f;
     x = v;
     return y;
+  }
+  void reset() {
+    x = 0.f;
+    y = 0.f;
   }
 };
 template<size_t S>
@@ -307,9 +543,55 @@ struct DensMenuItem : MenuItem {
   }
 };
 
+struct IntSelectItem : MenuItem {
+  int *value;
+  int min;
+  int max;
 
+  IntSelectItem(int *val,int _min,int _max) : value(val),min(_min),max(_max) {
+  }
+
+  Menu *createChildMenu() override {
+    Menu *menu=new Menu;
+    for(int c=min;c<=max;c++) {
+      menu->addChild(createCheckMenuItem(string::f("%d",c),"",[=]() {
+        return *value==c;
+      },[=]() {
+        *value=c;
+      }));
+    }
+    return menu;
+  }
+};
+struct MinMaxRange {
+  float min;
+  float max;
+};
+template<typename M>
+struct RangeSelectItem : MenuItem {
+  M *module;
+  std::vector <MinMaxRange> ranges;
+
+  RangeSelectItem(M *_module,std::vector <MinMaxRange> _ranges) : module(_module),ranges(std::move(_ranges)) {
+  }
+
+  Menu *createChildMenu() override {
+    Menu *menu=new Menu;
+    for(unsigned int k=0;k<ranges.size();k++) {
+      menu->addChild(createCheckMenuItem(string::f("%d/%dV",(int)ranges[k].min,(int)ranges[k].max),"",[=]() {
+        return module->min==ranges[k].min&&module->max==ranges[k].max;
+      },[=]() {
+        module->min=ranges[k].min;
+        module->max=ranges[k].max;
+        module->reconfig();
+      }));
+    }
+    return menu;
+  }
+};
 
 #define TWOPIF 6.2831853f
 #define MHEIGHT 128.5f
+#define TY(x) MHEIGHT-(x)-6.237
 
 #endif
