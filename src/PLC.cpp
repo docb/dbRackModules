@@ -139,6 +139,7 @@ struct PLCWidget : ModuleWidget {
         plcModule->copyFromFaders(k-1);
       }
     }
+    ModuleWidget::onHoverKey(e);
   }
 };
 
