@@ -50,7 +50,7 @@ struct HexSeqExp : Module {
       for(int k=0;k<NUMSEQ;k++) {
         bool trigger=mother->gatePulseInvGenerators[k].process(1.0/args.sampleRate);
         outputs[NUMSEQ*2+k].setVoltage((trigger?10.0f:0.0f));
-        outputs[NUMSEQ*3+1].setVoltage(trigger?10.0f:0.0f,k);
+        outputs[NUMSEQ*3+2].setVoltage(trigger?10.0f:0.0f,k);
       }
       for(int k=0;k<3;k++)
         outputs[NUMSEQ*3+k].setChannels(12);
