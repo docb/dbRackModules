@@ -20,15 +20,15 @@ struct ReverbParam {
 template<size_t S>
 struct DelayLine {
   ReverbParam rvParam;
-  int writePos;
-  int bufferSize;
-  int readPos;
-  int readPosFrac;
-  int readPosFracInc;
-  int rndVal;
-  int randLineCnt;
-  float filterState;
-  float buf[S];
+  int writePos=0;
+  int bufferSize=0;
+  int readPos=0;
+  int readPosFrac=0;
+  int readPosFracInc=0;
+  int rndVal=0;
+  int randLineCnt=0;
+  float filterState=0;
+  float buf[S]={};
 
   void nextRnd() {
     if(rndVal<0) rndVal += 0x10000;

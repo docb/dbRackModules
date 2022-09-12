@@ -1,6 +1,53 @@
 #include "textfield.hpp"
 #include <helpers.hpp>
 #include <context.hpp>
+#include "hexutil.h"
+
+struct EucHexItem : ui::MenuItem {
+  int length=4;
+  int hits=1;
+  WeakPtr<MTextField> textField=nullptr;
+  void onAction(const ActionEvent& e) override {
+    if(!textField)
+      return;
+    EuclideanAlgorithm euclid;
+    euclid.set(hits,length,0);
+    textField->insertText(euclid.getPattern());
+    APP->event->setSelectedWidget(textField);
+  }
+};
+
+struct EucMenuItem : ui::MenuItem {
+  int length=4;
+  WeakPtr<MTextField> textField=nullptr;
+    Menu* createChildMenu() override {
+      Menu* menu = new Menu;
+      for (unsigned int c = 1; c <= length; c++) {
+        auto *m=new EucHexItem;
+        m->textField=textField;
+        m->length=length;
+        m->hits=c;
+        m->text=rack::string::f("%d-%d",length,c);
+        menu->addChild(m);
+      }
+      return menu;
+    }
+};
+struct EucRootItem : ui::MenuItem {
+  WeakPtr<MTextField> textField;
+  Menu* createChildMenu() override {
+    Menu* menu = new Menu;
+    for (int c = 8; c <= 64; c+=4) {
+      auto *m=new EucMenuItem;
+      m->textField=textField;
+      m->length=c;
+      m->text=rack::string::f("Euc %d",c);
+      m->rightText=RIGHT_ARROW;
+      menu->addChild(m);
+    }
+    return menu;
+  }
+};
 
 struct MTextFieldCopyItem : ui::MenuItem {
 	WeakPtr<MTextField> textField;
@@ -365,4 +412,10 @@ void MTextField::createContextMenu() {
 	selectAllItem->rightText = RACK_MOD_CTRL_NAME "+A";
 	selectAllItem->textField = this;
 	menu->addChild(selectAllItem);
+
+  EucRootItem* euc = new EucRootItem;
+  euc->text = "Euclidean";
+  euc->textField = this;
+  euc->rightText=RIGHT_ARROW;
+  menu->addChild(euc);
 }

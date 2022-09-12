@@ -180,7 +180,7 @@ struct Faders : Module {
 
     for(int i=0;i<3;i++) {
       for(int k=0;k<16;k++) {
-        configParam(i*16+k,-10,10,0,"chn "+std::to_string(k+1));
+        configParam(i*16+k,-10,10,0,rowLabels[i] + " chn " + std::to_string(k+1));
       }
       configParam(MOD_CV_A+i,0,1,0,"Mod CV Amount "+rowLabels[i]);
       configOutput(i,"CV "+rowLabels[i]);
@@ -218,7 +218,7 @@ struct Faders : Module {
     int pat=params[PAT_PARAM].getValue();
     for(int nr=0;nr<3;nr++) {
       for(int k=0;k<16;k++) {
-        configParam(nr*16+k,presets[pat].min[nr],presets[pat].max[nr],0,"chn "+std::to_string(k+1));
+        configParam(nr*16+k,presets[pat].min[nr],presets[pat].max[nr],0,rowLabels[nr] +" chn "+std::to_string(k+1));
       }
     }
     for(int k=0;k<48;k++) {
@@ -362,7 +362,7 @@ struct Faders : Module {
         value=presets[pat].max[nr];
       if(value<presets[pat].min[nr])
         value=presets[pat].min[nr];
-      configParam(nr*16+k,presets[pat].min[nr],presets[pat].max[nr],0,"chn "+std::to_string(k+1));
+      configParam(nr*16+k,presets[pat].min[nr],presets[pat].max[nr],0,rowLabels[nr] +" chn "+std::to_string(k+1));
       getParamQuantity(nr*16+k)->setValue(value);
     }
   }

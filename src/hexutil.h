@@ -1,5 +1,9 @@
 #ifndef DBRACKMODULES_HEXUTIL_H
 #define DBRACKMODULES_HEXUTIL_H
+#include "rnd.h"
+#include <bitset>
+#include <sstream>
+#include <iomanip>
 
 static std::string getRandomHex(RND &rnd,float dens,int randomLengthFrom,int randomLengthTo) {
   unsigned long val=0;

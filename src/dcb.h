@@ -202,7 +202,10 @@ struct UpdateOnReleaseKnob : TrimbotWhite {
 
   void onChange(const ChangeEvent& e) override {
     SvgKnob::onChange(e);
-    if(update!=nullptr) *update=contextMenu;
+    if(update!=nullptr) {
+      if(contextMenu) INFO("SET UPDATE");
+      *update=contextMenu;
+    }
   }
 
   void onDragEnd(const DragEndEvent &e) override {
