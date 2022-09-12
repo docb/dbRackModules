@@ -133,8 +133,8 @@ struct RSC : Module {
   DelayLine<131072> delayLines[8];
   float dmp = 1.f;
   float prvLPFreq = 0.f;
-  bool update;
-  float pm;
+  bool update=false;
+  float pm=0.5;
 
   ReverbParam rvParam[8] = {
     { (2473.0 / DEFAULT_SRATE), 0.0010, 3.100,  1966 },
@@ -148,14 +148,15 @@ struct RSC : Module {
   };
 
   void init(float sampleRate, float pitchMod) {
-    for(int k=0;k< 8;k++) {
-      delayLines[k].rvParam = rvParam[k];
+    for(int k=0;k<8;k++) {
+      delayLines[k].rvParam=rvParam[k];
       delayLines[k].init(sampleRate,pitchMod);
     }
   }
-  void onAdd(const AddEvent &e) override {
-    update=true;
-  }
+  //void onAdd(const AddEvent &e) override {
+  //  INFO("on add");
+  //  update=true;
+  //}
 
 	RSC() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -169,12 +170,14 @@ struct RSC : Module {
     configOutput(R_OUTPUT,"Right");
     configBypass(L_INPUT,L_OUTPUT);
     configBypass(R_INPUT,R_OUTPUT);
+    init(APP->engine->getSampleRate(),pm);
 	}
 
 	void process(const ProcessArgs& args) override {
     if(update) {
       update = false;
       pm = params[PM_PARAM].getValue();
+      INFO("init in process %f",pm);
       init(args.sampleRate,pm);
     }
     if(inputs[L_INPUT].isConnected()) {
