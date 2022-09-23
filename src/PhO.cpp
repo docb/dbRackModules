@@ -3,7 +3,7 @@ using simd::float_4;
 
 struct PhO : Module {
   enum ParamId {
-    DMP_PARAM,PARAMS_LEN
+    DMP_PARAM,PHS_PARAM,PARAMS_LEN
   };
   enum InputId {
     PHASE_INPUT,AMP_1_16_INPUT,DMP_INPUT,INPUTS_LEN
@@ -29,6 +29,7 @@ struct PhO : Module {
 	PhO() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
     configParam(DMP_PARAM,0.f,10.f,0.f,"Damp");
+    configParam(PHS_PARAM,0,1,0,"Phase Offset");
     configInput(AMP_1_16_INPUT,"AMP 1-16");
     configInput(PHASE_INPUT,"Phase");
     configInput(DMP_INPUT,"Damp");
@@ -51,7 +52,7 @@ struct PhO : Module {
       }
     }
     for(int c=0;c<channels;c+=4) {
-      float_4 phs = inputs[PHASE_INPUT].getVoltageSimd<float_4>(c)*(float(M_PI)/5.f);
+      float_4 phs = inputs[PHASE_INPUT].getVoltageSimd<float_4>(c)*(float(M_PI)/5.f) + TWOPIF*params[PHS_PARAM].getValue();
       float_4 out=0;
       for(int k=0;k<16;k++) {
         if(amps[k]>0) {
@@ -80,6 +81,7 @@ struct PhOWidget : ModuleWidget {
     addParam(createParam<TrimbotWhite>(mm2px(Vec(x,MHEIGHT-103)),module,PhO::DMP_PARAM));
     addInput(createInput<SmallPort>(mm2px(Vec(x,MHEIGHT-93)),module,PhO::DMP_INPUT));
     addInput(createInput<SmallPort>(mm2px(Vec(x,MHEIGHT-67)),module,PhO::PHASE_INPUT));
+    addParam(createParam<TrimbotWhite>(mm2px(Vec(x,MHEIGHT-55)),module,PhO::PHS_PARAM));
     addOutput(createOutput<SmallPort>(mm2px(Vec(x,MHEIGHT-19)),module,PhO::V_OUTPUT));
 	}
 };
