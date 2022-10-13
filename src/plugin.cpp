@@ -44,6 +44,7 @@ extern Model* modelPHSR2;
 extern Model* modelEVA;
 extern Model* modelRatio;
 extern Model* modelCSOSC;
+extern Model* modelBWF;
 
 void init(Plugin* p) {
 	pluginInstance = p;
@@ -89,4 +90,5 @@ void init(Plugin* p) {
 	p->addModel(modelEVA);
 	p->addModel(modelCSOSC);
 	p->addModel(modelRatio);
+  p->addModel(modelBWF);
 }

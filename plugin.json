@@ -363,6 +363,14 @@
       "tags": [
         "Envelope Generator","Voltage Controlled Amplifier","Polyphonic"
       ]
+    },
+    {
+      "slug": "BWF",
+      "name": "BWF",
+      "description": "A brickwall filter",
+      "tags": [
+        "Effect","Filter","Polyphonic"
+      ]
     }
   ]
 }

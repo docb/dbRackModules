@@ -2,8 +2,9 @@
 
 Some VCVRack modules
 
-New modules in 2.1.0: [PAD2](#pad2),[µPad2](#%C2%B5pad2),[PhO](#pho), [PhS](#phs), [PHSR](#phsr), [SPL](#spl), [YAC](#yac),[Faders](#faders),[PLC](#plc)
+New modules in 2.1.0: [PAD2](#pad2), [µPad2](#%C2%B5pad2), [PhO](#pho), [PhS](#phs), [PHSR](#phsr), [SPL](#spl), [YAC](#yac), [Faders](#faders), [PLC](#plc)
 
+New modules in 2.1.1: [PHSR2](#phsr2), [CSOSC](#csosc), [BWF](#bwf), [EVA](#eva), [Ratio](#ratio)
 
 ![](images/allmodules.png?raw=true)
 
@@ -15,8 +16,10 @@ New modules in 2.1.0: [PAD2](#pad2),[µPad2](#%C2%B5pad2),[PhO](#pho), [PhS](#ph
   - [PhO](#pho)
   - [PhS](#phs)
   - [PHSR](#phsr)
+  - [PHSR2](#phsr2)
   - [Other modules which can be phase driven](#other-modules-which-can-be-phase-driven)
 - [Sound Generators](#sound-generators)
+  - [CSOSC](#csosc)
   - [SPL](#spl)
   - [Geneticterrain](#geneticterrain)
   - [Geneticsuperterrain](#geneticsuperterrain)
@@ -32,6 +35,7 @@ New modules in 2.1.0: [PAD2](#pad2),[µPad2](#%C2%B5pad2),[PhO](#pho), [PhS](#ph
   - [RSC](#rsc)
   - [MVerb](#mverb)
   - [YAC](#yac)
+  - [BWF](#bwf)
 - [Random](#random)
   - [RndH,RndC](#rndhrndc)
   - [RndG](#rndg)
@@ -44,6 +48,8 @@ New modules in 2.1.0: [PAD2](#pad2),[µPad2](#%C2%B5pad2),[PhO](#pho), [PhS](#ph
 - [Others](#others)
   - [Faders](#faders)
   - [PLC](#plc)
+  - [EVA](#eva)
+  - [Ratio](#ratio)
   - [FLA and FFL](#fla-and-ffl)
   - [STrg](#strg)
   - [JTScaler](#jtscaler)
@@ -102,8 +108,20 @@ https://user-images.githubusercontent.com/1134412/170367214-95789be0-5650-4afd-9
 This module is a tiny Phasor module which can be used as start phase generator
 It provides a polyphonic V/Oct input, a reset input and outputs for a clean saw wave, a sinus wave and a clean triangle wave.
 
+New in 2.1.1: Frequency modulation --
+By using FM PHSR can be used as FM Operator. When used as carrier the frequency modulation is applied
+to the target where its phase is connected to. So FM can also be utilised on phase driven oscillators
+which have no FM implemented by their own.
+
+### PHSR2
+![](images/PHSR2.png?raw=true)
+
+An advanced Phasor with frequency modulation. The phase can be distorted via moving the points (up to 16).
+The inner points can be modulated via the modulation inputs.
+
 ### Other modules which can be phase driven
 There are several modules which can be phase driven:
+- CSOSC (new in 2.1.1)
 - SPL (new, see below): generates spline waveforms from up to 16 points
 - GeneticTerrain (updated, now with phase input)
 - Geneticsuperterrain (updated, now with phase input)
@@ -113,6 +131,15 @@ There are several modules which can be phase driven:
 
 ## Sound Generators
 ![](images/soundgen.png?raw=true)
+
+### CSOSC
+![](images/CSOSC.png?raw=true)
+
+- CSOSC is a cosine oscillator with adjustable clip (towards pulse) and skew (towards saw). 
+- It is implemeted by distoring the phase. This distorted phase can be retrieved through the phs output
+and connected to phase driven oscillators. 
+- Via the phs input CSOSC can be phase driven itself.
+- CSOSC can be used as FM Operator.
 
 ### SPL
 ![](images/spl.png?raw=true)
@@ -319,6 +346,8 @@ Here an example using Caudal from VULT as modulator. With intent a just chord is
 
 https://user-images.githubusercontent.com/1134412/171022165-66ec0706-2f26-4b07-ad21-0d18babe37e1.mp4
 
+### BWF
+A brickwall filter. Uses FFT to cut frequencies. It is more an effect as a filter ....
 
 
 ## Random
@@ -498,6 +527,15 @@ This module does the same as PolyCon from Bogaudio but
 - It is thinner
 - The channels and ranges can be set in the menu.
 - The values stay the same if the range is changed and the values are still in the range.
+
+### EVA
+An ADSR with built in VCA on 2PH. Designed for using with FM Operators.
+
+### Ratio
+This modules applies a ratio to the incoming V/Oct signal. Designed for using with FM Operators.
+
+
+
 
 ### FLA and FFL
 FLA applies integer arithmetic to a CV signal.
