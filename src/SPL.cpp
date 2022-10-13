@@ -329,20 +329,15 @@ struct SPLWidget : ModuleWidget {
 		setModule(module);
 		setPanel(createPanel(asset::plugin(pluginInstance, "res/SPL.svg")));
 
-		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
-		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0)));
-		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-
     float x=1.9;
-    addParam(createParam<TrimbotWhite>(mm2px(Vec(x,MHEIGHT-115)),module,SPL::FREQ_PARAM));
-    addInput(createInput<SmallPort>(mm2px(Vec(x,MHEIGHT-103)),module,SPL::VOCT_INPUT));
-    addInput(createInput<SmallPort>(mm2px(Vec(x,MHEIGHT-91)),module,SPL::PTS_INPUT));
-    addInput(createInput<SmallPort>(mm2px(Vec(x,MHEIGHT-79)),module,SPL::RST_INPUT));
-    addInput(createInput<SmallPort>(mm2px(Vec(x,MHEIGHT-67)),module,SPL::PHS_INPUT));
-    addOutput(createOutput<SmallPort>(mm2px(Vec(x,MHEIGHT-43)),module,SPL::STEP_OUTPUT));
-    addOutput(createOutput<SmallPort>(mm2px(Vec(x,MHEIGHT-31)),module,SPL::LIN_OUTPUT));
-    addOutput(createOutput<SmallPort>(mm2px(Vec(x,MHEIGHT-19)),module,SPL::SPL_OUTPUT));
+    addParam(createParam<TrimbotWhite>(mm2px(Vec(x,9)),module,SPL::FREQ_PARAM));
+    addInput(createInput<SmallPort>(mm2px(Vec(x,21)),module,SPL::VOCT_INPUT));
+    addInput(createInput<SmallPort>(mm2px(Vec(x,33)),module,SPL::PTS_INPUT));
+    addInput(createInput<SmallPort>(mm2px(Vec(x,45)),module,SPL::RST_INPUT));
+    addInput(createInput<SmallPort>(mm2px(Vec(x,57)),module,SPL::PHS_INPUT));
+    addOutput(createOutput<SmallPort>(mm2px(Vec(x,92)),module,SPL::STEP_OUTPUT));
+    addOutput(createOutput<SmallPort>(mm2px(Vec(x,104)),module,SPL::LIN_OUTPUT));
+    addOutput(createOutput<SmallPort>(mm2px(Vec(x,116)),module,SPL::SPL_OUTPUT));
 	}
 };
 

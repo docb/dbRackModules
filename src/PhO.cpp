@@ -72,17 +72,13 @@ struct PhOWidget : ModuleWidget {
 		setModule(module);
 		setPanel(createPanel(asset::plugin(pluginInstance, "res/PhO.svg")));
 
-		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
-		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0)));
-		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
     float x = 1.9;
-    addInput(createInput<SmallPort>(mm2px(Vec(x,MHEIGHT-115)),module,PhO::AMP_1_16_INPUT));
-    addParam(createParam<TrimbotWhite>(mm2px(Vec(x,MHEIGHT-103)),module,PhO::DMP_PARAM));
-    addInput(createInput<SmallPort>(mm2px(Vec(x,MHEIGHT-93)),module,PhO::DMP_INPUT));
+    addInput(createInput<SmallPort>(mm2px(Vec(x,9)),module,PhO::AMP_1_16_INPUT));
+    addParam(createParam<TrimbotWhite>(mm2px(Vec(x,21)),module,PhO::DMP_PARAM));
+    addInput(createInput<SmallPort>(mm2px(Vec(x,31)),module,PhO::DMP_INPUT));
     addInput(createInput<SmallPort>(mm2px(Vec(x,MHEIGHT-67)),module,PhO::PHASE_INPUT));
     addParam(createParam<TrimbotWhite>(mm2px(Vec(x,MHEIGHT-55)),module,PhO::PHS_PARAM));
-    addOutput(createOutput<SmallPort>(mm2px(Vec(x,MHEIGHT-19)),module,PhO::V_OUTPUT));
+    addOutput(createOutput<SmallPort>(mm2px(Vec(x,116)),module,PhO::V_OUTPUT));
 	}
 };
 

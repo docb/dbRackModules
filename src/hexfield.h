@@ -125,7 +125,13 @@ struct HexField : MTextField {
     pasteCheckedString();
   }
 
-
+  unsigned int hexToInt(const std::string &hex) {
+    unsigned int x;
+    std::stringstream ss;
+    ss<<std::hex<<hex;
+    ss>>x;
+    return x;
+  }
 
   void onSelectKey(const event::SelectKey &e) override {
     bool act=e.action==GLFW_PRESS||e.action==GLFW_REPEAT;
@@ -172,6 +178,25 @@ struct HexField : MTextField {
           dirty=false;
         }
       }
+    } else if(act&&(e.keyName=="h")) {
+      if(text.size()>0 && text.size()<=8) {
+        std::vector<std::string> conv={"00","02","08","0A","20","22","28","2A","80","82","88","8A","A0","A2","A8","AA"};
+        std::string newText;
+        for(unsigned k=0;k<text.size();k++) {
+          std::string ch=text.substr(k,1);
+          if(ch=="*") newText.append("**");
+          else {
+            unsigned int i=hexToInt(ch);
+            newText.append(conv[i]);
+          }
+        }
+        setText(newText);
+        if((e.mods&RACK_MOD_MASK)==GLFW_MOD_SHIFT) {
+          module->setHex(nr,text);
+          dirty=false;
+        }
+      }
+
     } else if(act&&(e.mods&RACK_MOD_MASK)==GLFW_MOD_SHIFT&&e.key==GLFW_KEY_HOME) {
       cursor=0;
     } else if(act&&(e.mods&RACK_MOD_MASK)==GLFW_MOD_SHIFT&&e.key==GLFW_KEY_END) {

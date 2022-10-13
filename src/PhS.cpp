@@ -50,17 +50,13 @@ struct PhSWidget : ModuleWidget {
 		setModule(module);
 		setPanel(createPanel(asset::plugin(pluginInstance, "res/PhS.svg")));
 
-		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
-		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0)));
-		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
     float x=1.9f;
-    addParam(createParam<TrimbotWhite>(mm2px(Vec(x,MHEIGHT-115)),module,PhS::SHAPE_TYPE_PARAM));
-    addParam(createParam<TrimbotWhite>(mm2px(Vec(x,MHEIGHT-103)),module,PhS::SHAPE_PARAM));
-    addInput(createInput<SmallPort>(mm2px(Vec(x,MHEIGHT-93)),module,PhS::SHAPE_PARAM_INPUT));
-    addParam(createParam<TrimbotWhite>(mm2px(Vec(x,MHEIGHT-83)),module,PhS::SHAPE_CV_PARAM));
+    addParam(createParam<TrimbotWhite>(mm2px(Vec(x,9)),module,PhS::SHAPE_TYPE_PARAM));
+    addParam(createParam<TrimbotWhite>(mm2px(Vec(x,21)),module,PhS::SHAPE_PARAM));
+    addInput(createInput<SmallPort>(mm2px(Vec(x,31)),module,PhS::SHAPE_PARAM_INPUT));
+    addParam(createParam<TrimbotWhite>(mm2px(Vec(x,41)),module,PhS::SHAPE_CV_PARAM));
     addInput(createInput<SmallPort>(mm2px(Vec(x,MHEIGHT-67)),module,PhS::INPUT));
-    addOutput(createOutput<SmallPort>(mm2px(Vec(x,MHEIGHT-19)),module,PhS::OUTPUT));
+    addOutput(createOutput<SmallPort>(mm2px(Vec(x,116)),module,PhS::OUTPUT));
 	}
 };
 
