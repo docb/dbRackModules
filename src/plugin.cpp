@@ -40,6 +40,10 @@ extern Model* modelFaders;
 extern Model* modelYC;
 extern Model* modelPLC;
 extern Model* modelMPad2;
+extern Model* modelPHSR2;
+extern Model* modelEVA;
+extern Model* modelRatio;
+extern Model* modelCSOSC;
 
 void init(Plugin* p) {
 	pluginInstance = p;
@@ -81,4 +85,8 @@ void init(Plugin* p) {
 	p->addModel(modelYC);
   p->addModel(modelPLC);
 	p->addModel(modelMPad2);
+	p->addModel(modelPHSR2);
+	p->addModel(modelEVA);
+	p->addModel(modelCSOSC);
+	p->addModel(modelRatio);
 }

@@ -326,10 +326,42 @@
     },
     {
       "slug": "MPad2",
-      "name": "µPad2",
+      "name": "\u00b5Pad2",
       "description": "Micro Pad2",
       "tags": [
         "Oscillator"
+      ]
+    },
+    {
+      "slug": "PHSR2",
+      "name": "PHSR2",
+      "description": "Advanced Phasor with Line Segments and FM",
+      "tags": [
+        "Oscillator","Polyphonic"
+      ]
+    },
+    {
+      "slug": "Ratio",
+      "name": "Ratio",
+      "description": "Ratio scaling for FM",
+      "tags": [
+        "Utility","Polyphonic"
+      ]
+    },
+    {
+      "slug": "CSOSC",
+      "name": "CSOSC",
+      "description": "Cosine Oscillator",
+      "tags": [
+        "Oscillator","Polyphonic"
+      ]
+    },
+    {
+      "slug": "EVA",
+      "name": "EVA",
+      "description": "ADSR with integrated VCA",
+      "tags": [
+        "Envelope Generator","Voltage Controlled Amplifier","Polyphonic"
       ]
     }
   ]
