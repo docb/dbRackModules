@@ -136,9 +136,9 @@ There are several modules which can be phase driven:
 ![](images/CSOSC.png?raw=true)
 
 - CSOSC is a cosine oscillator with adjustable clip (towards pulse) and skew (towards saw). 
-- It is implemeted by distoring the phase. This distorted phase can be retrieved through the phs output
+- It is implemented by distoring the phase. This distorted phase can be retrieved through the phs output
 and connected to phase driven oscillators. 
-- Via the phs input CSOSC can be phase driven itself.
+- Via the phs input CSOSC itself can be phase driven.
 - CSOSC can be used as FM Operator.
 
 ### SPL
@@ -529,10 +529,10 @@ This module does the same as PolyCon from Bogaudio but
 - The values stay the same if the range is changed and the values are still in the range.
 
 ### EVA
-An ADSR with built in VCA on 2PH. Designed for using with FM Operators.
+An ADSR with built in VCA. Designed for using with FM Operators.
 
 ### Ratio
-This modules applies a ratio to the incoming V/Oct signal. Designed for using with FM Operators.
+This module applies a ratio to the incoming V/Oct signal. Designed for using with FM Operators.
 
 
 
