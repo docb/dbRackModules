@@ -4,21 +4,22 @@
 using simd::float_4;
 
 struct Ratio : Module {
-	enum ParamId {
-		RATIO_PARAM,FINE_PARAM,INV_PARAM,PARAMS_LEN
-	};
-	enum InputId {
-		VOCT_INPUT,RATIO_INPUT,FINE_INPUT,INPUTS_LEN
-	};
-	enum OutputId {
-		VOCT_OUTPUT,OUTPUTS_LEN
-	};
-	enum LightId {
-		LIGHTS_LEN
-	};
+  enum ParamId {
+    RATIO_PARAM,FINE_PARAM,INV_PARAM,PARAMS_LEN
+  };
+  enum InputId {
+    VOCT_INPUT,RATIO_INPUT,FINE_INPUT,INPUTS_LEN
+  };
+  enum OutputId {
+    VOCT_OUTPUT,OUTPUTS_LEN
+  };
+  enum LightId {
+    LIGHTS_LEN
+  };
   dsp::ClockDivider divider;
-	Ratio() {
-		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
+
+  Ratio() {
+    config(PARAMS_LEN,INPUTS_LEN,OUTPUTS_LEN,LIGHTS_LEN);
     configButton(INV_PARAM,"1/x");
     configParam(RATIO_PARAM,1,32,1,"Ratio");
     getParamQuantity(RATIO_PARAM)->snapEnabled=true;
@@ -28,9 +29,9 @@ struct Ratio : Module {
     configInput(VOCT_INPUT,"Fine");
     configOutput(VOCT_OUTPUT,"V/Oct");
     divider.setDivision(32);
-	}
+  }
 
-	void process(const ProcessArgs& args) override {
+  void process(const ProcessArgs &args) override {
     int channels=std::max(inputs[VOCT_INPUT].getChannels(),1);
     if(divider.process()) {
       if(inputs[RATIO_INPUT].isConnected()) {
@@ -47,28 +48,28 @@ struct Ratio : Module {
         getParamQuantity(FINE_PARAM)->setValue(f*0.1);
       }
     }
-    float ratio = params[RATIO_PARAM].getValue();
-    float fine = params[FINE_PARAM].getValue();
+    float ratio=params[RATIO_PARAM].getValue();
+    float fine=params[FINE_PARAM].getValue();
     if(ratio<=1) {
       fine=clamp(fine,0.f,1.f);
     }
-    ratio +=fine;
+    ratio+=fine;
     if(params[INV_PARAM].getValue()>0) {
-      ratio = 1.f/ratio;
+      ratio=1.f/ratio;
     }
     for(int c=0;c<channels;c+=4) {
       float_4 in=inputs[VOCT_INPUT].getVoltageSimd<float_4>(c);
       outputs[VOCT_OUTPUT].setVoltageSimd(in+log2f(ratio),c);
     }
     outputs[VOCT_OUTPUT].setChannels(channels);
-	}
+  }
 };
 
 
 struct RatioWidget : ModuleWidget {
-	RatioWidget(Ratio* module) {
-		setModule(module);
-		setPanel(createPanel(asset::plugin(pluginInstance, "res/Ratio.svg")));
+  RatioWidget(Ratio *module) {
+    setModule(module);
+    setPanel(createPanel(asset::plugin(pluginInstance,"res/Ratio.svg")));
     float x=1.9;
     float y=9;
     addParam(createParam<TrimbotWhite>(mm2px(Vec(x,y)),module,Ratio::RATIO_PARAM));
@@ -86,8 +87,8 @@ struct RatioWidget : ModuleWidget {
     addInput(createInput<SmallPort>(mm2px(Vec(x,y)),module,Ratio::VOCT_INPUT));
     y+=12;
     addOutput(createOutput<SmallPort>(mm2px(Vec(x,y)),module,Ratio::VOCT_OUTPUT));
-	}
+  }
 };
 
 
-Model* modelRatio = createModel<Ratio, RatioWidget>("Ratio");
+Model *modelRatio=createModel<Ratio,RatioWidget>("Ratio");

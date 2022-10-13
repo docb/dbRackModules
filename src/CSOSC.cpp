@@ -11,6 +11,7 @@ struct COSC {
     phase+=(sampleTime*freq);
     phase-=simd::floor(phase);
   }
+
   // test phase modulation
   void updatePhs(float sampleTime,T freq,T ain) {
     phase+=(sampleTime*freq)+ain;
@@ -84,19 +85,19 @@ struct CSOSC : Module {
       if(inputs[PHS_INPUT].isConnected()) {
         oscil->updateExtPhs(inputs[PHS_INPUT].getVoltageSimd<float_4>(c)/10.f+0.5f);
       } else {
-        float freqParam = params[FREQ_PARAM].getValue();
+        float freqParam=params[FREQ_PARAM].getValue();
         float fmParam=params[FM_PARAM].getValue();
-        bool linear = params[LIN_PARAM].getValue()>0;
-        float_4 pitch = freqParam + inputs[VOCT_INPUT].getPolyVoltageSimd<float_4>(c);
+        bool linear=params[LIN_PARAM].getValue()>0;
+        float_4 pitch=freqParam+inputs[VOCT_INPUT].getPolyVoltageSimd<float_4>(c);
         float_4 freq;
-        if (linear) {
-          freq = dsp::FREQ_C4 * dsp::approxExp2_taylor5(pitch + 30.f) / std::pow(2.f, 30.f);
-          freq += dsp::FREQ_C4 * inputs[FM_INPUT].getPolyVoltageSimd<float_4>(c) * fmParam;
+        if(linear) {
+          freq=dsp::FREQ_C4*dsp::approxExp2_taylor5(pitch+30.f)/std::pow(2.f,30.f);
+          freq+=dsp::FREQ_C4*inputs[FM_INPUT].getPolyVoltageSimd<float_4>(c)*fmParam;
         } else {
-          pitch += inputs[FM_INPUT].getPolyVoltageSimd<float_4>(c) * fmParam;
-          freq = dsp::FREQ_C4 * dsp::approxExp2_taylor5(pitch + 30.f) / std::pow(2.f, 30.f);
+          pitch+=inputs[FM_INPUT].getPolyVoltageSimd<float_4>(c)*fmParam;
+          freq=dsp::FREQ_C4*dsp::approxExp2_taylor5(pitch+30.f)/std::pow(2.f,30.f);
         }
-        freq = simd::fmin(freq, args.sampleRate / 2);
+        freq=simd::fmin(freq,args.sampleRate/2);
         oscil->updatePhs(args.sampleTime,freq);
       }
       float_4 skewIn=simd::clamp(inputs[SKEW_INPUT].getVoltageSimd<float_4>(c)*params[SKEW_CV_PARAM].getValue()*0.1+skew,0.f,1.f);

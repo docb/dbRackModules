@@ -1,10 +1,18 @@
 #include "dcb.h"
 #include "rnd.h"
+
 struct LPoint {
   float x;
   float y;
-  LPoint() { x=0;y=0;}
-  LPoint(float _x,float _y) : x(_x),y(_y) {}
+
+  LPoint() {
+    x=0;
+    y=0;
+  }
+
+  LPoint(float _x,float _y) : x(_x),y(_y) {
+  }
+
   void set(float _x,float _y) {
     x=_x;
     y=_y;
@@ -17,6 +25,7 @@ struct LSegOsc {
   float *px;
   int len;
   std::vector<LPoint> points;
+
   void init(float *_py,float *_px,int _len) {
     py=_py;
     px=_px;
@@ -35,30 +44,33 @@ struct LSegOsc {
   }
 
   float linseg() {
-    if(len==0) return 0.f;
-    if(len==1) return points[0].y;
+    if(len==0)
+      return 0.f;
+    if(len==1)
+      return points[0].y;
     float s=points[0].x;
     float pre=0;
     int j=1;
     for(;j<len;j++) {
       pre=s;
       s=points[j].x;
-      if(phs<s) break;
+      if(phs<s)
+        break;
     }
-    float ivl = s-pre;
+    float ivl=s-pre;
     float pct=ivl==0?1:(phs-pre)/ivl;
     return points[j-1].y+pct*(points[j<len?j:0].y-points[j-1].y);
   }
+
   void updatePhs(float sampleTime,float freq) {
     phs+=(sampleTime*freq);
     phs-=simd::floor(phs);
-
-
   }
 
   float process() {
     return linseg();
   }
+
   void reset() {
     phs=0;
   }
@@ -83,10 +95,11 @@ struct PHSR2 : Module {
   int len=5;
   bool changed=false;
   LSegOsc lsegOsc[16];
-  std::vector<LPoint> points = {{0,0},{0,0},{0,0},{0,0}, {0,0},{0,0},{0,0},{0,0}, {0,0},{0,0},{0,0},{0,0}, {0,0},{0,0},{0,0},{0,0}};
+  std::vector<LPoint> points={{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0}};
   RND rnd;
-	PHSR2() {
-    config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
+
+  PHSR2() {
+    config(PARAMS_LEN,INPUTS_LEN,OUTPUTS_LEN,LIGHTS_LEN);
     configParam(FREQ_PARAM,-14.f,4.f,0.f,"Frequency"," Hz",2,dsp::FREQ_C4);
     configParam(NODES_PARAM,3,16,5,"Length");
     configButton(LIN_PARAM,"Linear");
@@ -98,7 +111,8 @@ struct PHSR2 : Module {
     configInput(VOCT_INPUT,"V/Oct");
     configOutput(CV_OUTPUT,"CV");
     changed=true;
-	}
+  }
+
   void updatePoints() {
     for(int k=0;k<len;k++) {
       points[k].x=px[k];
@@ -108,12 +122,14 @@ struct PHSR2 : Module {
 
   void updatePoint(int idx,float x,float y) {
     if(idx>0) {
-      if(x<px[idx-1]) x=px[idx-1];
+      if(x<px[idx-1])
+        x=px[idx-1];
     } else {
       x=0;
     }
     if(idx<len-1) {
-      if(x>px[idx+1]) x=px[idx+1];
+      if(x>px[idx+1])
+        x=px[idx+1];
     } else {
       x=1;
     }
@@ -122,7 +138,7 @@ struct PHSR2 : Module {
     changed=true;
   }
 
-  void process(const ProcessArgs& args) override {
+  void process(const ProcessArgs &args) override {
     int _len=params[NODES_PARAM].getValue();
     if(_len<len) {
       px[_len-1]=1;
@@ -153,21 +169,21 @@ struct PHSR2 : Module {
       changed=false;
     }
 
-    int channels = std::max(inputs[VOCT_INPUT].getChannels(),1);
+    int channels=std::max(inputs[VOCT_INPUT].getChannels(),1);
     for(int c=0;c<channels;c++) {
-      float freqParam = params[FREQ_PARAM].getValue();
+      float freqParam=params[FREQ_PARAM].getValue();
       float fmParam=params[FM_PARAM].getValue();
-      bool linear = params[LIN_PARAM].getValue()>0;
-      float pitch = freqParam + inputs[VOCT_INPUT].getPolyVoltage(c);
+      bool linear=params[LIN_PARAM].getValue()>0;
+      float pitch=freqParam+inputs[VOCT_INPUT].getPolyVoltage(c);
       float freq;
-      if (linear) {
-        freq = dsp::FREQ_C4 * dsp::approxExp2_taylor5(pitch + 30.f) / std::pow(2.f, 30.f);
-        freq += dsp::FREQ_C4 * inputs[FM_INPUT].getPolyVoltage(c) * fmParam;
+      if(linear) {
+        freq=dsp::FREQ_C4*dsp::approxExp2_taylor5(pitch+30.f)/std::pow(2.f,30.f);
+        freq+=dsp::FREQ_C4*inputs[FM_INPUT].getPolyVoltage(c)*fmParam;
       } else {
-        pitch += inputs[FM_INPUT].getPolyVoltage(c) * fmParam;
-        freq = dsp::FREQ_C4 * dsp::approxExp2_taylor5(pitch + 30.f) / std::pow(2.f, 30.f);
+        pitch+=inputs[FM_INPUT].getPolyVoltage(c)*fmParam;
+        freq=dsp::FREQ_C4*dsp::approxExp2_taylor5(pitch+30.f)/std::pow(2.f,30.f);
       }
-      freq = fmin(freq, args.sampleRate / 2);
+      freq=fmin(freq,args.sampleRate/2);
       float out=lsegOsc[c].process();
       lsegOsc[c].updatePhs(args.sampleTime,freq);
       outputs[CV_OUTPUT].setVoltage(out,c);
@@ -236,7 +252,9 @@ struct PHSR2 : Module {
     }
   }
 };
+
 #define PSIZE 6
+
 struct LSegDisplay : OpaqueWidget {
   PHSR2 *module=nullptr;
   Vec center;
@@ -254,22 +272,25 @@ struct LSegDisplay : OpaqueWidget {
   bool isDragging=false;
 
   LSegDisplay(PHSR2 *m,Vec pos,Vec size) : module(m) {
-    box.size = size;
-    box.pos = pos;
+    box.size=size;
+    box.pos=pos;
     center={box.size.x/2,box.size.y/2};
   }
+
   void drawBG(const DrawArgs &args,NVGcolor color) {
     nvgBeginPath(args.vg);
     nvgRect(args.vg,0,0,box.size.x,box.size.y);
     nvgFillColor(args.vg,color);
     nvgFill(args.vg);
   }
+
   void drawCirc(const DrawArgs &args,float x,float y) {
     nvgBeginPath(args.vg);
     nvgCircle(args.vg,x,y,PSIZE);
     nvgFillColor(args.vg,pointColor);
     nvgFill(args.vg);
   }
+
   void drawLayer(const DrawArgs &args,int layer) override {
     if(layer==1) {
       _draw(args);
@@ -280,7 +301,11 @@ struct LSegDisplay : OpaqueWidget {
   void _draw(const DrawArgs &args) {
 
     drawBG(args,bgColor);
-    std::vector<LPoint> pts={{0,-5},{0.25,2.5},{0.5,-1},{0.75,-0.5},{1,5}};
+    std::vector<LPoint> pts={{0,   -5},
+                             {0.25,2.5},
+                             {0.5, -1},
+                             {0.75,-0.5},
+                             {1,   5}};
     int len=5;
     if(module) {
       pts=module->points;
@@ -293,8 +318,7 @@ struct LSegDisplay : OpaqueWidget {
       if(first) {
         nvgMoveTo(args.vg,lp.x*box.size.x,box.size.y-(lp.y/10.f+0.5f)*box.size.y);
         first=false;
-      }
-      else
+      } else
         nvgLineTo(args.vg,lp.x*box.size.x,box.size.y-(lp.y/10.f+0.5f)*box.size.y);
     }
     nvgStrokeColor(args.vg,lineColor);
@@ -308,7 +332,7 @@ struct LSegDisplay : OpaqueWidget {
 
   int findPoint(float x,float y) {
     int j=0;
-    auto pts = module->points;
+    auto pts=module->points;
     for(int k=0;k<module->len;k++) {
       LPoint lp=module->points[k];
       float px=lp.x*box.size.x;
@@ -349,12 +373,16 @@ struct LSegDisplay : OpaqueWidget {
     if(isDragging) {
       posX=startX+(newDragX-dragX);
       posY=startY+(newDragY-dragY);
-      if(posX>box.size.x) posX=box.size.x;
-      if(posY>box.size.y) posY=box.size.y;
-      if(posX<0) posX=0;
-      if(posY<0) posY=0;
-      float x = posX/box.size.x;
-      float y = ((box.size.y - posY)/box.size.y - 0.5)*10.f;
+      if(posX>box.size.x)
+        posX=box.size.x;
+      if(posY>box.size.y)
+        posY=box.size.y;
+      if(posX<0)
+        posX=0;
+      if(posY<0)
+        posY=0;
+      float x=posX/box.size.x;
+      float y=((box.size.y-posY)/box.size.y-0.5)*10.f;
       module->updatePoint(currentIdx,x,y);
     }
   }
@@ -366,9 +394,9 @@ struct LSegDisplay : OpaqueWidget {
 };
 
 struct PHSR2Widget : ModuleWidget {
-	PHSR2Widget(PHSR2* module) {
-		setModule(module);
-		setPanel(createPanel(asset::plugin(pluginInstance, "res/PHSR2.svg")));
+  PHSR2Widget(PHSR2 *module) {
+    setModule(module);
+    setPanel(createPanel(asset::plugin(pluginInstance,"res/PHSR2.svg")));
 
     auto display=new LSegDisplay(module,mm2px(Vec(4,8)),mm2px(Vec(94,80)));
     addChild(display);
@@ -393,8 +421,8 @@ struct PHSR2Widget : ModuleWidget {
     addParam(createParam<MLED>(mm2px(Vec(44,y)),module,PHSR2::LIN_PARAM));
     addParam(createParam<TrimbotWhite>(mm2px(Vec(65,y)),module,PHSR2::NODES_PARAM));
     addOutput(createOutput<SmallPort>(mm2px(Vec(86,y)),module,PHSR2::CV_OUTPUT));
-	}
+  }
 };
 
 
-Model* modelPHSR2 = createModel<PHSR2, PHSR2Widget>("PHSR2");
+Model *modelPHSR2=createModel<PHSR2,PHSR2Widget>("PHSR2");
