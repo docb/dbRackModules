@@ -117,7 +117,7 @@ which have no FM implemented by their own.
 ![](images/PHSR2.png?raw=true)
 
 An advanced Phasor with frequency modulation. The phase can be distorted via moving the points (up to 16).
-The inner points can be modulated via the modulation inputs.
+The inner points can be modulated via the modulation inputs (currently only the top row for Y is working).
 
 ### Other modules which can be phase driven
 There are several modules which can be phase driven:
