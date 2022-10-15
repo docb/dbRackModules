@@ -120,13 +120,6 @@ struct PHSR2 : Module {
     }
   }
 
-  void updatePoints() {
-    for(int k=0;k<len;k++) {
-      points[k].x=px[k];
-      points[k].y=py[k];
-    }
-  }
-
   void updatePoint(int idx,float x,float y) {
     if(idx>0) {
       if(x<px[idx-1])
@@ -152,13 +145,20 @@ struct PHSR2 : Module {
       py[_len-1]=py[len-1];
       changed=true;
     } else if(_len>len) {
-      for(int k=0;k<len;k++) {
-        px[k]=float(k)/float(len-1);
-        py[k]=float(k)*10.f/float(len-1)-5;
+      for(int k=0;k<_len;k++) {
+        px[k]=float(k)/float(_len-1);
+        py[k]=float(k)*10.f/float(_len-1)-5;
       }
       changed=true;
     }
-
+    if(changed) {
+      len=_len;
+      for(int k=0;k<len;k++) {
+        points[k].x=px[k];
+        points[k].y=py[k];
+      }
+      changed=false;
+    }
     for(int k=0;k<14;k++) {
       if(k>=len-2) break;
       if(inputs[Y_INPUT+k].isConnected()) {
@@ -173,14 +173,7 @@ struct PHSR2 : Module {
         points[k+1].x=px[k+1];
       }
     }
-    if(changed) {
-      len=_len;
-      for(int k=0;k<len;k++) {
-        points[k].x=px[k];
-        points[k].y=py[k];
-      }
-      changed=false;
-    }
+
 
     int channels=std::max(inputs[VOCT_INPUT].getChannels(),1);
     for(int c=0;c<channels;c++) {
