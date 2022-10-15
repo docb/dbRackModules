@@ -4,6 +4,7 @@
 #include <Gamma/Delay.h>
 #include <Gamma/Filter.h>
 #include <thread>
+
 struct EarlyReturnPreset {
   std::string name;
   std::vector<float> tapsLeft;
@@ -83,6 +84,7 @@ struct MeshNode {
   float left=0.f;
   float dly=0.f;
   float fb=0.f;
+
   MeshNode() {
     delay[0].maxDelay(1.);
     delay[1].maxDelay(1.);
@@ -142,7 +144,7 @@ struct MVerb : Module {
   std::thread thread=std::thread([this] {
     run=true;
     while(run) {
-      if(!outBuffer.full() && !inBuffer.empty()) {
+      if(!outBuffer.full()&&!inBuffer.empty()) {
         Vec in=inBuffer.shift();
         Vec out=_process(in.x,in.y);
         outBuffer.push(out);
@@ -173,10 +175,10 @@ struct MVerb : Module {
     configParam(ER_AMP_PARAM,0,1,0,"Early Reflection Amp");
     configParam(WET_PARAM,0,1,0.5,"Wet");
     configParam(FB_PARAM,0,1,0.5,"Feedback");
-    configParam(MOD_AMT_PARAM,0,1,0.f,"Mod Amount", " %",0.f,100.f);
+    configParam(MOD_AMT_PARAM,0,1,0.f,"Mod Amount"," %",0.f,100.f);
 
     for(int k=0;k<25;k++) {
-      configParam(RES_PARAMS+k,1,14,1,"Freq " + std::to_string(k+1)," HZ",2,1);
+      configParam(RES_PARAMS+k,1,14,1,"Freq "+std::to_string(k+1)," HZ",2,1);
     }
     configInput(L_INPUT,"Left");
     configInput(R_INPUT,"Right");
@@ -190,21 +192,23 @@ struct MVerb : Module {
     configBypass(R_INPUT,R_OUTPUT);
     paramDivider.setDivision(32);
   }
-  void onSampleRateChange(const SampleRateChangeEvent& e) override {
+
+  void onSampleRateChange(const SampleRateChangeEvent &e) override {
     gam::sampleRate(APP->engine->getSampleRate());
   }
+
   void onAdd(const AddEvent &e) override {
     gam::sampleRate(APP->engine->getSampleRate());
     initializeER();
   }
 
   float getRes(int k) {
-    float p = params[RES_PARAMS+k].getValue();
-    float amt = params[MOD_AMT_PARAM].getValue();
-    if(k<16 && inputs[RND_0_15_INPUT].isConnected()) {
-      p += (p*inputs[RND_0_15_INPUT].getVoltage(k)*0.02f*amt);
+    float p=params[RES_PARAMS+k].getValue();
+    float amt=params[MOD_AMT_PARAM].getValue();
+    if(k<16&&inputs[RND_0_15_INPUT].isConnected()) {
+      p+=(inputs[RND_0_15_INPUT].getVoltage(k)*amt);
     } else {
-      p += (p*inputs[RND_16_24_INPUT].getVoltage(k-16)*0.02f*amt);
+      p+=(inputs[RND_16_24_INPUT].getVoltage(k-16)*amt);
     }
     return p;
   }
@@ -217,7 +221,7 @@ struct MVerb : Module {
     float aR=multiTapsRight.process(inR,erAmp);
     for(int k=0;k<25;k++) {
       m[k].dly=1.f/powf(2.0f,getRes(k));
-      m[k].fb = fb;
+      m[k].fb=fb;
     }
     m[0].process(m[0].up,m[1].left,m[5].up,m[0].left);
     m[1].process(m[1].up,m[2].left,m[6].up,m[0].right);
@@ -254,7 +258,7 @@ struct MVerb : Module {
   void process(const ProcessArgs &args) override {
     sampleTime=args.sampleTime;
     if(updateER) {
-      updateER = false;
+      updateER=false;
       initializeER();
     }
     float inL=0;
@@ -266,25 +270,25 @@ struct MVerb : Module {
       } else {
         inR=inL;
       }
+      wet=inputs[WET_CV_INPUT].isConnected()?clamp(inputs[WET_CV_INPUT].getVoltage()*0.1f,0.f,1.f):params[WET_PARAM].getValue();
+      if(wet==0.f) {
+        outputs[L_OUTPUT].setVoltage(inL);
+        outputs[R_OUTPUT].setVoltage(inR);
+        return;
+      }
       if(paramDivider.process()) {
-        wet=inputs[WET_CV_INPUT].isConnected()?clamp(inputs[WET_CV_INPUT].getVoltage()*0.1f,0.f,1.f):params[WET_PARAM].getValue();
-        if(wet==0.f) {
-          outputs[L_OUTPUT].setVoltage(inL);
-          outputs[R_OUTPUT].setVoltage(inR);
-          return;
-        }
         fbIn=inputs[FB_CV_INPUT].isConnected()?clamp(inputs[FB_CV_INPUT].getVoltage(),0.f,10.f)*0.5f:params[FB_PARAM].getValue()*5.f;
-
         erAmp=inputs[ERAMP_INPUT].isConnected()?inputs[ERAMP_INPUT].getVoltage()*0.1f:params[ER_AMP_PARAM].getValue();
       }
       Vec out={};
       if(useThread) {
-        if(!inBuffer.full()) inBuffer.push({inL,inR});
+        if(!inBuffer.full())
+          inBuffer.push({inL,inR});
         if(!outBuffer.empty()) {
           out=outBuffer.shift();
         }
       } else {
-        out =_process(inL,inR);
+        out=_process(inL,inR);
       }
       outputs[L_OUTPUT].setVoltage(out.x);
       outputs[R_OUTPUT].setVoltage(out.y);
@@ -293,14 +297,18 @@ struct MVerb : Module {
   }
 
 };
+
 template<typename T>
 struct ERKnob : TrimbotWhite {
   bool *update=nullptr;
+
   ERKnob() : TrimbotWhite() {
 
   }
-  void onChange(const ChangeEvent& e) override {
-    if(update) *update = true;
+
+  void onChange(const ChangeEvent &e) override {
+    if(update)
+      *update=true;
     TrimbotWhite::onChange(e);
   }
 };
@@ -344,7 +352,8 @@ struct MVerbWidget : ModuleWidget {
     addOutput(createOutput<SmallPort>(mm2px(Vec(27.283f,MHEIGHT-18.287f)),module,MVerb::R_OUTPUT));
 
   }
-  void appendContextMenu(Menu* menu) override {
+
+  void appendContextMenu(Menu *menu) override {
     auto *module=dynamic_cast<MVerb *>(this->module);
     assert(module);
 

@@ -42,6 +42,7 @@ struct EVA : Module {
     configInput(GAIN_INPUT,"Gain");
     configOutput(CV_OUTPUT,"CV");
     configOutput(ENV_OUTPUT,"Env");
+    cvDivider.setDivision(32);
   }
 
   void process(const ProcessArgs &args) override {

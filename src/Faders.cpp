@@ -499,7 +499,7 @@ struct Fader : SliderKnob {
       }
       e.consume(this);
     }
-    Knob::onButton(e);
+    SliderKnob::onButton(e);
   }
 
   void onChange(const ChangeEvent &e) override {

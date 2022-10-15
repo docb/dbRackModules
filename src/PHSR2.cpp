@@ -23,9 +23,9 @@ struct LSegOsc {
   float phs=0.f;
   float *py;
   float *px;
-  int len;
-  std::vector<LPoint> points;
-
+  int *plen;
+  std::vector<LPoint> *mpoints;
+/*
   void init(float *_py,float *_px,int _len) {
     py=_py;
     px=_px;
@@ -37,13 +37,15 @@ struct LSegOsc {
     }
     points.emplace_back(1,py[len-1]);
   }
-
-  void init(const std::vector<LPoint> &_points) {
-    points=_points;
-    len=points.size();
+*/
+  void init(std::vector<LPoint> *_points,int *length) {
+    mpoints=_points;
+    plen=length;
   }
 
   float linseg() {
+    int len=*plen;
+    std::vector<LPoint> points=*mpoints;
     if(len==0)
       return 0.f;
     if(len==1)
@@ -106,11 +108,16 @@ struct PHSR2 : Module {
     configParam(FM_PARAM,0,1,0,"FM Amount","%",0,100);
     configInput(FM_INPUT,"FM");
     getParamQuantity(NODES_PARAM)->snapEnabled=true;
-    configInput(Y_INPUT,"Y");
-    configInput(X_INPUT,"X");
+    for(int k=0;k<14;k++) {
+      configInput(Y_INPUT+k,"Y " + std::to_string(k+2));
+      configInput(X_INPUT+k,"X " + std::to_string(k+2));
+    }
     configInput(VOCT_INPUT,"V/Oct");
     configOutput(CV_OUTPUT,"CV");
     changed=true;
+    for(int k=0;k<16;k++) {
+      lsegOsc[k].init(&points,&len);
+    }
   }
 
   void updatePoints() {
@@ -143,10 +150,8 @@ struct PHSR2 : Module {
     if(_len<len) {
       px[_len-1]=1;
       py[_len-1]=py[len-1];
-      len=_len;
       changed=true;
     } else if(_len>len) {
-      len=_len;
       for(int k=0;k<len;k++) {
         px[k]=float(k)/float(len-1);
         py[k]=float(k)*10.f/float(len-1)-5;
@@ -155,16 +160,24 @@ struct PHSR2 : Module {
     }
 
     for(int k=0;k<14;k++) {
+      if(k>=len-2) break;
       if(inputs[Y_INPUT+k].isConnected()) {
         py[k+1]=clamp(inputs[Y_INPUT+k].getVoltage(),-5.f,5.f);
-        changed=true;
+        points[k+1].x=px[k+1];
+        points[k+1].y=py[k+1];
+      }
+      if(inputs[X_INPUT+k].isConnected()) {
+        float pct=clamp(inputs[X_INPUT+k].getVoltage()*0.1f,0.f,1.f);
+        px[k+1]=points[k].x+pct*(points[k+2].x-points[k].x);
+        points[k+1].y=py[k+1];
+        points[k+1].x=px[k+1];
       }
     }
-
     if(changed) {
-      updatePoints();
-      for(int k=0;k<16;k++) {
-        lsegOsc[k].init(points);
+      len=_len;
+      for(int k=0;k<len;k++) {
+        points[k].x=px[k];
+        points[k].y=py[k];
       }
       changed=false;
     }
