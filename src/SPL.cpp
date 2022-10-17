@@ -146,12 +146,10 @@ struct SPLPhsOsc {
     pts=_pts;
     len=_len;
   }
-  float process(float phs) {
+  float process(float _phs) {
     if(len==0) return 0;
-    if(phs>=1.f) phs=0.99999f;
-    if(phs<0.f) phs = 0.f;
+    float phs=clamp(_phs,0.f,0.99999f);
     int idx0 = int(phs*float(len))%len;
-    //idx0 = (idx0==0)?len-1:idx0-1;
     int idx1 = (idx0+1)%len;
     int idx2 = (idx0+2)%len;
     int idx3 = (idx0+3)%len;
@@ -161,7 +159,12 @@ struct SPLPhsOsc {
     float a3=pts[idx1];
     float start = float(idx0)/float(len);
     float stepPhs = (phs - start)*len;
-    return ((a0*stepPhs+a1)*stepPhs+a2)*stepPhs+a3;
+    float ret = ((a0*stepPhs+a1)*stepPhs+a2)*stepPhs+a3;
+    //phs=1.000000 stepPhs=8.000000 result=45.107517 p1=0.376747 p2=0.194761 p3=-0.372326 p4=-0.102710
+    if(ret>1.2f) {
+      INFO("_phs=%f phs=%f stepPhs=%f result=%f p1=%f p2=%f p3=%f p4=%f",_phs, phs, stepPhs, ret, pts[idx0],pts[idx1],pts[idx2],pts[idx3]);
+    }
+    return ret;
   }
 };
 struct LinPhsOsc {
@@ -171,10 +174,10 @@ struct LinPhsOsc {
     pts=_pts;
     len=_len;
   }
-  float process(float phs) {
+  float process(float _phs) {
     if(len==0) return 0;
-    if(phs>=1.f) phs=0.99999f;
-    if(phs<0.f) phs = 0.f;
+    float phs=clamp(_phs,0.f,0.99999f);
+
     int idx = int(phs*float(len))%len;
     int idx2 = (idx+1)%len;
     float start = float(idx)/float(len);
@@ -190,10 +193,9 @@ struct StepPhsOsc {
     pts=_pts;
     len=_len;
   }
-  float process(float phs) {
+  float process(float _phs) {
     if(len==0) return 0;
-    if(phs>=1.f) phs=0.99999f;
-    if(phs<0.f) phs = 0.f;
+    float phs=clamp(_phs,0.f,0.99999f);
     int idx = int(phs*float(len))%len;
     return pts[idx];
   }
