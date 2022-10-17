@@ -47,7 +47,7 @@ struct EVA : Module {
 
   void process(const ProcessArgs &args) override {
     int channels=std::max(1,inputs[CV_INPUT].getChannels());
-
+    int gateChannels=std::max(channels,inputs[GATE_INPUT].getChannels());
     // Compute lambdas
     if(cvDivider.process()) {
       float attackParam=params[ATTACK_PARAM].getValue();
@@ -64,7 +64,7 @@ struct EVA : Module {
     }
     float_4 gate[4]={};
 
-    for(int c=0;c<channels;c+=4) {
+    for(int c=0;c<gateChannels;c+=4) {
       // Gate
       gate[c/4]=inputs[GATE_INPUT].getPolyVoltageSimd<float_4>(c)>=1.f;
 
@@ -97,7 +97,7 @@ struct EVA : Module {
       outputs[CV_OUTPUT].setVoltageSimd(input*env[c/4],c);
     }
     outputs[CV_OUTPUT].setChannels(channels);
-    outputs[ENV_OUTPUT].setChannels(channels);
+    outputs[ENV_OUTPUT].setChannels(gateChannels);
   }
 };
 

@@ -136,8 +136,8 @@ struct MVerb : Module {
   float sampleTime=1.f/48000;
   bool useThread=true;
   std::atomic<bool> run;
-  rack::dsp::RingBuffer<Vec,64> outBuffer;
-  rack::dsp::RingBuffer<Vec,64> inBuffer;
+  rack::dsp::RingBuffer<Vec,256> outBuffer;
+  rack::dsp::RingBuffer<Vec,256> inBuffer;
   //rack::dsp::RingBuffer<float,64> outBuffer[2];
   //rack::dsp::RingBuffer<float,64> inBuffer[2];
   dsp::ClockDivider paramDivider;
