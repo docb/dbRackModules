@@ -160,10 +160,6 @@ struct SPLPhsOsc {
     float start = float(idx0)/float(len);
     float stepPhs = (phs - start)*len;
     float ret = ((a0*stepPhs+a1)*stepPhs+a2)*stepPhs+a3;
-    //phs=1.000000 stepPhs=8.000000 result=45.107517 p1=0.376747 p2=0.194761 p3=-0.372326 p4=-0.102710
-    if(ret>1.2f) {
-      INFO("_phs=%f phs=%f stepPhs=%f result=%f p1=%f p2=%f p3=%f p4=%f",_phs, phs, stepPhs, ret, pts[idx0],pts[idx1],pts[idx2],pts[idx3]);
-    }
     return ret;
   }
 };

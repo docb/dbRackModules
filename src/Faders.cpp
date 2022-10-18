@@ -150,7 +150,7 @@ struct FadersPreset {
 
 struct Faders : Module {
   enum ParamId {
-    FADERS_A,FADERS_B=16,FADERS_C=32,MOD_CV_A=48,MOD_CV_B,MOD_CV_C,PAT_PARAM,EDIT_PARAM,COPY_PARAM,PASTE_PARAM,GLIDE_PARAM,KNOB_PARAMS,PARAMS_LEN=KNOB_PARAMS+MAX_KNOBS
+    FADERS_A,FADERS_B=16,FADERS_C=32,MOD_CV_A=48,MOD_CV_B,MOD_CV_C,PAT_PARAM,EDIT_PARAM,COPY_PARAM,PASTE_PARAM,GLIDE_PARAM,KNOB_PARAMS,INSERT_PARAM=KNOB_PARAMS+MAX_KNOBS,DEL_PARAM,PARAMS_LEN
   };
   enum InputId {
     MOD_A_INPUT,MOD_B_INPUT,MOD_C_INPUT,PAT_INPUT,INPUTS_LEN
@@ -211,6 +211,24 @@ struct Faders : Module {
   void paste() {
     int pat=params[PAT_PARAM].getValue();
     presets[pat].set(clipBoard);
+    setCurrentPattern();
+  }
+
+  void insert() {
+    int pat=params[PAT_PARAM].getValue();
+    for(int k=MAX_PATS-1;k>pat;k--) {
+      presets[k]=presets[k-1];
+    }
+    presets[pat]={};
+    setCurrentPattern();
+
+  }
+
+  void del() {
+    int pat=params[PAT_PARAM].getValue();
+    for(int k=pat;k<MAX_PATS-1;k++) {
+      presets[k]=presets[k+1];
+    }
     setCurrentPattern();
   }
 
@@ -611,6 +629,36 @@ struct SingleKnob : TrimbotWhite {
   }
 };
 
+struct MInsertButton : SmallButtonWithLabel {
+  Faders *module;
+
+  MInsertButton() : SmallButtonWithLabel() {
+    momentary=true;
+  }
+
+  void onChange(const ChangeEvent &e) override {
+    SvgSwitch::onChange(e);
+    if(module) {
+      if(module->params[Faders::INSERT_PARAM].getValue()>0)
+        module->insert();
+    }
+  }
+};
+struct MDelButton : SmallButtonWithLabel {
+  Faders *module;
+
+  MDelButton() : SmallButtonWithLabel() {
+    momentary=true;
+  }
+
+  void onChange(const ChangeEvent &e) override {
+    SvgSwitch::onChange(e);
+    if(module) {
+      if(module->params[Faders::DEL_PARAM].getValue()>0)
+        module->del();
+    }
+  }
+};
 struct FadersWidget : ModuleWidget {
   FadersWidget(Faders *module) {
     setModule(module);
@@ -651,15 +699,25 @@ struct FadersWidget : ModuleWidget {
     pasteButton->label="Pst";
     pasteButton->module=module;
     addParam(pasteButton);
-    y+=12;
+    y+=4;
+    auto insertButton=createParam<MInsertButton>(mm2px(Vec(x,y)),module,Faders::INSERT_PARAM);
+    insertButton->label="+";
+    insertButton->module=module;
+    addParam(insertButton);
+    y+=4;
+    auto delButton=createParam<MDelButton>(mm2px(Vec(x,y)),module,Faders::DEL_PARAM);
+    delButton->label="-";
+    delButton->module=module;
+    addParam(delButton);
+    y=58;
     for(int k=0;k<MAX_KNOBS;k++) {
       auto knob=createParam<SingleKnob>(mm2px(Vec(x,y)),module,Faders::KNOB_PARAMS+k);
       knob->module=module;
       knob->nr=k;
       addParam(knob);
-      y+=8;
+      y+=7;
       addOutput(createOutput<SmallPort>(mm2px(Vec(x,y)),module,Faders::KNOB_OUTPUTS+k));
-      y+=12;
+      y+=11;
     }
     addParam(createParam<TrimbotWhite>(mm2px(Vec(x,113.213f)),module,Faders::GLIDE_PARAM));
 

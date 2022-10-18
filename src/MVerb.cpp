@@ -4,6 +4,77 @@
 #include <Gamma/Delay.h>
 #include <Gamma/Filter.h>
 #include <thread>
+struct RBufferBase {
+  virtual bool in_empty()=0;
+  virtual bool in_full()=0;
+  virtual Vec in_shift()=0;
+  virtual void in_push(Vec val)=0;
+  virtual bool out_empty()=0;
+  virtual bool out_full()=0;
+  virtual Vec out_shift()=0;
+  virtual void out_push(Vec val)=0;
+};
+template<int S>
+struct RBuffer : RBufferBase {
+  rack::dsp::RingBuffer<Vec,S> outBuffer;
+  rack::dsp::RingBuffer<Vec,S> inBuffer;
+  bool in_empty() override {
+    return inBuffer.empty();
+  };
+  bool in_full() override {
+    return inBuffer.full();
+  };
+  Vec in_shift() override {
+    return inBuffer.shift();
+  }
+  void in_push(Vec val) override {
+    inBuffer.push(val);
+  }
+  bool out_empty() override {
+    return outBuffer.empty();
+  };
+  bool out_full() override {
+    return outBuffer.full();
+  };
+  Vec out_shift() override {
+    return outBuffer.shift();
+  }
+  void out_push(Vec val) override {
+    outBuffer.push(val);
+  }
+};
+
+struct RBufferMgr {
+  int bufferSizeIndex=3;
+  RBufferMgr() {
+    buffer=&b256;
+  }
+  RBufferBase *buffer;
+  RBuffer<32> b32;
+  RBuffer<64> b64;
+  RBuffer<128> b128;
+  RBuffer<256> b256;
+  RBuffer<512> b512;
+  RBuffer<1024> b1024;
+  void setBufferSize(int s) {
+    bufferSizeIndex=s;
+    switch(s) {
+      case 0:
+        buffer=&b32;break;
+      case 1:
+        buffer=&b64;break;
+      case 2:
+        buffer=&b128;break;
+      case 3:
+        buffer=&b256;break;
+      case 4:
+        buffer=&b512;break;
+      case 5:
+        buffer=&b1024;break;
+      default: break;
+    }
+  }
+};
 
 struct EarlyReturnPreset {
   std::string name;
@@ -136,11 +207,12 @@ struct MVerb : Module {
   float sampleTime=1.f/48000;
   bool useThread=true;
   std::atomic<bool> run;
+  RBufferMgr bufMgr;
   rack::dsp::RingBuffer<Vec,256> outBuffer;
   rack::dsp::RingBuffer<Vec,256> inBuffer;
-  //rack::dsp::RingBuffer<float,64> outBuffer[2];
-  //rack::dsp::RingBuffer<float,64> inBuffer[2];
+
   dsp::ClockDivider paramDivider;
+  /*
   std::thread thread=std::thread([this] {
     run=true;
     while(run) {
@@ -148,6 +220,19 @@ struct MVerb : Module {
         Vec in=inBuffer.shift();
         Vec out=_process(in.x,in.y);
         outBuffer.push(out);
+      } else {
+        std::this_thread::sleep_for(std::chrono::duration<double>(sampleTime));
+      }
+    }
+  });
+  */
+  std::thread thread=std::thread([this] {
+    run=true;
+    while(run) {
+      if(!bufMgr.buffer->out_full()&&!bufMgr.buffer->in_empty()) {
+        Vec in=bufMgr.buffer->in_shift();
+        Vec out=_process(in.x,in.y);
+        bufMgr.buffer->out_push(out);
       } else {
         std::this_thread::sleep_for(std::chrono::duration<double>(sampleTime));
       }
@@ -191,6 +276,10 @@ struct MVerb : Module {
     configBypass(L_INPUT,L_OUTPUT);
     configBypass(R_INPUT,R_OUTPUT);
     paramDivider.setDivision(32);
+  }
+
+  void setBufferSize(int s) {
+    bufMgr.setBufferSize(s);
   }
 
   void onSampleRateChange(const SampleRateChangeEvent &e) override {
@@ -282,10 +371,17 @@ struct MVerb : Module {
       }
       Vec out={};
       if(useThread) {
+        /*
         if(!inBuffer.full())
           inBuffer.push({inL,inR});
         if(!outBuffer.empty()) {
           out=outBuffer.shift();
+        }
+         */
+        if(!bufMgr.buffer->in_full())
+          bufMgr.buffer->in_push({inL,inR});
+        if(!bufMgr.buffer->out_empty()) {
+          out=bufMgr.buffer->out_shift();
         }
       } else {
         out=_process(inL,inR);
@@ -313,7 +409,28 @@ struct ERKnob : TrimbotWhite {
   }
 };
 
+struct MLabelIntSelectItem : MenuItem {
+  MVerb *module;
+  std::vector<std::string> labels;
+
+  MLabelIntSelectItem(MVerb *m,std::vector<std::string> _labels) : module(m),labels(std::move(_labels)) {
+  }
+
+  Menu *createChildMenu() override {
+    Menu *menu=new Menu;
+    for(unsigned k=0;k<labels.size();k++) {
+      menu->addChild(createCheckMenuItem(labels[k],"",[=]() {
+        return module->bufMgr.bufferSizeIndex==int(k);
+      },[=]() {
+        module->setBufferSize(k);
+      }));
+    }
+    return menu;
+  }
+};
+
 struct MVerbWidget : ModuleWidget {
+  std::vector<std::string> labels={"32","64","128","256","512","1024"};
   MVerbWidget(MVerb *module) {
     setModule(module);
     setPanel(createPanel(asset::plugin(pluginInstance,"res/MVerb.svg")));
@@ -360,6 +477,10 @@ struct MVerbWidget : ModuleWidget {
     menu->addChild(new MenuSeparator);
 
     menu->addChild(createBoolPtrMenuItem("Use Thread","",&module->useThread));
+    auto bufSizeSelect=new MLabelIntSelectItem(module,labels);
+    bufSizeSelect->text="Thread buffer size";
+    bufSizeSelect->rightText=labels[module->bufMgr.bufferSizeIndex]+"  "+RIGHT_ARROW;
+    menu->addChild(bufSizeSelect);
   }
 };
 
