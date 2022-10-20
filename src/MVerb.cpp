@@ -208,24 +208,9 @@ struct MVerb : Module {
   bool useThread=true;
   std::atomic<bool> run;
   RBufferMgr bufMgr;
-  rack::dsp::RingBuffer<Vec,256> outBuffer;
-  rack::dsp::RingBuffer<Vec,256> inBuffer;
 
   dsp::ClockDivider paramDivider;
-  /*
-  std::thread thread=std::thread([this] {
-    run=true;
-    while(run) {
-      if(!outBuffer.full()&&!inBuffer.empty()) {
-        Vec in=inBuffer.shift();
-        Vec out=_process(in.x,in.y);
-        outBuffer.push(out);
-      } else {
-        std::this_thread::sleep_for(std::chrono::duration<double>(sampleTime));
-      }
-    }
-  });
-  */
+
   std::thread thread=std::thread([this] {
     run=true;
     while(run) {
@@ -371,13 +356,6 @@ struct MVerb : Module {
       }
       Vec out={};
       if(useThread) {
-        /*
-        if(!inBuffer.full())
-          inBuffer.push({inL,inR});
-        if(!outBuffer.empty()) {
-          out=outBuffer.shift();
-        }
-         */
         if(!bufMgr.buffer->in_full())
           bufMgr.buffer->in_push({inL,inR});
         if(!bufMgr.buffer->out_empty()) {
@@ -391,6 +369,24 @@ struct MVerb : Module {
     }
 
   }
+
+  json_t *dataToJson() override {
+    json_t *data=json_object();
+    json_object_set_new(data,"useThread",json_boolean(useThread));
+    json_object_set_new(data,"bufferSizeIndex",json_integer(bufMgr.bufferSizeIndex));
+    return data;
+  }
+
+  void dataFromJson(json_t *rootJ) override {
+    json_t *jUseThread = json_object_get(rootJ,"useThread");
+    if(jUseThread!=nullptr) {
+      useThread=json_boolean_value(jUseThread);
+    }
+    json_t *jBufferSizeIndex =json_object_get(rootJ,"bufferSizeIndex");
+    if(jBufferSizeIndex!=nullptr)
+      setBufferSize(json_integer_value(jBufferSizeIndex));
+  }
+
 
 };
 
