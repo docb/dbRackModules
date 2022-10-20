@@ -117,7 +117,10 @@ which have no FM implemented by their own.
 ![](images/PHSR2.png?raw=true)
 
 An advanced Phasor with frequency modulation. The phase can be distorted via moving the points (up to 16).
-The inner points can be modulated via the modulation inputs (currently only the top row for Y is working).
+The inner points (2 up to (Len-2)) can be modulated via the modulation inputs:
+- The Y values are in the range -5/5V
+- The X values are in range 0/10V and influence the actual x coordinate relative to the surrounding points.
+
 
 ### Other modules which can be phase driven
 There are several modules which can be phase driven:
@@ -330,7 +333,7 @@ The standard presets are provided in the factory presets of the module.
 
 New in 2.1.0: The MVerb can now be run in a threaded mode (the default setting in the menu)
 which puts  the heavy computing into a background thread. It should now run  below 1-2% CPU.
-
+*Note: On some hardware/audio configurations it seems not to work properly, here threaded mode should be turn off by now.*
 
 ### YAC
 Yet another chorus, this one can be modulated.
@@ -347,7 +350,8 @@ Here an example using Caudal from VULT as modulator. With intent a just chord is
 https://user-images.githubusercontent.com/1134412/171022165-66ec0706-2f26-4b07-ad21-0d18babe37e1.mp4
 
 ### BWF
-A brickwall filter. Uses FFT to cut frequencies. It is more an effect as a filter ....
+A brickwall filter. Uses FFT to cut frequencies. It is more an effect as a filter ...
+The fft size which determines the latency can be configured in the menu.
 
 
 ## Random
