@@ -337,7 +337,8 @@
       "name": "PHSR2",
       "description": "Advanced Phasor with Line Segments and FM",
       "tags": [
-        "Oscillator","Polyphonic"
+        "Oscillator",
+        "Polyphonic"
       ]
     },
     {
@@ -345,7 +346,8 @@
       "name": "Ratio",
       "description": "Ratio scaling for FM",
       "tags": [
-        "Utility","Polyphonic"
+        "Utility",
+        "Polyphonic"
       ]
     },
     {
@@ -353,7 +355,8 @@
       "name": "CSOSC",
       "description": "Cosine Oscillator",
       "tags": [
-        "Oscillator","Polyphonic"
+        "Oscillator",
+        "Polyphonic"
       ]
     },
     {
@@ -361,7 +364,9 @@
       "name": "EVA",
       "description": "ADSR with integrated VCA",
       "tags": [
-        "Envelope Generator","Voltage Controlled Amplifier","Polyphonic"
+        "Envelope Generator",
+        "Voltage Controlled Amplifier",
+        "Polyphonic"
       ]
     },
     {
@@ -369,7 +374,17 @@
       "name": "BWF",
       "description": "A brickwall filter",
       "tags": [
-        "Effect","Filter","Polyphonic"
+        "Effect",
+        "Filter",
+        "Polyphonic"
+      ]
+    },
+    {
+      "slug": "PRB",
+      "name": "PRB",
+      "description": "Parabolic Oscillator",
+      "tags": [
+        "Oscillator"
       ]
     }
   ]

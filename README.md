@@ -333,7 +333,7 @@ The standard presets are provided in the factory presets of the module.
 
 New in 2.1.0: The MVerb can now be run in a threaded mode (the default setting in the menu)
 which puts  the heavy computing into a background thread. It should now run  below 1-2% CPU.
-*Note: On some hardware/audio configurations it seems not to work properly, here threaded mode should be turn off by now.*
+If there are audio glitches the thread buffer size can be increased in the menu.
 
 ### YAC
 Yet another chorus, this one can be modulated.

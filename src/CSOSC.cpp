@@ -75,6 +75,9 @@ struct CSOSC : Module {
   }
 
   void process(const ProcessArgs &args) override {
+    float freqParam=params[FREQ_PARAM].getValue();
+    float fmParam=params[FM_PARAM].getValue();
+    bool linear=params[LIN_PARAM].getValue()>0;
     int channels=std::max(inputs[VOCT_INPUT].getChannels(),1);
     if(inputs[PHS_INPUT].isConnected())
       channels=inputs[PHS_INPUT].getChannels();
@@ -85,9 +88,6 @@ struct CSOSC : Module {
       if(inputs[PHS_INPUT].isConnected()) {
         oscil->updateExtPhs(inputs[PHS_INPUT].getVoltageSimd<float_4>(c)/10.f+0.5f);
       } else {
-        float freqParam=params[FREQ_PARAM].getValue();
-        float fmParam=params[FM_PARAM].getValue();
-        bool linear=params[LIN_PARAM].getValue()>0;
         float_4 pitch=freqParam+inputs[VOCT_INPUT].getPolyVoltageSimd<float_4>(c);
         float_4 freq;
         if(linear) {

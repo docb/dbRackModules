@@ -261,7 +261,6 @@ struct Computer {
     }
     return {v[0],v[1],v[2],v[3]};
   }
-
   float lookup(float fphs,int tblNr) {
     int sign=fphs>=0?1:-1;
     int phs=(int)(fphs*od2p*65536);

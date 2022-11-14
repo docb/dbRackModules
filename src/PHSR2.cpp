@@ -25,19 +25,7 @@ struct LSegOsc {
   float *px;
   int *plen;
   std::vector<LPoint> *mpoints;
-/*
-  void init(float *_py,float *_px,int _len) {
-    py=_py;
-    px=_px;
-    len=_len;
-    points.clear();
-    points.emplace_back(0,py[0]);
-    for(int k=1;k<len-1;k++) {
-      points.emplace_back(px[k-1],py[k]);
-    }
-    points.emplace_back(1,py[len-1]);
-  }
-*/
+
   void init(std::vector<LPoint> *_points,int *length) {
     mpoints=_points;
     plen=length;
@@ -84,7 +72,7 @@ struct PHSR2 : Module {
     NODES_PARAM,FREQ_PARAM,FM_PARAM,LIN_PARAM,PARAMS_LEN
   };
   enum InputId {
-    Y_INPUT,X_INPUT=Y_INPUT+14,VOCT_INPUT=X_INPUT+14,FM_INPUT,INPUTS_LEN
+    Y_INPUT,X_INPUT=Y_INPUT+14,VOCT_INPUT=X_INPUT+14,FM_INPUT,RST_INPUT,INPUTS_LEN
   };
   enum OutputId {
     CV_OUTPUT,OUTPUTS_LEN
@@ -99,7 +87,7 @@ struct PHSR2 : Module {
   LSegOsc lsegOsc[16];
   std::vector<LPoint> points={{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0}};
   RND rnd;
-
+  dsp::SchmittTrigger rstTrigger;
   PHSR2() {
     config(PARAMS_LEN,INPUTS_LEN,OUTPUTS_LEN,LIGHTS_LEN);
     configParam(FREQ_PARAM,-14.f,4.f,0.f,"Frequency"," Hz",2,dsp::FREQ_C4);
@@ -113,6 +101,7 @@ struct PHSR2 : Module {
       configInput(X_INPUT+k,"X " + std::to_string(k+2));
     }
     configInput(VOCT_INPUT,"V/Oct");
+    configInput(RST_INPUT,"Reset/Sync");
     configOutput(CV_OUTPUT,"CV");
     changed=true;
     for(int k=0;k<16;k++) {
@@ -173,7 +162,11 @@ struct PHSR2 : Module {
         points[k+1].x=px[k+1];
       }
     }
-
+    if(rstTrigger.process(inputs[RST_INPUT].getVoltage())) {
+      for(auto &k:lsegOsc) {
+        k.reset();
+      }
+    }
 
     int channels=std::max(inputs[VOCT_INPUT].getChannels(),1);
     for(int c=0;c<channels;c++) {
@@ -425,6 +418,7 @@ struct PHSR2Widget : ModuleWidget {
     addInput(createInput<SmallPort>(mm2px(Vec(28,y)),module,PHSR2::FM_INPUT));
     addParam(createParam<TrimbotWhite>(mm2px(Vec(36,y)),module,PHSR2::FM_PARAM));
     addParam(createParam<MLED>(mm2px(Vec(44,y)),module,PHSR2::LIN_PARAM));
+    addInput(createInput<SmallPort>(mm2px(Vec(57,y)),module,PHSR2::RST_INPUT));
     addParam(createParam<TrimbotWhite>(mm2px(Vec(65,y)),module,PHSR2::NODES_PARAM));
     addOutput(createOutput<SmallPort>(mm2px(Vec(86,y)),module,PHSR2::CV_OUTPUT));
   }
