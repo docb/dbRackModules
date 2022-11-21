@@ -3,8 +3,41 @@ using simd::float_4;
 template<typename T>
 struct ParaSinOsc {
   T phs=0.f;
-  float fdp2=4/(M_PI*M_PI);
+  float fdp[16];
   float pih=M_PI/2;
+
+  ParaSinOsc() {
+    for(int k=2;k<18;k++)
+      fdp[k-2]=ipowf(2,k)/ipowf(float(M_PI),k);
+  }
+  float ipowf(float base, int exp)
+  {
+    float result = 1;
+    for (;;)
+    {
+      if (exp & 1)
+        result *= base;
+      exp >>= 1;
+      if (!exp)
+        break;
+      base *= base;
+    }
+    return result;
+  }
+  T ipow(T base, int exp)
+  {
+    T result = 1;
+    for (;;)
+    {
+      if (exp & 1)
+        result *= base;
+      exp >>= 1;
+      if (!exp)
+        break;
+      base *= base;
+    }
+    return result;
+  }
 
   void updatePhs(float sampleTime,T freq) {
     phs+=simd::fmin(freq*sampleTime,0.5f);
@@ -13,18 +46,18 @@ struct ParaSinOsc {
   void updateExtPhs(T phase) {
     phs=simd::fmod(phase,1);
   }
-  T firstHalf(T po) {
+  T firstHalf(T po,int k) {
     T x=po*TWOPIF-pih;
-    return (-fdp2*x*x+1)*.5f+.5f;
+    return (-fdp[k-2]*simd::fabs(ipow(x,k))+1)*.5f+.5f;
   }
 
-  T secondHalf(T po) {
+  T secondHalf(T po,int k) {
     T x=(po-1.f)*TWOPIF+pih;
-    return (fdp2*x*x-1)*.5f+.5f;
+    return (simd::fabs(fdp[k-2]*ipow(x,k))-1)*.5f+.5f;
   }
 
-  T process() {
-    return simd::ifelse(phs<0.5f,firstHalf(phs),secondHalf(phs));
+  T process(int k) {
+    return simd::ifelse(phs<0.5f,firstHalf(phs,k),secondHalf(phs,k));
   }
 
   void reset(T trigger) {
@@ -33,7 +66,7 @@ struct ParaSinOsc {
 };
 struct PRB : Module {
 	enum ParamId {
-    FREQ_PARAM,FM_PARAM,LIN_PARAM,FINE_PARAM,PARAMS_LEN
+    FREQ_PARAM,FM_PARAM,LIN_PARAM,FINE_PARAM,DEGREE_PARAM,PARAMS_LEN
 	};
 	enum InputId {
     VOCT_INPUT,RST_INPUT,FM_INPUT,PHS_INPUT,INPUTS_LEN
@@ -45,6 +78,7 @@ struct PRB : Module {
 		LIGHTS_LEN
 	};
   ParaSinOsc<float_4> osc[4];
+
   bool dcBlock=false;
   dsp::TSchmittTrigger<float_4> rstTriggers4[4];
   DCBlocker<float_4> dcb[4];
@@ -53,6 +87,8 @@ struct PRB : Module {
     configParam(FREQ_PARAM,-14.f,4.f,0.f,"Frequency"," Hz",2,dsp::FREQ_C4);
     configParam(FM_PARAM,0,1,0,"FM Amount","%",0,100);
     configParam(FINE_PARAM,-100,100,0,"Fine tune"," cents");
+    configParam(DEGREE_PARAM,2,17,2,"Degree");
+    getParamQuantity(DEGREE_PARAM)->snapEnabled=true;
     configInput(FM_INPUT,"FM");
     configButton(LIN_PARAM,"Linear");
     configInput(VOCT_INPUT,"V/Oct");
@@ -66,6 +102,7 @@ struct PRB : Module {
     float fmParam=params[FM_PARAM].getValue();
     bool linear=params[LIN_PARAM].getValue()>0;
     float fineTune=params[FINE_PARAM].getValue();
+    int deg=params[DEGREE_PARAM].getValue();
     int channels=std::max(inputs[VOCT_INPUT].getChannels(),1);
     if(inputs[PHS_INPUT].isConnected())
       channels=inputs[PHS_INPUT].getChannels();
@@ -89,7 +126,7 @@ struct PRB : Module {
       float_4 rst = inputs[RST_INPUT].getPolyVoltageSimd<float_4>(c);
       float_4 resetTriggered = rstTriggers4[c/4].process(rst, 0.1f, 2.f);
       oscil->reset(resetTriggered);
-      float_4 out=oscil->process()*10.f-5.f;
+      float_4 out=oscil->process(deg)*10.f-5.f;
       if(outputs[CV_OUTPUT].isConnected())
         outputs[CV_OUTPUT].setVoltageSimd(dcBlock?dcb[c/4].process(out):out,c);
     }
@@ -123,7 +160,7 @@ struct PRBWidget : ModuleWidget {
     addParam(createParam<MLED>(mm2px(Vec(x,65)),module,PRB::LIN_PARAM));
     addInput(createInput<SmallPort>(mm2px(Vec(x,77)),module,PRB::RST_INPUT));
     addInput(createInput<SmallPort>(mm2px(Vec(x,92)),module,PRB::PHS_INPUT));
-
+    addParam(createParam<TrimbotWhite>(mm2px(Vec(x,104)),module,PRB::DEGREE_PARAM));
     addOutput(createOutput<SmallPort>(mm2px(Vec(x,116)),module,PRB::CV_OUTPUT));
 	}
   void appendContextMenu(Menu* menu) override {
