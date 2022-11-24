@@ -17,7 +17,7 @@ struct PhO : Module {
   };
 
   bool blockDC=false;
-  DCBlocker<float_4> dcBlocker;
+  DCBlocker<float_4> dcBlocker[4];
 
   double fastPow(double a,double b) {
     union {
@@ -30,7 +30,8 @@ struct PhO : Module {
   }
 
   void onReset(const ResetEvent &e) override {
-    dcBlocker.reset();
+    for(auto dcb:dcBlocker)
+      dcb.reset();
   }
 
   PhO() {
@@ -67,7 +68,7 @@ struct PhO : Module {
         }
       }
       if(blockDC) {
-        out=dcBlocker.process(out);
+        out=dcBlocker[c/4].process(out);
       }
       outputs[V_OUTPUT].setVoltageSimd(out*5.f,c);
     }

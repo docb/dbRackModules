@@ -386,6 +386,14 @@
       "tags": [
         "Oscillator"
       ]
+    },
+    {
+      "slug": "Osc2",
+      "name": "Osc2",
+      "description": "Double Sinus Oscillator",
+      "tags": [
+        "Oscillator"
+      ]
     }
   ]
 }
