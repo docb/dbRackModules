@@ -25,6 +25,8 @@ struct HexField : MTextField {
   NVGcolor textColor; // This can be used to temporarily override text color
   NVGcolor backgroundColor;
   NVGcolor backgroundColorFocus;
+  NVGcolor backgroundColor1;
+  NVGcolor backgroundColorFocus1;
   NVGcolor dirtyColor;
   NVGcolor emptyColor;
   M *module;
@@ -42,6 +44,8 @@ struct HexField : MTextField {
     textColor=defaultTextColor;
     backgroundColor=nvgRGB(0xcc,0xcc,0xcc);
     backgroundColorFocus=nvgRGB(0xcc,0xff,0xcc);
+    backgroundColor1=nvgRGB(0xbb,0xbb,0xbb);
+    backgroundColorFocus1=nvgRGB(0xaa,0xdd,0xaa);
     box.size=mm2px(Vec(45.5,6.f));
     font_size=14;
     charWidth = 16.5f;
@@ -271,6 +275,15 @@ struct HexField : MTextField {
     MTextField::step();
   }
 
+  void drawBG(NVGcontext *vg) {
+    for(int k=0;k<4;k++) {
+      nvgBeginPath(vg);
+      nvgRect(vg,k*(box.size.x*.25f-1),0,box.size.x*0.25,box.size.y);
+      nvgFillColor(vg,isFocused?(k%2==0?backgroundColorFocus1:backgroundColorFocus):(k%2==1?backgroundColor:backgroundColor1));
+      nvgFill(vg);
+    }
+  }
+
   void draw(const DrawArgs &args) override {
     std::shared_ptr <Font> font = APP->window->loadFont(fontPath);
     if(module && module->isDirty(nr)) {
@@ -283,10 +296,7 @@ struct HexField : MTextField {
     auto vg=args.vg;
     nvgScissor(vg,0,0,box.size.x,box.size.y);
 
-    nvgBeginPath(vg);
-    nvgRoundedRect(vg,0,0,box.size.x,box.size.y,3.0);
-    nvgFillColor(vg,isFocused?backgroundColorFocus:backgroundColor);
-    nvgFill(vg);
+    drawBG(vg);
 
     if(font->handle>=0) {
 
