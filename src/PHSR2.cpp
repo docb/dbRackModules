@@ -32,24 +32,22 @@ struct LSegOsc {
   }
 
   float linseg() {
-    int len=*plen;
-    std::vector<LPoint> points=*mpoints;
-    if(len==0)
+    if(*plen==0)
       return 0.f;
-    if(len==1)
-      return points[0].y;
-    float s=points[0].x;
+    if(*plen==1)
+      return mpoints->at(0).y;
+    float s=mpoints->at(0).x;
     float pre=0;
     int j=1;
-    for(;j<len;j++) {
+    for(;j<*plen;j++) {
       pre=s;
-      s=points[j].x;
+      s=mpoints->at(j).x;
       if(phs<s)
         break;
     }
     float ivl=s-pre;
     float pct=ivl==0?1:(phs-pre)/ivl;
-    return points[j-1].y+pct*(points[j<len?j:0].y-points[j-1].y);
+    return mpoints->at(j-1).y+pct*(mpoints->at(j<*plen?j:0).y-mpoints->at(j-1).y);
   }
 
   void updatePhs(float sampleTime,float freq) {
@@ -84,6 +82,7 @@ struct PHSR2 : Module {
   float px[16]={0,0.25,0.5,0.75,1};
   int len=5;
   bool changed=false;
+  bool random=false;
   LSegOsc lsegOsc[16];
   std::vector<LPoint> points={{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0}};
   RND rnd;
@@ -129,16 +128,32 @@ struct PHSR2 : Module {
 
   void process(const ProcessArgs &args) override {
     int _len=params[NODES_PARAM].getValue();
-    if(_len<len) {
+    if(_len<len && !changed) {
       px[_len-1]=1;
       py[_len-1]=py[len-1];
       changed=true;
-    } else if(_len>len) {
+    } else if(_len>len && !changed) {
       for(int k=0;k<_len;k++) {
         px[k]=float(k)/float(_len-1);
         py[k]=float(k)*10.f/float(_len-1)-5;
       }
       changed=true;
+    }
+    if(random) {
+      _len=rnd.nextRange(3,16);
+      getParamQuantity(NODES_PARAM)->setValue(_len);
+      for(int k=0;k<_len;k++) {
+        px[k]=float(k)/float(_len-1);
+        if(k==0) {
+          py[k]=-5;
+        } else if(k==_len-1) {
+          py[k]=5;
+        } else {
+          py[k]=float(rnd.nextDouble())*10.f-5.f;
+        }
+      }
+      changed=true;
+      random=false;
     }
     if(changed) {
       len=_len;
@@ -238,17 +253,7 @@ struct PHSR2 : Module {
   }
 
   void onRandomize(const RandomizeEvent &e) override {
-    len=rnd.nextRange(3,16);
-    for(int k=0;k<len;k++) {
-      px[k]=float(k)/float(len-1);
-      if(k==0) {
-        py[k]=0;
-      } else if(k==len-1) {
-        py[k]=1;
-      } else {
-        py[k]=float(rnd.nextDouble())*10.f-5.f;
-      }
-    }
+    random=true;
   }
 };
 
