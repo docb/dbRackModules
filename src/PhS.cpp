@@ -19,9 +19,9 @@ struct PhS : Module {
 	PhS() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
     configParam(SHAPE_PARAM,0,0.99,0.5,"Depth");
-    configParam(SHAPE_PARAM,-1,1.f,0.5,"Shape param CV");
+    configParam(SHAPE_CV_PARAM,0,1.f,0,"Depth CV");
     configSwitch(SHAPE_TYPE_PARAM,0,Shaper::NUM_MODES-1,0,"Shape Type",{"BEND","TILT","LEAN","TWIST","WRAP","MIRROR","REFLECT","PULSE","STEP4","STEP8","STEP16","VARSTEP","SINEWRAP","HARMONICS","BUZZ_X2","BUZZ_X4","BUZZ_X8","WRINKLE_X2","WRINKLE_X4","WRINKLE_X8","SINE_DOWN_X2","SINE_DOWN_X4","SINE_DOWN_X8","SINE_UP_X2","SINE_UP_X4","SINE_UP_X8"});
-    configInput(SHAPE_PARAM_INPUT,"Shape Param");
+    configInput(SHAPE_PARAM_INPUT,"Depth");
     configInput(SHAPE_TYPE_INPUT,"Shape Type");
     configInput(INPUT,"Phs");
     configOutput(OUTPUT,"Phs");
@@ -33,7 +33,7 @@ struct PhS : Module {
     float _shapeParam = params[SHAPE_PARAM].getValue();
     float _shapeParamCV = params[SHAPE_CV_PARAM].getValue();
     for(int c=0;c<channels;c+=4) {
-      float_4 shapeParam = simd::clamp(inputs[SHAPE_PARAM_INPUT].getPolyVoltageSimd<float_4>(c)/10.f*_shapeParamCV+_shapeParam,-1.f,1.f);
+      float_4 shapeParam = simd::clamp((inputs[SHAPE_PARAM_INPUT].getPolyVoltageSimd<float_4>(c)/10.f)*_shapeParamCV+_shapeParam,0.f,1.f);
       float_4 in = inputs[INPUT].getVoltageSimd<float_4>(c)/5.f;
       in = (in+1.f)/2.f;
       float_4 out = shaper.process(in.v,shapeParam.v);
