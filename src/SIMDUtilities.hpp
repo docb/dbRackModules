@@ -8,7 +8,7 @@ ValleyRackFree Copyright (C) 2020, Valley Audio Soft, Dale Johnson
 Licenced under the terms of the GNU General Public License v3 or later
  */
 #pragma once
-#include <pmmintrin.h>
+//#include <pmmintrin.h>
 #include <iostream>
 #include "plugin.hpp"
 #define VALLEY_1F2 0.5

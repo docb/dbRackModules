@@ -119,7 +119,7 @@ struct FLL : Module {
     outputs[SR_OUTPUT].setVoltage((n>>s)/(float(DEPTH)/10.f));
     outputs[SL_OUTPUT].setVoltage(((n<<s)&(DEPTH-1))/(float(DEPTH)/10.f));
     outputs[NOTN_OUTPUT].setVoltage(((~n)&(DEPTH-1))/(float(DEPTH)/10.f));
-    outputs[NOTM_OUTPUT].setVoltage(((~n)&(DEPTH-1))/(float(DEPTH)/10.f));
+    outputs[NOTM_OUTPUT].setVoltage(((~m)&(DEPTH-1))/(float(DEPTH)/10.f));
   }
 };
 

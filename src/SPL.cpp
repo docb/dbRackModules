@@ -217,10 +217,13 @@ struct SPL : Module {
   LinPhsOsc linPhsOsc[16];
   StepPhsOsc stepPhsOsc[16];
   SPLPhsOsc splPhsOsc[16];
+  DCBlocker<float> dcb[16];
   float pts[16]={};
   int len=0;
   dsp::SchmittTrigger rstTrigger[16];
   dsp::ClockDivider divider;
+  bool dcBlock;
+
 	SPL() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
     configParam(FREQ_PARAM,-14.f,4.f,0.f,"Frequency"," Hz",2,dsp::FREQ_C4);
@@ -256,7 +259,7 @@ struct SPL : Module {
         float outL=osc[c].process();
         osc[c].updatePhs(args.sampleTime,freq);
         if(rst) osc[c].reset();
-        outputs[SPL_OUTPUT].setVoltage(outL*4.f,c);
+        outputs[SPL_OUTPUT].setVoltage(dcBlock?dcb[c].process(outL*4.f):outL*4.f,c);
       }
 
       if(outputs[LIN_OUTPUT].isConnected()) {
@@ -319,6 +322,19 @@ struct SPL : Module {
       processVOct(args);
     }
 	}
+
+
+  json_t *dataToJson() override {
+    json_t *data=json_object();
+    json_object_set_new(data,"dcBlock",json_boolean(dcBlock));
+    return data;
+  }
+
+  void dataFromJson(json_t *rootJ) override {
+    json_t *jDcBlock = json_object_get(rootJ,"dcBlock");
+    if(jDcBlock!=nullptr) dcBlock = json_boolean_value(jDcBlock);
+  }
+
 };
 
 
@@ -337,6 +353,14 @@ struct SPLWidget : ModuleWidget {
     addOutput(createOutput<SmallPort>(mm2px(Vec(x,104)),module,SPL::LIN_OUTPUT));
     addOutput(createOutput<SmallPort>(mm2px(Vec(x,116)),module,SPL::SPL_OUTPUT));
 	}
+  void appendContextMenu(Menu* menu) override {
+    SPL *module=dynamic_cast<SPL *>(this->module);
+    assert(module);
+
+    menu->addChild(new MenuSeparator);
+
+    menu->addChild(createBoolPtrMenuItem("Block DC","",&module->dcBlock));
+  }
 };
 
 
