@@ -394,6 +394,33 @@
       "tags": [
         "Oscillator"
       ]
+    },
+    {
+      "slug": "RndH2",
+      "name": "RndH2",
+      "description": "Random and Hold mk2",
+      "tags": [
+        "Random",
+        "Polyphonic"
+      ]
+    },
+    {
+      "slug": "OFS",
+      "name": "OFS",
+      "description": "CPU friendly polyphonic offset/scaler with polyphonic cv inputs and cv attenuators",
+      "tags": [
+        "Polyphonic",
+        "Attenuator"
+      ]
+    },
+    {
+      "slug": "OFS3",
+      "name": "OFS3",
+      "description": "3x OFS",
+      "tags": [
+        "Polyphonic",
+        "Attenuator"
+      ]
     }
   ]
 }

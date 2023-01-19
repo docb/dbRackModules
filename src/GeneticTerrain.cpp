@@ -109,7 +109,7 @@ struct GeneticTerrain : Module {
 
     configParam(X_SCL_PARAM,0.f,1.f,0.f,"X_CV","%",0.f,100.f);
     configParam(Y_SCL_PARAM,0.f,1.f,0.f,"Y_CV","%",0.f,100.f);
-    configParam(CP_SCL_PARAM,0.f,1.f,3,"CP_CV","%",0.f,100.f);
+    configParam(CP_SCL_PARAM,0.f,1.f,0,"CP_CV","%",0.f,100.f);
     configParam(ROT_SCL_PARAM,0.f,1.f,0,"ROT_CV","%",0.f,100.f);
     configParam(RX_SCL_PARAM,0.f,1.f,0.0f,"RX_CV","%",0.f,100.f);
     configParam(RY_SCL_PARAM,0.f,1.f,0.0f,"RY_CV","%",0.f,100.f);

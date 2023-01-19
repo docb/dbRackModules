@@ -26,7 +26,7 @@ struct Ratio : Module {
     configParam(FINE_PARAM,-1,1,0,"Fine");
     configInput(VOCT_INPUT,"V/Oct");
     configInput(RATIO_INPUT,"Ratio");
-    configInput(VOCT_INPUT,"Fine");
+    configInput(FINE_INPUT,"Fine");
     configOutput(VOCT_OUTPUT,"V/Oct");
     divider.setDivision(32);
   }

@@ -47,7 +47,9 @@ extern Model* modelCSOSC;
 extern Model* modelBWF;
 extern Model* modelPRB;
 extern Model* modelOsc2;
-
+extern Model* modelRndH2;
+extern Model* modelOFS;
+extern Model* modelOFS3;
 
 void init(Plugin* p) {
 	pluginInstance = p;
@@ -96,4 +98,7 @@ void init(Plugin* p) {
   p->addModel(modelBWF);
 	p->addModel(modelPRB);
 	p->addModel(modelOsc2);
+  p->addModel(modelRndH2);
+	p->addModel(modelOFS);
+	p->addModel(modelOFS3);
 }
