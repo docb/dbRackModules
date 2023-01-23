@@ -421,6 +421,70 @@
         "Polyphonic",
         "Attenuator"
       ]
+    },
+    {
+      "slug": "Osc1",
+      "name": "Osc1",
+      "description": "Line segement oscillator with alias suppressing ",
+      "tags": [
+        "Oscillator"
+      ]
+    },
+    {
+      "slug": "Osc3",
+      "name": "Osc3",
+      "description": "Step/Line segement oscillator with alias suppressing",
+      "tags": [
+        "Oscillator"
+      ]
+    },
+    {
+      "slug": "Osc4",
+      "name": "Osc4",
+      "description": "Classic oscillator with alias suppressing",
+      "tags": [
+        "Oscillator"
+      ]
+    },
+    {
+      "slug": "Osc5",
+      "name": "Osc5",
+      "description": "Pulse oscillator with alias suppressing",
+      "tags": [
+        "Oscillator"
+      ]
+    },
+    {
+      "slug": "SKF",
+      "name": "SKF",
+      "description": "CPU friendly polyphonic stereo sallen key filter",
+      "tags": [
+        "Filter"
+      ]
+    },
+    {
+      "slug": "SPF",
+      "name": "SPF",
+      "description": "CPU friendly polyphonic steiner parker filter",
+      "tags": [
+        "Filter"
+      ]
+    },
+    {
+      "slug": "L4P",
+      "name": "Osc1",
+      "description": "CPU friendly polyphonic stereo 4 pole filter",
+      "tags": [
+        "Filter"
+      ]
+    },
+    {
+      "slug": "USVF",
+      "name": "USVF",
+      "description": "CPU friendly polyphonic unstable state variable filter with overdrive",
+      "tags": [
+        "Filter"
+      ]
     }
   ]
 }

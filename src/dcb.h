@@ -612,6 +612,166 @@ struct RangeSelectItem : MenuItem {
   }
 };
 
+#define POINT_SIZE 6
+
+struct LPoint {
+  float x;
+  float y;
+
+  LPoint() {
+    x=0;
+    y=0;
+  }
+
+  LPoint(float _x,float _y) : x(_x),y(_y) {
+  }
+
+  void set(float _x,float _y) {
+    x=_x;
+    y=_y;
+  }
+};
+
+template<typename M>
+struct LSegDisplay : OpaqueWidget {
+  M *module=nullptr;
+  Vec center;
+  NVGcolor lineColor=nvgRGB(0x22,0xaa,0x22);
+  NVGcolor bgColor=nvgRGB(0x22,0x22,0x22);
+  NVGcolor pointColor=nvgRGB(0x22,0xaa,0xaa);
+
+  int currentIdx=-1;
+
+  float posX=0;
+  float posY=0;
+
+  float dragX,dragY;
+  float startX,startY;
+  bool isDragging=false;
+
+  LSegDisplay(M *m,Vec pos,Vec size) : module(m) {
+    box.size=size;
+    box.pos=pos;
+    center={box.size.x/2,box.size.y/2};
+  }
+
+  void drawBG(const DrawArgs &args,NVGcolor color) {
+    nvgBeginPath(args.vg);
+    nvgRect(args.vg,0,0,box.size.x,box.size.y);
+    nvgFillColor(args.vg,color);
+    nvgFill(args.vg);
+  }
+
+  void drawCirc(const DrawArgs &args,float x,float y) {
+    nvgBeginPath(args.vg);
+    nvgCircle(args.vg,x,y,POINT_SIZE);
+    nvgFillColor(args.vg,pointColor);
+    nvgFill(args.vg);
+  }
+
+  void drawLayer(const DrawArgs &args,int layer) override {
+    if(layer==1) {
+      _draw(args);
+    }
+    Widget::drawLayer(args,layer);
+  }
+
+  void _draw(const DrawArgs &args) {
+
+    drawBG(args,bgColor);
+    std::vector<LPoint> pts={{0,   -5},
+                             {0.25,2.5},
+                             {0.5, -1},
+                             {0.75,-0.5},
+                             {1,   5}};
+    int len=5;
+    if(module) {
+      pts=module->getPoints();
+      len=module->len;
+    }
+    nvgBeginPath(args.vg);
+    bool first=true;
+    for(int k=0;k<len;k++) {
+      LPoint lp=pts[k];
+      if(first) {
+        nvgMoveTo(args.vg,lp.x*box.size.x,box.size.y-(lp.y/10.f+0.5f)*box.size.y);
+        first=false;
+      } else
+        nvgLineTo(args.vg,lp.x*box.size.x,box.size.y-(lp.y/10.f+0.5f)*box.size.y);
+    }
+    nvgStrokeColor(args.vg,lineColor);
+    nvgStrokeWidth(args.vg,3);
+    nvgStroke(args.vg);
+    for(int k=0;k<len;k++) {
+      LPoint lp=pts[k];
+      drawCirc(args,lp.x*box.size.x,box.size.y-(lp.y/10.f+0.5f)*box.size.y);
+    }
+  }
+
+  int findPoint(float x,float y) {
+    int j=0;
+    for(int k=0;k<module->len;k++) {
+      LPoint lp=module->points[k];
+      float px=lp.x*box.size.x;
+      float py=box.size.y-(lp.y/10.f+0.5f)*box.size.y;
+      if(x>=px-POINT_SIZE&&x<=px+POINT_SIZE&&y>=py-POINT_SIZE&&y<=py+POINT_SIZE) {
+        return j;
+      }
+      j++;
+    }
+    return -1;
+  }
+
+  void onButton(const event::Button &e) override {
+    if(!(e.button==GLFW_MOUSE_BUTTON_LEFT&&(e.mods&RACK_MOD_MASK)==0)) {
+      return;
+    }
+    if(e.action==GLFW_PRESS) {
+      e.consume(this);
+      currentIdx=findPoint(e.pos.x,e.pos.y);
+      if(currentIdx>=0) {
+        startX=e.pos.x;
+        startY=e.pos.y;
+        isDragging=true;
+      }
+    }
+  }
+
+  void onDragStart(const event::DragStart &e) override {
+    if(isDragging) {
+      dragX=APP->scene->rack->getMousePos().x;
+      dragY=APP->scene->rack->getMousePos().y;
+    }
+  }
+
+  void onDragMove(const event::DragMove &e) override {
+    float newDragX=APP->scene->rack->getMousePos().x;
+    float newDragY=APP->scene->rack->getMousePos().y;
+    if(isDragging) {
+      posX=startX+(newDragX-dragX);
+      posY=startY+(newDragY-dragY);
+      if(posX>box.size.x)
+        posX=box.size.x;
+      if(posY>box.size.y)
+        posY=box.size.y;
+      if(posX<0)
+        posX=0;
+      if(posY<0)
+        posY=0;
+      float x=posX/box.size.x;
+      float y=((box.size.y-posY)/box.size.y-0.5)*10.f;
+      module->updatePoint(currentIdx,x,y);
+    }
+  }
+
+  void onDragEnd(const event::DragEnd &e) override {
+    isDragging=false;
+  }
+
+};
+
+
+
 #define TWOPIF 6.2831853f
 #define MHEIGHT 128.5f
 #define TY(x) MHEIGHT-(x)-6.237

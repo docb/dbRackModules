@@ -1,53 +1,61 @@
 #include "dcb.h"
 #include "rnd.h"
+#include "filter.hpp"
+using simd::float_4;
+using simd::int32_4;
 
 struct LSegOsc {
-  float phs=0.f;
-  float *py;
-  float *px;
+  float_4 phs=0.f;
   int *plen;
-  std::vector<LPoint> *mpoints;
+  LPoint *mpoints;
+  int32_4 stage=0;
 
-  void init(std::vector<LPoint> *_points,int *length) {
+  void init(LPoint *_points,int *length) {
     mpoints=_points;
     plen=length;
+    stage=1;
   }
 
-  float linseg() {
+  float_4 linseg(int c) {
     if(*plen==0)
       return 0.f;
-    if(*plen==1)
-      return mpoints->at(0).y;
-    float s=mpoints->at(0).x;
-    float pre=0;
-    int j=1;
-    for(;j<*plen;j++) {
-      pre=s;
-      s=mpoints->at(j).x;
-      if(phs<s)
-        break;
+    float ret[4]={};
+    for(int k=0;k<c;k++) {
+      if(*plen==1||stage[k]==0) {
+        ret[k]=mpoints[0].y;
+      } else {
+        float ivl=mpoints[stage[k]].x-mpoints[stage[k]-1].x;
+        float pct=ivl==0?1:(phs[k]-mpoints[stage[k]-1].x)/ivl;
+        if(pct>1) pct=1;
+        if(pct<0) pct=0;
+        ret[k]=mpoints[stage[k]-1].y+pct*(mpoints[stage[k]].y-mpoints[stage[k]-1].y);
+      }
     }
-    float ivl=s-pre;
-    float pct=ivl==0?1:(phs-pre)/ivl;
-    return mpoints->at(j-1).y+pct*(mpoints->at(j<*plen?j:0).y-mpoints->at(j-1).y);
+    return {ret[0],ret[1],ret[2],ret[3]};
   }
-
-  void updatePhs(float sampleTime,float freq) {
+  void updatePhs(float sampleTime,float_4 freq,int c) {
     phs+=(sampleTime*freq);
+    stage=simd::ifelse(phs>=1.f,0.f,stage);
     phs-=simd::floor(phs);
+    for(int k=0;k<c;k++) {
+      if(phs[k]>=mpoints[stage[k]].x)
+        stage[k]++;
+      if(stage[k]>=*plen)
+        stage[k]=0;
+    }
   }
 
-  float process() {
-    return linseg();
+  float_4 process(int c) {
+    return linseg(c);
   }
 
   void reset() {
     phs=0;
+    stage=1;
   }
 };
 
-
-struct PHSR2 : Module {
+struct Osc1 : Module {
   enum ParamId {
     NODES_PARAM,FREQ_PARAM,FM_PARAM,LIN_PARAM,PARAMS_LEN
   };
@@ -65,12 +73,15 @@ struct PHSR2 : Module {
   int len=5;
   bool changed=false;
   bool random=false;
-  LSegOsc lsegOsc[16];
-  std::vector<LPoint> points={{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0}};
+  LSegOsc lsegOsc[4];
+  LPoint points[16]={};
   RND rnd;
   dsp::SchmittTrigger rstTrigger;
-  PHSR2() {
-    config(PARAMS_LEN,INPUTS_LEN,OUTPUTS_LEN,LIGHTS_LEN);
+  Cheby1_32_BandFilter<float_4> filters[4];
+  DCBlocker<float_4> dcBlocker[4];
+
+	Osc1() {
+		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
     configParam(FREQ_PARAM,-14.f,4.f,0.f,"Frequency"," Hz",2,dsp::FREQ_C4);
     configParam(NODES_PARAM,3,16,5,"Length");
     configButton(LIN_PARAM,"Linear");
@@ -78,20 +89,20 @@ struct PHSR2 : Module {
     configInput(FM_INPUT,"FM");
     getParamQuantity(NODES_PARAM)->snapEnabled=true;
     for(int k=0;k<14;k++) {
-      configInput(Y_INPUT+k,"Y " + std::to_string(k+2));
-      configInput(X_INPUT+k,"X " + std::to_string(k+2));
+      configInput(Y_INPUT+k,"Y "+std::to_string(k+2));
+      configInput(X_INPUT+k,"X "+std::to_string(k+2));
     }
     configInput(VOCT_INPUT,"V/Oct");
     configInput(RST_INPUT,"Reset/Sync");
     configOutput(CV_OUTPUT,"CV");
     changed=true;
-    for(int k=0;k<16;k++) {
-      lsegOsc[k].init(&points,&len);
+    for(int k=0;k<4;k++) {
+      lsegOsc[k].init(points,&len);
     }
-  }
+	}
 
   std::vector<LPoint> getPoints() {
-    return points;
+    return std::vector<LPoint>(std::begin(points),std::end(points));
   }
 
   void updatePoint(int idx,float x,float y) {
@@ -130,13 +141,7 @@ struct PHSR2 : Module {
       getParamQuantity(NODES_PARAM)->setValue(_len);
       for(int k=0;k<_len;k++) {
         px[k]=float(k)/float(_len-1);
-        if(k==0) {
-          py[k]=-5;
-        } else if(k==_len-1) {
-          py[k]=5;
-        } else {
-          py[k]=float(rnd.nextDouble())*10.f-5.f;
-        }
+        py[k]=float(rnd.nextDouble())*10.f-5.f;
       }
       changed=true;
       random=false;
@@ -150,7 +155,8 @@ struct PHSR2 : Module {
       changed=false;
     }
     for(int k=0;k<14;k++) {
-      if(k>=len-2) break;
+      if(k>=len-2)
+        break;
       if(inputs[Y_INPUT+k].isConnected()) {
         py[k+1]=clamp(inputs[Y_INPUT+k].getVoltage(),-5.f,5.f);
         points[k+1].x=px[k+1];
@@ -170,23 +176,28 @@ struct PHSR2 : Module {
     }
 
     int channels=std::max(inputs[VOCT_INPUT].getChannels(),1);
-    for(int c=0;c<channels;c++) {
+    for(int c=0;c<channels;c+=4) {
       float freqParam=params[FREQ_PARAM].getValue();
       float fmParam=params[FM_PARAM].getValue();
       bool linear=params[LIN_PARAM].getValue()>0;
-      float pitch=freqParam+inputs[VOCT_INPUT].getPolyVoltage(c);
-      float freq;
+      float_4 pitch=freqParam+inputs[VOCT_INPUT].getPolyVoltageSimd<float_4>(c);
+      float_4 freq;
       if(linear) {
         freq=dsp::FREQ_C4*dsp::approxExp2_taylor5(pitch+30.f)/std::pow(2.f,30.f);
-        freq+=dsp::FREQ_C4*inputs[FM_INPUT].getPolyVoltage(c)*fmParam;
+        freq+=dsp::FREQ_C4*inputs[FM_INPUT].getPolyVoltageSimd<float_4>(c)*fmParam;
       } else {
-        pitch+=inputs[FM_INPUT].getPolyVoltage(c)*fmParam;
+        pitch+=inputs[FM_INPUT].getPolyVoltageSimd<float_4>(c)*fmParam;
         freq=dsp::FREQ_C4*dsp::approxExp2_taylor5(pitch+30.f)/std::pow(2.f,30.f);
       }
-      freq=fmin(freq,args.sampleRate/2);
-      float out=lsegOsc[c].process();
-      lsegOsc[c].updatePhs(args.sampleTime,freq);
-      outputs[CV_OUTPUT].setVoltage(out,c);
+      freq=simd::fmin(freq,args.sampleRate/2);
+      float_4 out;
+      int ch=std::min(4,channels-c);
+      for(int k=0;k<16;k++) {
+        out=lsegOsc[c/4].process(ch);
+        lsegOsc[c/4].updatePhs(args.sampleTime,freq/16.f,ch);
+        out=filters[c/4].process(out);
+      }
+      outputs[CV_OUTPUT].setVoltageSimd(dcBlocker[c/4].process(out),c);
     }
     outputs[CV_OUTPUT].setChannels(channels);
   }
@@ -244,37 +255,37 @@ struct PHSR2 : Module {
 };
 
 
-struct PHSR2Widget : ModuleWidget {
-  PHSR2Widget(PHSR2 *module) {
-    setModule(module);
-    setPanel(createPanel(asset::plugin(pluginInstance,"res/PHSR2.svg")));
+struct Osc1Widget : ModuleWidget {
+	Osc1Widget(Osc1* module) {
+		setModule(module);
+		setPanel(createPanel(asset::plugin(pluginInstance, "res/Osc1.svg")));
 
-    auto display=new LSegDisplay<PHSR2>(module,mm2px(Vec(4,8)),mm2px(Vec(94,80)));
+    auto display=new LSegDisplay<Osc1>(module,mm2px(Vec(4,8)),mm2px(Vec(94,80)));
     addChild(display);
 
     float x=2;
     float y=94;
     for(int k=0;k<14;k++) {
-      addInput(createInput<SmallPort>(mm2px(Vec(x,y)),module,PHSR2::Y_INPUT+k));
+      addInput(createInput<SmallPort>(mm2px(Vec(x,y)),module,Osc1::Y_INPUT+k));
       x+=7;
     }
     y=102;
     x=2;
     for(int k=0;k<14;k++) {
-      addInput(createInput<SmallPort>(mm2px(Vec(x,y)),module,PHSR2::X_INPUT+k));
+      addInput(createInput<SmallPort>(mm2px(Vec(x,y)),module,Osc1::X_INPUT+k));
       x+=7;
     }
     y=116;
-    addParam(createParam<TrimbotWhite>(mm2px(Vec(6,y)),module,PHSR2::FREQ_PARAM));
-    addInput(createInput<SmallPort>(mm2px(Vec(17,y)),module,PHSR2::VOCT_INPUT));
-    addInput(createInput<SmallPort>(mm2px(Vec(28,y)),module,PHSR2::FM_INPUT));
-    addParam(createParam<TrimbotWhite>(mm2px(Vec(36,y)),module,PHSR2::FM_PARAM));
-    addParam(createParam<MLED>(mm2px(Vec(44,y)),module,PHSR2::LIN_PARAM));
-    addInput(createInput<SmallPort>(mm2px(Vec(57,y)),module,PHSR2::RST_INPUT));
-    addParam(createParam<TrimbotWhite>(mm2px(Vec(65,y)),module,PHSR2::NODES_PARAM));
-    addOutput(createOutput<SmallPort>(mm2px(Vec(86,y)),module,PHSR2::CV_OUTPUT));
-  }
+    addParam(createParam<TrimbotWhite>(mm2px(Vec(6,y)),module,Osc1::FREQ_PARAM));
+    addInput(createInput<SmallPort>(mm2px(Vec(17,y)),module,Osc1::VOCT_INPUT));
+    addInput(createInput<SmallPort>(mm2px(Vec(28,y)),module,Osc1::FM_INPUT));
+    addParam(createParam<TrimbotWhite>(mm2px(Vec(36,y)),module,Osc1::FM_PARAM));
+    addParam(createParam<MLED>(mm2px(Vec(44,y)),module,Osc1::LIN_PARAM));
+    addInput(createInput<SmallPort>(mm2px(Vec(57,y)),module,Osc1::RST_INPUT));
+    addParam(createParam<TrimbotWhite>(mm2px(Vec(65,y)),module,Osc1::NODES_PARAM));
+    addOutput(createOutput<SmallPort>(mm2px(Vec(86,y)),module,Osc1::CV_OUTPUT));
+	}
 };
 
 
-Model *modelPHSR2=createModel<PHSR2,PHSR2Widget>("PHSR2");
+Model* modelOsc1 = createModel<Osc1, Osc1Widget>("Osc1");

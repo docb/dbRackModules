@@ -50,6 +50,14 @@ extern Model* modelOsc2;
 extern Model* modelRndH2;
 extern Model* modelOFS;
 extern Model* modelOFS3;
+extern Model* modelOsc1;
+extern Model* modelOsc3;
+extern Model* modelOsc4;
+extern Model* modelOsc5;
+extern Model* modelL4P;
+extern Model* modelSKF;
+extern Model* modelSPF;
+extern Model* modelUSVF;
 
 void init(Plugin* p) {
 	pluginInstance = p;
@@ -101,4 +109,12 @@ void init(Plugin* p) {
   p->addModel(modelRndH2);
 	p->addModel(modelOFS);
 	p->addModel(modelOFS3);
+	p->addModel(modelOsc1);
+  p->addModel(modelOsc3);
+  p->addModel(modelOsc4);
+  p->addModel(modelOsc5);
+  p->addModel(modelSKF);
+  p->addModel(modelSPF);
+  p->addModel(modelL4P);
+  p->addModel(modelUSVF);
 }
