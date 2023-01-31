@@ -58,6 +58,14 @@ struct OFSWidget : ModuleWidget {
     y+=12;
     addOutput(createOutput<SmallPort>(mm2px(Vec(x,y)),module,OFS::CV_OUTPUT));
 	}
+  void appendContextMenu(Menu* menu) override {
+    OFS *module=dynamic_cast<OFS *>(this->module);
+    assert(module);
+
+    menu->addChild(new MenuSeparator);
+
+    menu->addChild(createBoolPtrMenuItem("Offset Then Scale","",&module->offsetThenScale));
+  }
 };
 
 

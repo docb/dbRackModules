@@ -6,6 +6,8 @@ New modules in 2.1.0: [PAD2](#pad2), [µPad2](#%C2%B5pad2), [PhO](#pho), [PhS](#
 
 New modules in 2.1.1: [PHSR2](#phsr2), [CSOSC](#csosc), [BWF](#bwf), [EVA](#eva), [Ratio](#ratio)
 
+New modules in 2.2.0: [Osc1](#osc1), [Osc2](#osc2), [Osc3](#osc3), [Osc4](#osc4), [Osc5](#osc5), [PRB](#prb), [SPF](#spf), [SKF](#skf), [L4P](#l4p), [USVF](#usvf), [CHBY](#chby), [AP](#ap), [RndH2](#rndh2),[AUX](#aux),[OFS and OFS3](#ofs-and-ofs3) 
+
 ![](images/allmodules.png?raw=true)
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
@@ -19,6 +21,12 @@ New modules in 2.1.1: [PHSR2](#phsr2), [CSOSC](#csosc), [BWF](#bwf), [EVA](#eva)
   - [PHSR2](#phsr2)
   - [Other modules which can be phase driven](#other-modules-which-can-be-phase-driven)
 - [Sound Generators](#sound-generators)
+  - [Osc1](#osc1)
+  - [Osc2](#osc2)
+  - [Osc3](#osc3)
+  - [Osc4](#osc4)
+  - [Osc5](#osc5)
+  - [PRB](#prb)
   - [CSOSC](#csosc)
   - [SPL](#spl)
   - [Geneticterrain](#geneticterrain)
@@ -29,6 +37,13 @@ New modules in 2.1.1: [PHSR2](#phsr2), [CSOSC](#csosc), [BWF](#bwf), [EVA](#eva)
   - [PAD2](#pad2)
   - [µPad2](#%C2%B5pad2)
   - [Gendy](#gendy)
+- [Some CPU friendly polyphonic filters](#some-cpu-friendly-polyphonic-filters)
+  - [SPF](#spf)
+  - [SKF](#skf)
+  - [L4P](#l4p)
+  - [USVF](#usvf)
+  - [CHBY](#chby)
+  - [AP](#ap)
 - [Effects](#effects)
   - [DCBlock](#dcblock)
   - [PS](#ps)
@@ -38,6 +53,7 @@ New modules in 2.1.1: [PHSR2](#phsr2), [CSOSC](#csosc), [BWF](#bwf), [EVA](#eva)
   - [BWF](#bwf)
 - [Random](#random)
   - [RndH,RndC](#rndhrndc)
+  - [RndH2](#rndh2)
   - [RndG](#rndg)
   - [RndHVS3](#rndhvs3)
   - [RTrig](#rtrig)
@@ -48,12 +64,13 @@ New modules in 2.1.1: [PHSR2](#phsr2), [CSOSC](#csosc), [BWF](#bwf), [EVA](#eva)
 - [Others](#others)
   - [Faders](#faders)
   - [PLC](#plc)
+  - [OFS and OFS3](#ofs-and-ofs3)
   - [EVA](#eva)
   - [Ratio](#ratio)
+  - [AUX](#aux)
   - [FLA and FFL](#fla-and-ffl)
   - [STrg](#strg)
   - [JTScaler](#jtscaler)
-  - [JTKeys](#jtkeys)
   - [GenScale](#genscale)
   - [Interface](#interface)
   - [Plotter](#plotter)
@@ -116,7 +133,7 @@ which have no FM implemented by their own.
 ### PHSR2
 ![](images/PHSR2.png?raw=true)
 
-An advanced Phasor with frequency modulation. The phase can be distorted via moving the points (up to 16).
+An advanced Phasor with frequency modulation (including linear FM through zero). The phase can be distorted via moving the points (up to 16).
 The inner points (2 up to (Len-2)) can be modulated via the modulation inputs:
 - The Y values are in the range -5/5V
 - The X values are in range 0/10V and influence the actual x coordinate relative to the surrounding points.
@@ -124,16 +141,64 @@ The inner points (2 up to (Len-2)) can be modulated via the modulation inputs:
 
 ### Other modules which can be phase driven
 There are several modules which can be phase driven:
+- PRB (new in 2.2.0)
 - CSOSC (new in 2.1.1)
 - SPL (new, see below): generates spline waveforms from up to 16 points
-- GeneticTerrain (updated, now with phase input)
-- Geneticsuperterrain (updated, now with phase input)
-- SuperLFO (updated, if the frequency is set to the lowest value)
+- GeneticTerrain
+- Geneticsuperterrain
+- SuperLFO (if the frequency is set to the lowest value)
 - Valley's Terrorform:
   connect the phase to the FM input, set the attenuator to 0.5 and set "zero mode" on.
 
 ## Sound Generators
 ![](images/soundgen.png?raw=true)
+### Osc1
+![](images/Osc1.png?raw=true)
+- Osc1 is a polyphonic oscillator making complex waveforms out of up to 16 given points which can be modulated (see PHSR2).
+- Aliasing is suppressed via 16 times oversampling.
+- Osc1 provides exponential FM and linear FM through zero.
+### Osc2
+![](images/Osc2.png?raw=true)
+- Osc2 provides two sinus oscillators with adjustable phase difference.
+- It outputs the maximum wave and the wave of the first oscillator clipped by the second.
+- The second oscillator uses its own v/oct input if connected.
+- The phase can be realigned using the reset input. (if the v/oct inputs differ the phases of the two oscillators will diverge)
+- Osc2 provides exponential FM and linear FM through zero.
+
+### Osc3
+![](images/Osc3.png?raw=true)
+- Osc3 is a polyphonic  oscillator making complex waveforms for a set of up to 16 given values via the polyphonic Pts input (similar to SPL).
+- It outputs the line segments ans the step segments.
+- Aliasing is suppressed via 16 times oversampling.
+
+### Osc4
+![](images/Osc4.png?raw=true)
+- Osc4 is classic polyphonic oscillator with a smooth transition from triangle to square wave.
+- Wave input behaviour:
+  - 0 = Triangle
+  - 0.3 = Saw Wave
+  - 0.6 = Square Wave
+  - 0.6-0.98 = Square wave with modulated pulse width
+- Osc4 provides exponential FM and linear FM through zero, hard and soft sync
+- Aliasing is suppressed via 16 times oversampling.
+
+### Osc5
+![](images/Osc5.png?raw=true)
+- Osc5 is an alias suppressed polyphonic pulse oscillator
+- It makes 4 pulse per cycle. 
+  - The BP1 parameter controls the position in time of the 3rd pulse
+  - The BP2 parameter controls the relative positions of the second and forth pulse
+- Osc5 provides exponential FM and linear FM through zero.
+- Aliasing is suppressed via 16 times oversampling.
+
+### PRB
+![](images/prb1.png?raw=true)
+- PRB is a very fast polyphonic oscillator providing sinus like waves via polynomials
+- With degree 2 it is a sinus wave with slightly odd harmonics above (picture above)
+- With higher degrees (parameter 'deg') it converges in direction to a square wave
+![](images/prb-2.png?raw=true)
+- PRB provides exponential FM and linear FM through zero.
+- PRB has a phs input for phase distortion synthesis
 
 ### CSOSC
 ![](images/CSOSC.png?raw=true)
@@ -155,11 +220,7 @@ If SPL is fed with a phase i.e. the phase input is connected, then the V/Oct inp
 Here an example. The spline wave is generated randomly and smoothly changed over time, and a bit strechted randomly over time with the PhS BEND shaper.
 
 
-
 https://user-images.githubusercontent.com/1134412/170430990-c7cdd08d-1266-4b39-a2af-182c86453245.mp4
-
-
-
 
 ### Geneticterrain
 
@@ -305,6 +366,20 @@ https://user-images.githubusercontent.com/1134412/175530919-0f10c530-6997-4db3-b
 This is a port of Supercolliders gendy which is based on the work of Peter Hoffmann who has rebuild GENDYN
 from Iannis Xenakis.
 
+## Some CPU friendly polyphonic filters
+![](images/filters.png?raw=true)
+### SPF
+A fast polyphonic Steiner Parker filter.
+### SKF
+A fast polyphonic Sallen Key filter
+### L4P
+A fast polyphonic linear 4 pole filter
+### USVF
+A fast polyphonic unstable state variable filter with overdrive control
+### CHBY
+A 4 pole Chebyshev type 1 filter
+### AP
+An allpass filter. A Building block for phasers and reverbs.
 
 ## Effects
 ![](images/effects.png?raw=true)
@@ -390,6 +465,14 @@ the min distribution or weibull.
 
 This image shows from left to right: min, weibull, tri with strength 10 and uniform.
 
+### RndH2
+![](images/RndH2.png?raw=true)
+
+Additions over RndH:
+- The clock input is polyphonic, the Chn parameter is only used if the channel count is one.
+- Can be seeded with a parameter knob
+- Has Range and Offset parameters which can be modulated
+- Has and additional Uni output which provides still a uniform distribution regardless of the strength parameter
 
 ### RndG
 The module does the same as Count Modulas Clocked Random Gates but is full polyphonic, seedable and a bit smaller sized.
@@ -532,14 +615,19 @@ This module does the same as PolyCon from Bogaudio but
 - The channels and ranges can be set in the menu.
 - The values stay the same if the range is changed and the values are still in the range.
 
+### OFS and OFS3
+- CPU friendly polyphonic modules for offset and scale cv values.
+
 ### EVA
 An ADSR with built in VCA. Designed for using with FM Operators.
 
 ### Ratio
 This module applies a ratio to the incoming V/Oct signal. Designed for using with FM Operators.
 
+### AUX
+![](images/AUX.png?raw=true)
 
-
+AUX mixes a stereo polyphonic signal down to a stereo monophonic signal
 
 ### FLA and FFL
 FLA applies integer arithmetic to a CV signal.
@@ -560,17 +648,6 @@ JTScaler tunes a 12edo V/Oct standard input to a just intonation scale.
 The scales selectable via the scale knob are defined  in res/default_scales.json in the dbRackModules plugin directory.
 You can copy this file to scales.json in the same directory and make your own version of it.
 If it can be read without errors it will be taken instead otherwise it falls back to default_scales.json
-(which should never be changed)
-
-### JTKeys
-
-**DEPRECATED** , will be removed - use JTChords of dbRackSequencer instead.
-
-Simulates a 31 Key Just Intonation keyboard.
-
-The scales selectable via the scale knob are defined  in res/default_scales_31.json in the dbRackModules plugin directory.
-You can copy this file to scales_31.json in the same directory and make your own version of it.
-If it can be read without errors it will be taken instead otherwise it falls back to default_scales_31.json
 (which should never be changed)
 
 ### GenScale

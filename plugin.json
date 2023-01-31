@@ -1,7 +1,7 @@
 {
   "slug": "dbRackModules",
   "name": "dbRackModules",
-  "version": "2.1.5",
+  "version": "2.2.0",
   "license": "GPL-3.0-or-later",
   "brand": "docB",
   "author": "docB",
@@ -330,7 +330,7 @@
       "name": "\u00b5Pad2",
       "description": "Micro Pad2",
       "tags": [
-        "Oscillator"
+        "Oscillator","Polyphonic"
       ]
     },
     {
@@ -385,7 +385,7 @@
       "name": "PRB",
       "description": "Parabolic Oscillator",
       "tags": [
-        "Oscillator"
+        "Oscillator","Polyphonic"
       ]
     },
     {
@@ -393,7 +393,7 @@
       "name": "Osc2",
       "description": "Double Sinus Oscillator",
       "tags": [
-        "Oscillator"
+        "Oscillator","Polyphonic"
       ]
     },
     {
@@ -428,7 +428,7 @@
       "name": "Osc1",
       "description": "Line segement oscillator with alias suppressing ",
       "tags": [
-        "Oscillator"
+        "Oscillator","Polyphonic"
       ]
     },
     {
@@ -436,7 +436,7 @@
       "name": "Osc3",
       "description": "Step/Line segment oscillator with alias suppressing",
       "tags": [
-        "Oscillator"
+        "Oscillator","Polyphonic"
       ]
     },
     {
@@ -444,7 +444,7 @@
       "name": "Osc4",
       "description": "Classic oscillator with alias suppressing",
       "tags": [
-        "Oscillator"
+        "Oscillator","Polyphonic"
       ]
     },
     {
@@ -452,7 +452,7 @@
       "name": "Osc5",
       "description": "Pulse oscillator with alias suppressing",
       "tags": [
-        "Oscillator"
+        "Oscillator","Polyphonic"
       ]
     },
     {
@@ -460,7 +460,7 @@
       "name": "SKF",
       "description": "CPU friendly polyphonic stereo sallen key filter",
       "tags": [
-        "Filter"
+        "Filter","Polyphonic"
       ]
     },
     {
@@ -468,7 +468,7 @@
       "name": "SPF",
       "description": "CPU friendly polyphonic steiner parker filter",
       "tags": [
-        "Filter"
+        "Filter","Polyphonic"
       ]
     },
     {
@@ -476,7 +476,7 @@
       "name": "L4P",
       "description": "CPU friendly polyphonic stereo 4 pole filter",
       "tags": [
-        "Filter"
+        "Filter","Polyphonic"
       ]
     },
     {
@@ -484,7 +484,39 @@
       "name": "USVF",
       "description": "CPU friendly polyphonic unstable state variable filter with overdrive",
       "tags": [
-        "Filter"
+        "Filter","Polyphonic"
+      ]
+    },
+    {
+      "slug": "AP",
+      "name": "AP",
+      "description": "A Polyphonic Allpass Filter",
+      "tags": [
+        "Filter","Polyphonic"
+      ]
+    },
+    {
+      "slug": "AUX",
+      "name": "AUX",
+      "description": "Polyphonic stereo signal mixer",
+      "tags": [
+        "Mixer","Polyphonic"
+      ]
+    },
+    {
+      "slug": "WS",
+      "name": "WS",
+      "description": "Polyphonic stereo waveshaper using JONG attractor",
+      "tags": [
+        "Mixer","Polyphonic"
+      ]
+    },
+    {
+      "slug": "CHBY",
+      "name": "CHBY",
+      "description": "4 pole Chebyshev type 1 filter",
+      "tags": [
+        "Filter","Polyphonic"
       ]
     }
   ]

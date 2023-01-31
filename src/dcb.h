@@ -770,7 +770,29 @@ struct LSegDisplay : OpaqueWidget {
 
 };
 
+struct LSeg {
+  std::vector<float> params;
+  uint32_t len;
+  LSeg(std::vector<float> _params) : params(std::move(_params)) {
+    len = params.size();
+  }
 
+  float process(float in) {
+    if(len==0) return 0;
+    if(len==1) return params[0];
+    float s=0;
+    float pre=0;
+    uint32_t j=1;
+    for(;j<len;j+=2) {
+      pre=s;
+      s+=params[j];
+      if(in<s) break;
+    }
+    if(j>=len) return params[len%2==1?len-1:0];
+    float pct=params[j]==0?1:(in-pre)/params[j];
+    return params[j-1]+pct*(params[(j+1)<len?j+1:0]-params[j-1]);
+  }
+};
 
 #define TWOPIF 6.2831853f
 #define MHEIGHT 128.5f

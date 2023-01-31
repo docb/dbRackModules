@@ -72,6 +72,14 @@ struct OFS3Widget : ModuleWidget {
       addOutput(createOutput<SmallPort>(mm2px(Vec(x2,y)),module,OFS3::CV_OUTPUT+k));
     }
 	}
+  void appendContextMenu(Menu* menu) override {
+    OFS3 *module=dynamic_cast<OFS3 *>(this->module);
+    assert(module);
+
+    menu->addChild(new MenuSeparator);
+    for(int k=0;k<NUM_OFS;k++)
+       menu->addChild(createBoolPtrMenuItem("Offset Then Scale " + std::to_string(k+1),"",&module->offsetThenScale[k]));
+  }
 };
 
 
