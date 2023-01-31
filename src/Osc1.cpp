@@ -68,9 +68,9 @@ struct Osc1 : Module {
   enum LightId {
     LIGHTS_LEN
   };
-  float py[16]={-5,-2.5,0,2.5,5};
-  float px[16]={0,0.25,0.5,0.75,1};
-  int len=5;
+  float py[16]={-5,-2.5,0,2.5,5,2.5,0,-2.5,-5};
+  float px[16]={0,0.125,0.25,0.375,0.5,0.625,0.75,0.875,1};
+  int len=9;
   bool changed=false;
   bool random=false;
   LSegOsc lsegOsc[4];
@@ -83,7 +83,7 @@ struct Osc1 : Module {
 	Osc1() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
     configParam(FREQ_PARAM,-14.f,4.f,0.f,"Frequency"," Hz",2,dsp::FREQ_C4);
-    configParam(NODES_PARAM,3,16,5,"Length");
+    configParam(NODES_PARAM,3,16,9,"Length");
     configButton(LIN_PARAM,"Linear");
     configParam(FM_PARAM,0,1,0,"FM Amount","%",0,100);
     configInput(FM_INPUT,"FM");

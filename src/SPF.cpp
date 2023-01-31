@@ -51,7 +51,7 @@ struct SPF : Module {
   SPFFilter<float_4> filter[4];
 	SPF() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
-    configParam(FREQ_PARAM,7.f,14.f,10.f,"Frequency"," Hz",2,1);
+    configParam(FREQ_PARAM,1.f,14.f,10.f,"Frequency"," Hz",2,1);
     configParam(R_PARAM,0,2,1,"R");
     configParam(R_CV_PARAM,0,1,0,"R CV");
     configInput(R_INPUT,"R");

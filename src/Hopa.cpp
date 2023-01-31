@@ -1,11 +1,6 @@
 #include "dcb.h"
-#include <Gamma/Delay.h>
-#include <Gamma/Filter.h>
 
 #include <cmath>
-//template <typename T> int sgn(T val) {
-//    return (T(0) < val) - (val < T(0));
-//}
 
 struct Hopa : Module {
   enum ParamIds {
@@ -22,9 +17,15 @@ struct Hopa : Module {
   };
   double x=0.5;
   double y=0.5;
-  gam::BlockDC<> blockDC;
+  float a=0.f;
+  float b=0.f;
+  float c=0.f;
+  double dx=0.5;
+  double dy=0.5;
+  DCBlocker<float> blockDC;
   dsp::SchmittTrigger clockTrigger;
   dsp::SchmittTrigger rstTrigger;
+  dsp::PulseGenerator rstPulse;
   bool onReset = false;
   Hopa() {
     config(NUM_PARAMS,NUM_INPUTS,NUM_OUTPUTS,NUM_LIGHTS);
@@ -43,9 +44,6 @@ struct Hopa : Module {
 
   void nextHopa() {
     double x0=x;
-    float a=params[A_PARAM].getValue();
-    float b=params[B_PARAM].getValue();
-    float c=params[C_PARAM].getValue();
     x=y-sgn(x0)*sqrt(fabs(b*x0-c));
     y=a-x0;
 
@@ -54,32 +52,51 @@ struct Hopa : Module {
   void next(bool rt=false) {
     nextHopa();
     if(rt) {
-      float xf = blockDC((float)x);
-      float yf = blockDC((float)y);
-      outputs[X_OUTPUT].setVoltage((float)xf);
-      outputs[Y_OUTPUT].setVoltage((float)yf);
+      float xf = blockDC.process(float(x));
+      float yf = blockDC.process(float(y));
+      outputs[X_OUTPUT].setVoltage(xf);
+      outputs[Y_OUTPUT].setVoltage(yf);
     } else {
-      outputs[X_OUTPUT].setVoltage((float)x);
-      outputs[Y_OUTPUT].setVoltage((float)y);
+      outputs[X_OUTPUT].setVoltage(float(x));
+      outputs[Y_OUTPUT].setVoltage(float(y));
     }
 
   }
-
-  void reset(int offset) {
-    x=params[SX_PARAM].getValue();
-    y=params[SY_PARAM].getValue();
-    for(int k=0;k<offset;k++) nextHopa();
+  void nextReset() {
+    dx=params[SX_PARAM].getValue();
+    dy=params[SY_PARAM].getValue();
+    a=params[A_PARAM].getValue();
+    b=params[B_PARAM].getValue();
+    c=params[C_PARAM].getValue();
+    int offset = std::floor(params[OFS_PARAM].getValue()*APP->engine->getSampleRate());
+    for(int k=0;k<offset;k++) {
+      double x0=dx;
+      dx=dy-sgn(x0)*sqrt(fabs(b*x0-c));
+      dy=a-x0;
+    }
+    INFO("next reset %f %f",dx,dy);
+  }
+  void reset() {
+    //dx=params[SX_PARAM].getValue();
+    //dy=params[SY_PARAM].getValue();
+    //for(int k=0;k<offset;k++) nextHopa();
+    x=dx;
+    y=dy;
     INFO("reset %f %f",x,y);
   }
 
   void process(const ProcessArgs &args) override {
+    a=params[A_PARAM].getValue();
+    b=params[B_PARAM].getValue();
+    c=params[C_PARAM].getValue();
     if(rstTrigger.process(inputs[RST_INPUT].getVoltage()) || onReset) {
       onReset = false;
-      int offset = std::floor(params[OFS_PARAM].getValue()*args.sampleRate);
-      reset(offset);
+      rstPulse.trigger(0.001f);
+      reset();
     }
+    bool rstGate=rstPulse.process(args.sampleTime);
     if(inputs[CLOCK_INPUT].isConnected()) {
-      if(clockTrigger.process(inputs[CLOCK_INPUT].getVoltage())) {
+      if(clockTrigger.process(inputs[CLOCK_INPUT].getVoltage())&&!rstGate) {
         next();
       }
     } else {
@@ -92,6 +109,15 @@ struct Hopa : Module {
   }
 };
 
+struct HopaUpdateKnob : TrimbotWhite {
+  Hopa *module=nullptr;
+  void onChange(const ChangeEvent &e) override {
+    if(module) {
+      module->nextReset();
+    }
+    SvgKnob::onChange(e);
+  }
+};
 
 struct HopaWidget : ModuleWidget {
   HopaWidget(Hopa *module) {
@@ -106,12 +132,18 @@ struct HopaWidget : ModuleWidget {
     float xpos = 1.9f;
     addInput(createInput<SmallPort>(mm2px(Vec(xpos,MHEIGHT-115.f)),module,Hopa::CLOCK_INPUT));
     addInput(createInput<SmallPort>(mm2px(Vec(xpos,MHEIGHT-103.f)),module,Hopa::RST_INPUT));
-    addParam(createParam<TrimbotWhite>(mm2px(Vec(2,MHEIGHT-91.5f)),module,Hopa::SX_PARAM));
-    addParam(createParam<TrimbotWhite>(mm2px(Vec(2,MHEIGHT-79.0f)),module,Hopa::SY_PARAM));
+    auto sxParam=createParam<HopaUpdateKnob>(mm2px(Vec(2,MHEIGHT-91.5f)),module,Hopa::SX_PARAM);
+    sxParam->module=module;
+    addParam(sxParam);
+    auto syParam=createParam<HopaUpdateKnob>(mm2px(Vec(2,MHEIGHT-79.f)),module,Hopa::SY_PARAM);
+    syParam->module=module;
+    addParam(syParam);
     addParam(createParam<TrimbotWhite>(mm2px(Vec(2,MHEIGHT-67.f)),module,Hopa::A_PARAM));
     addParam(createParam<TrimbotWhite>(mm2px(Vec(2,MHEIGHT-55.5f)),module,Hopa::B_PARAM));
     addParam(createParam<TrimbotWhite>(mm2px(Vec(2,MHEIGHT-43.5f)),module,Hopa::C_PARAM));
-    addParam(createParam<TrimbotWhite>(mm2px(Vec(2,MHEIGHT-31.f)),module,Hopa::OFS_PARAM));
+    auto ofsParam=createParam<HopaUpdateKnob>(mm2px(Vec(2,MHEIGHT-31.f)),module,Hopa::OFS_PARAM);
+    ofsParam->module=module;
+    addParam(ofsParam);
     addOutput(createOutput<SmallPort>(mm2px(Vec(xpos,MHEIGHT-19.f)),module,Hopa::X_OUTPUT));
   }
 };

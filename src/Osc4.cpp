@@ -41,7 +41,7 @@ struct FSquareOsc {
     return simd::ifelse(wv<0,simd::ifelse(phs<wva,-1+phs*2/wva,(1-phs)*2/(1-wva)-1),simd::ifelse(phs<wv,1.f,simd::ifelse(phs>=1-wv,-1,1-(phs-wv)*2/(1-wv*2))));
   }
 };
-
+#define OVERSMP 16
 struct Osc4 : Module {
 	enum ParamId {
     FREQ_PARAM,FM_PARAM,LIN_PARAM,WAVE_PARAM,WAVE_CV_PARAM,PARAMS_LEN
@@ -58,6 +58,7 @@ struct Osc4 : Module {
 
   FSquareOsc<float_4> osc[4];
   Cheby1_32_BandFilter<float_4> filter24[4];
+  dsp::Decimator<OVERSMP,16,float_4> decimator;
   DCBlocker<float_4> dcBlocker[4];
 
   LSeg lseg={{-.5f,0.2f,-0.1f,0.2f,0.f,0.1f, 0.5f,0.3f,0.6f,0.2f,0.95f}};
@@ -70,7 +71,7 @@ struct Osc4 : Module {
     configParam(FM_PARAM,0,1,0,"FM Amount","%",0,100);
     //configParam(WAVE_PARAM,-0.5,0.95,0.5,"Wave");
     configParam(WAVE_PARAM,0,0.97,0.666666,"Wave");
-    configParam(WAVE_CV_PARAM,0,0.1,0,"Wave CV");
+    configParam(WAVE_CV_PARAM,0,1,0,"Wave CV"," %",0,100);
 
     configInput(FM_INPUT,"FM");
     configInput(WAVE_CV_INPUT,"Wave CV");
@@ -100,12 +101,15 @@ struct Osc4 : Module {
       }
       freq=simd::fmin(freq,args.sampleRate/2);
       float_4 o=0;
-      int over=16;
-      for(int k=0;k<over;k++) {
-        oscil->updatePhs(args.sampleTime/float(over),freq);
+
+      //float_4 buf[OVERSMP]={};
+      for(int k=0;k<OVERSMP;k++) {
+        oscil->updatePhs(args.sampleTime/float(OVERSMP),freq);
         o=oscil->process(wave);
+        //buf[k]=oscil->process(wave);
         o=filter24[c/4].process(o);
       }
+      //o=decimator.process(buf);
       //outputs[CV_OUTPUT].setVoltageSimd(o*5.f,c);
       outputs[CV_OUTPUT].setVoltageSimd(dcBlocker[c/4].process(o*5.f),c);
     }
