@@ -170,6 +170,7 @@ There are several modules which can be phase driven:
 - Osc3 is a polyphonic  oscillator making complex waveforms for a set of up to 16 given values via the polyphonic Pts input (similar to SPL).
 - It outputs the line segments ans the step segments.
 - Aliasing is suppressed via 16 times oversampling.
+- Osc3 provides exponential FM and linear FM through zero.
 
 ### Osc4
 ![](images/Osc4.png?raw=true)
@@ -179,7 +180,7 @@ There are several modules which can be phase driven:
   - 0.3 = Saw Wave
   - 0.6 = Square Wave
   - 0.6-0.98 = Square wave with modulated pulse width
-- Osc4 provides exponential FM and linear FM through zero, hard and soft sync
+- Osc4 provides exponential FM,linear FM through zero and hard and soft sync
 - Aliasing is suppressed via 16 times oversampling.
 
 ### Osc5
@@ -377,9 +378,9 @@ A fast polyphonic linear 4 pole filter
 ### USVF
 A fast polyphonic unstable state variable filter with overdrive control
 ### CHBY
-A 4 pole Chebyshev type 1 filter
+A fast polyphonic 4 pole Chebyshev type 1 filter
 ### AP
-An allpass filter. A Building block for phasers and reverbs.
+A polyphonic allpass filter. A building block for phasers and reverbs.
 
 ## Effects
 ![](images/effects.png?raw=true)
