@@ -92,7 +92,7 @@ struct AUX : Module {
 struct AUXWidget : ModuleWidget {
   AUXWidget(AUX *module) {
     setModule(module);
-    setPanel(createPanel(asset::plugin(pluginInstance,"res/AUX.svg")));
+    setPanel(createPanel(asset::plugin(pluginInstance,"res/AX.svg")));
 
     addChild(createWidget<ScrewSilver>(Vec(0, 0)));
     addChild(createWidget<ScrewSilver>(Vec(box.size.x - 15, 0)));

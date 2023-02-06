@@ -508,7 +508,7 @@
       "name": "WS",
       "description": "Polyphonic stereo waveshaper using JONG attractor",
       "tags": [
-        "Mixer","Polyphonic"
+        "Waveshaper","Polyphonic"
       ]
     },
     {
