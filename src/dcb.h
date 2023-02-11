@@ -613,6 +613,7 @@ struct RangeSelectItem : MenuItem {
 };
 
 #define POINT_SIZE 6
+#define POINT_AREA 8
 
 struct LPoint {
   float x;
@@ -714,7 +715,7 @@ struct LSegDisplay : OpaqueWidget {
       LPoint lp=module->points[k];
       float px=lp.x*box.size.x;
       float py=box.size.y-(lp.y/10.f+0.5f)*box.size.y;
-      if(x>=px-POINT_SIZE&&x<=px+POINT_SIZE&&y>=py-POINT_SIZE&&y<=py+POINT_SIZE) {
+      if(x>=px-POINT_AREA&&x<=px+POINT_AREA&&y>=py-POINT_AREA&&y<=py+POINT_AREA) {
         return j;
       }
       j++;

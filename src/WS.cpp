@@ -37,6 +37,8 @@ struct WS : Module {
     configInput(CV2_INPUT,"CV2");
     configOutput(CV1_OUTPUT,"CV1");
     configOutput(CV2_OUTPUT,"CV2");
+    configBypass(CV1_INPUT,CV1_OUTPUT);
+    configBypass(CV2_INPUT,CV2_OUTPUT);
 	}
 
 	void process(const ProcessArgs& args) override {

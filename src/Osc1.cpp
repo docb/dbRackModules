@@ -68,8 +68,8 @@ struct Osc1 : Module {
   enum LightId {
     LIGHTS_LEN
   };
-  float py[16]={-5,-2.5,0,2.5,5,2.5,0,-2.5,-5};
-  float px[16]={0,0.125,0.25,0.375,0.5,0.625,0.75,0.875,1};
+  float py[16]={};
+  float px[16]={};
   int len=9;
   bool changed=false;
   bool random=false;
@@ -82,7 +82,7 @@ struct Osc1 : Module {
 
 	Osc1() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
-    configParam(FREQ_PARAM,-14.f,4.f,0.f,"Frequency"," Hz",2,dsp::FREQ_C4);
+    configParam(FREQ_PARAM,-8.f,4.f,0.f,"Frequency"," Hz",2,dsp::FREQ_C4);
     configParam(NODES_PARAM,3,16,9,"Length");
     configButton(LIN_PARAM,"Linear");
     configParam(FM_PARAM,0,1,0,"FM Amount","%",0,100);
@@ -95,6 +95,7 @@ struct Osc1 : Module {
     configInput(VOCT_INPUT,"V/Oct");
     configInput(RST_INPUT,"Reset/Sync");
     configOutput(CV_OUTPUT,"CV");
+    resetPoints();
     changed=true;
     for(int k=0;k<4;k++) {
       lsegOsc[k].init(points,&len);
@@ -239,13 +240,19 @@ struct Osc1 : Module {
     return root;
   }
 
-  void onReset(const ResetEvent &e) override {
-    getParamQuantity(NODES_PARAM)->setValue(5);
-    len=5;
+  void resetPoints() {
+    float y[16]={-5,-2.5,0,2.5,5,2.5,0,-2.5,-5};
+    float x[16]={0,0.125,0.25,0.375,0.5,0.625,0.75,0.875,1};
+    len=9;
     for(int k=0;k<len;k++) {
-      px[k]=float(k)/float(len-1);
-      py[k]=float(k)*10.f/float(len-1)-5;
+      px[k]=x[k];
+      py[k]=y[k];
     }
+  }
+
+  void onReset(const ResetEvent &e) override {
+    getParamQuantity(NODES_PARAM)->setValue(9);
+    resetPoints();
     changed=true;
   }
 

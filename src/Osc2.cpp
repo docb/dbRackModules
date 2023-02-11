@@ -42,7 +42,7 @@ struct Osc2 : Module {
 
   Osc2() {
     config(PARAMS_LEN,INPUTS_LEN,OUTPUTS_LEN,LIGHTS_LEN);
-    configParam(FREQ_PARAM,-14.f,4.f,0.f,"Frequency"," Hz",2,dsp::FREQ_C4);
+    configParam(FREQ_PARAM,-8.f,4.f,0.f,"Frequency"," Hz",2,dsp::FREQ_C4);
     configInput(VOCT_INPUT,"V/Oct 1");
     configInput(VOCT2_INPUT,"V/Oct 2");
     configParam(PHS_PARAM,0,1,0,"Phs Shift","%",0,100);

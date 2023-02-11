@@ -25,6 +25,7 @@ struct PhS : Module {
     configInput(SHAPE_TYPE_INPUT,"Shape Type");
     configInput(INPUT,"Phs");
     configOutput(OUTPUT,"Phs");
+    configBypass(INPUT,OUTPUT);
 	}
 
 	void process(const ProcessArgs& args) override {
