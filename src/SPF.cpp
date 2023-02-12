@@ -76,8 +76,7 @@ struct SPF : Module {
     if(inputs[HP_INPUT].isConnected() && inputs[HP_INPUT].getChannels()>channels) channels=inputs[HP_INPUT].getChannels();
     for(int c=0;c<channels;c+=4) {
       float_4 pitch = freqParam + inputs[FREQ_INPUT].getPolyVoltageSimd<float_4>(c) * freqCvParam;
-      float_4 cutoff = simd::pow(2.f, pitch);
-      cutoff=clamp(cutoff, 1.f, args.sampleRate * 0.3);
+      float_4 cutoff=simd::clamp(simd::pow(2.f,pitch),2.f,args.sampleRate*0.33f);
       float_4 R = 2.f-simd::clamp(r + inputs[R_INPUT].getPolyVoltageSimd<float_4>(c)*rCvParam,0.0f,1.999f);
       float_4 lpInput=inputs[LP_INPUT].getVoltageSimd<float_4>(c);
       float_4 bpInput=inputs[BP_INPUT].getVoltageSimd<float_4>(c);

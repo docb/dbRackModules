@@ -40,7 +40,7 @@ struct SKF : Module {
   SKFFilter<float_4> filterR[4];
 	SKF() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
-    configParam(FREQ_PARAM,4.f,14.f,14.f,"Frequency"," Hz",2,1);
+    configParam(FREQ_PARAM,4.f,14.f,11.f,"Frequency"," Hz",2,1);
     configInput(FREQ_INPUT,"Freq");
     configParam(FREQ_CV_PARAM,0,1,0,"Freq CV","%",0,100);
     configParam(R_PARAM,0,1,0.5,"R");
@@ -66,7 +66,7 @@ struct SKF : Module {
     if(outputs[CV_L_OUTPUT].isConnected()) {
       for(int c=0;c<channels;c+=4) {
         float_4 pitch=freqParam+inputs[FREQ_INPUT].getPolyVoltageSimd<float_4>(c)*freqCvParam;
-        float_4 cutoff=simd::pow(2.f,pitch);
+        float_4 cutoff=simd::clamp(simd::pow(2.f,pitch),2.f,args.sampleRate*0.33f);
         float_4 R=simd::clamp(r+inputs[R_INPUT].getPolyVoltageSimd<float_4>(c)*rCvParam*0.1f,0.0f,1.f);
         float_4 in=inputs[CV_L_INPUT].getVoltageSimd<float_4>(c);
         float_4 out=filter[c/4].process(in,cutoff,R,piosr);
@@ -76,7 +76,7 @@ struct SKF : Module {
     if(outputs[CV_R_OUTPUT].isConnected()) {
       for(int c=0;c<channelsR;c+=4) {
         float_4 pitch=freqParam+inputs[FREQ_INPUT].getPolyVoltageSimd<float_4>(c)*freqCvParam;
-        float_4 cutoff=simd::pow(2.f,pitch);
+        float_4 cutoff=simd::clamp(simd::pow(2.f,pitch),2.f,args.sampleRate*0.33f);
         float_4 R=simd::clamp(r+inputs[R_INPUT].getPolyVoltageSimd<float_4>(c)*rCvParam*0.1f,0.0f,1.f);
         float_4 in=inputs[CV_R_INPUT].getVoltageSimd<float_4>(c);
         float_4 out=filterR[c/4].process(in,cutoff,R,piosr);

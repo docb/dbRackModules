@@ -107,7 +107,7 @@ struct CHBY : Module {
     bool hpConnected=outputs[HP_OUTPUT].isConnected();
     for(int c=0;c<channels;c+=4) {
       float_4 pitch=freqParam+inputs[FREQ_INPUT].getPolyVoltageSimd<float_4>(c)*freqCvParam;
-      float_4 cutoff=simd::pow(2.f,pitch);
+      float_4 cutoff=simd::clamp(simd::pow(2.f,pitch),2.f,args.sampleRate*0.33f);
       float_4 in=inputs[CV_INPUT].getVoltageSimd<float_4>(c);
       if(hpConnected) {
         float_4 hpOut=hpFilter[c/4].process(in,cutoff,piosr,true);

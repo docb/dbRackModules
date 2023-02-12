@@ -109,7 +109,7 @@ struct USVF : Module {
     if(outputs[HP_OUTPUT].isConnected()||outputs[BP_OUTPUT].isConnected()||outputs[LP_OUTPUT].isConnected()) {
       for(int c=0;c<channels;c+=4) {
         float_4 pitch=freqParam+inputs[FREQ_INPUT].getPolyVoltageSimd<float_4>(c)*freqCvParam;
-        float_4 cutoff=simd::pow(2.f,pitch);
+        float_4 cutoff=simd::clamp(simd::pow(2.f,pitch),2.f,args.sampleRate*0.33f);
         float_4 R=simd::clamp(r+inputs[R_INPUT].getPolyVoltageSimd<float_4>(c)*rCvParam*0.1f,0.5f,4.f);
         float_4 D=simd::clamp(drive+inputs[D_INPUT].getPolyVoltageSimd<float_4>(c)*driveCvParam*0.1f,0.0f,1.f);
         float_4 in=inputs[CV_INPUT].getVoltageSimd<float_4>(c);

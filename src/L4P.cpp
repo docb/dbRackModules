@@ -83,7 +83,7 @@ struct L4P : Module {
     if(outputs[CV_R_OUTPUT].isConnected()) {
       for(int c=0;c<channelsR;c+=4) {
         float_4 pitch=freqParam+inputs[FREQ_INPUT].getPolyVoltageSimd<float_4>(c)*freqCvParam;
-        float_4 cutoff=simd::pow(2.f,pitch);
+        float_4 cutoff=simd::clamp(simd::pow(2.f,pitch),2.f,args.sampleRate*0.33f);
         float_4 R=simd::clamp(r+inputs[R_INPUT].getPolyVoltageSimd<float_4>(c)*rCvParam*0.1f,0.0f,1.f);
         float_4 in=inputs[CV_R_INPUT].getVoltageSimd<float_4>(c);
         float_4 out=filterR[c/4].process(in,cutoff,R,piosr);
