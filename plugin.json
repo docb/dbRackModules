@@ -504,8 +504,8 @@
       ]
     },
     {
-      "slug": "WS",
-      "name": "WS",
+      "slug": "JWS",
+      "name": "JWS",
       "description": "Polyphonic stereo waveshaper using JONG attractor",
       "tags": [
         "Waveshaper","Polyphonic"
@@ -517,6 +517,46 @@
       "description": "4 pole Chebyshev type 1 filter",
       "tags": [
         "Filter","Polyphonic"
+      ]
+    },
+    {
+      "slug": "CLP",
+      "name": "CLP",
+      "description": "Clipper/Waveshaper",
+      "tags": ["Waveshaper","Distortion"]
+    },
+    {
+      "slug": "LWF",
+      "name": "LWF",
+      "description": "Lockhard Wavefolder",
+      "tags": [
+        "Waveshaper"
+      ]
+    },
+    {
+      "slug": "DRM",
+      "name": "DRM",
+      "description": "Diode Ring Modulator",
+      "tags": [
+        "Ring modulator"
+      ]
+    },
+    {
+      "slug": "CWS",
+      "name": "CWS",
+      "description": "Chebyshev Waveshaper",
+      "tags": [
+        "Polyphonic",
+        "Waveshaper"
+      ]
+    },
+    {
+      "slug": "SWF",
+      "name": "SWF",
+      "description": "Sharp Wavefolder",
+      "tags": [
+        "Waveshaper",
+        "Polyphonic"
       ]
     }
   ]

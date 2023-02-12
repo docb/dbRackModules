@@ -131,4 +131,4 @@ struct WSWidget : ModuleWidget {
 };
 
 
-Model* modelWS = createModel<WS, WSWidget>("WS");
+Model* modelWS = createModel<WS, WSWidget>("JWS");

@@ -6,7 +6,7 @@ New modules in 2.1.0: [PAD2](#pad2), [µPad2](#%C2%B5pad2), [PhO](#pho), [PhS](#
 
 New modules in 2.1.1: [PHSR2](#phsr2), [CSOSC](#csosc), [BWF](#bwf), [EVA](#eva), [Ratio](#ratio)
 
-New modules in 2.2.0: [Osc1](#osc1), [Osc2](#osc2), [Osc3](#osc3), [Osc4](#osc4), [Osc5](#osc5), [PRB](#prb), [SPF](#spf), [SKF](#skf), [L4P](#l4p), [USVF](#usvf), [CHBY](#chby), [AP](#ap), [RndH2](#rndh2),[AUX](#aux),[OFS and OFS3](#ofs-and-ofs3) 
+New modules in 2.2.0: [Osc1](#osc1), [Osc2](#osc2), [Osc3](#osc3), [Osc4](#osc4), [Osc5](#osc5), [PRB](#prb), [SPF](#spf), [SKF](#skf), [L4P](#l4p), [USVF](#usvf), [CHBY](#chby), [AP](#ap), [LWF](#lwf), [DRM](#drm), [SWF](#swf), [JWS](#jws), [CLP](#clp), [CWS](#cws), [RndH2](#rndh2),[AUX](#aux),[OFS and OFS3](#ofs-and-ofs3) 
 
 ![](images/allmodules.png?raw=true)
 
@@ -44,6 +44,13 @@ New modules in 2.2.0: [Osc1](#osc1), [Osc2](#osc2), [Osc3](#osc3), [Osc4](#osc4)
   - [USVF](#usvf)
   - [CHBY](#chby)
   - [AP](#ap)
+- [Some cpu friendly polyphonic Waveshapers](#some-cpu-friendly-polyphonic-waveshapers)
+  - [LWF](#lwf)
+  - [DRM](#drm)
+  - [SWF](#swf)
+  - [JWS](#jws)
+  - [CLP](#clp)
+  - [CWS](#cws)
 - [Effects](#effects)
   - [DCBlock](#dcblock)
   - [PS](#ps)
@@ -381,6 +388,27 @@ A fast polyphonic unstable state variable filter with overdrive control
 A fast polyphonic 4 pole Chebyshev type 1 filter
 ### AP
 A polyphonic allpass filter. A building block for phasers and reverbs.
+
+## Some cpu friendly polyphonic Waveshapers
+![](images/waveshaper.png?raw=true)
+
+### LWF
+A cpu friendly polyphonic Rack v2 version of the Lockhard Wavefolder released in the JE-plugin for Rack v1.
+
+### DRM
+A cpu friendly polyphonic Rack v2 version of the Diode Rimg Modulator released in the JE-plugin for Rack v1.
+
+### SWF
+A cpu friendly polyphonic Rack v2 version of the Sharp Wavefolder of the Agave Rack v1 plugin.
+
+### JWS
+A cpu friendly polyphonic waveshaper based on the De Jong Attractor algorithm of Nozoïd Sin WS.
+
+### CLP
+A cpu frienfly polyphonic clipper/waveshaper with 9 different selectable algorithms.
+
+### CWS
+A cpu friendly polyphonic chebyshev waveshaper with up to 16 coefficients (to be passed in the polyphonic input) 
 
 ## Effects
 ![](images/effects.png?raw=true)
