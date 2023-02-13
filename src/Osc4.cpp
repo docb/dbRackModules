@@ -42,8 +42,8 @@ struct FSquareOsc {
 
   }
 
-  T process(T wv,float sampleTime, T freq, bool syncEnabled, T syncValue, bool soft) {
-    T phsDelta=simd::fmin(freq*sampleTime,0.5f);
+  T process(T wv,T fms, bool syncEnabled, T syncValue, bool soft) {
+    T phsDelta=simd::fmin(fms,0.5f);
     if(soft) {
       phsDelta *= syncDirection;
     } else {
@@ -134,9 +134,9 @@ struct Osc4 : Module {
       if(syncEnabled) {
         syncValue = inputs[SYNC_INPUT].getPolyVoltageSimd<float_4>(c);
       }
+      float_4 fms=args.sampleTime*freq/float(OVERSMP);
       for(int k=0;k<OVERSMP;k++) {
-        //oscil->updatePhs(args.sampleTime/float(OVERSMP),freq);
-        o=oscil->process(wave,args.sampleTime/float(OVERSMP),freq,syncEnabled,syncValue,softSync);
+        o=oscil->process(wave,fms,syncEnabled,syncValue,softSync);
         o=filter24[c/4].process(o);
       }
       outputs[CV_OUTPUT].setVoltageSimd(dcBlocker[c/4].process(o*5.f),c);

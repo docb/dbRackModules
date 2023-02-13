@@ -33,8 +33,8 @@ struct LSegOsc {
     }
     return {ret[0],ret[1],ret[2],ret[3]};
   }
-  void updatePhs(float sampleTime,float_4 freq,int c) {
-    phs+=(sampleTime*freq);
+  void updatePhs(float_4 fms,int c) {
+    phs+=fms;
     stage=simd::ifelse(phs>=1.f,0.f,stage);
     phs-=simd::floor(phs);
     for(int k=0;k<c;k++) {
@@ -193,9 +193,10 @@ struct Osc1 : Module {
       freq=simd::fmin(freq,args.sampleRate/2);
       float_4 out;
       int ch=std::min(4,channels-c);
+      float_4 fms=args.sampleTime*freq/16.f;
       for(int k=0;k<16;k++) {
         out=lsegOsc[c/4].process(ch);
-        lsegOsc[c/4].updatePhs(args.sampleTime,freq/16.f,ch);
+        lsegOsc[c/4].updatePhs(fms,ch);
         out=filters[c/4].process(out);
       }
       outputs[CV_OUTPUT].setVoltageSimd(dcBlocker[c/4].process(out),c);

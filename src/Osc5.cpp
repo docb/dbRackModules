@@ -5,8 +5,8 @@ using simd::float_4;
 struct PulseOsc {
   float phs=0.f;
   int stage=0;
-  void updatePhs(float sampleTime,float freq) {
-    phs+=sampleTime*(freq);
+  void updatePhs(float fms) {
+    phs+=fms;
     phs-=std::floor(phs);
   }
   float process(float bp=0.5f,float bp1=0.5f) {
@@ -45,9 +45,9 @@ struct PulseOsc {
 };
 struct PulseOsc4 {
   PulseOsc osc[4];
-  void updatePhs(float sampleTime,float_4 freq) {
+  void updatePhs(float_4 fms) {
     for(int k=0;k<4;k++) {
-      osc[k].updatePhs(sampleTime,freq[k]);
+      osc[k].updatePhs(fms[k]);
     }
   }
   float_4 process(float_4 bp1,float_4 bp2) {
@@ -120,8 +120,9 @@ struct Osc5 : Module {
       freq=simd::fmin(freq,args.sampleRate/2);
       float_4 o=0;
       int over=16;
+      float_4 fms=args.sampleTime*freq/float(over);
       for(int k=0;k<over;k++) {
-        oscil->updatePhs(args.sampleTime,freq/float(over));
+        oscil->updatePhs(fms);
         o=oscil->process(bp1,bp2);
         o=filter24[c/4].process(o);
       }

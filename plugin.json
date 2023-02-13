@@ -243,7 +243,7 @@
       "name": "Plotter",
       "description": "Plots a 2D signal",
       "tags": [
-        "Visual"
+        "Visual","Polyphonic"
       ]
     },
     {
@@ -523,14 +523,15 @@
       "slug": "CLP",
       "name": "CLP",
       "description": "Clipper/Waveshaper",
-      "tags": ["Waveshaper","Distortion"]
+      "tags": ["Waveshaper","Distortion","Polyphonic"]
     },
     {
       "slug": "LWF",
       "name": "LWF",
       "description": "Lockhard Wavefolder",
       "tags": [
-        "Waveshaper"
+        "Waveshaper",
+        "Polyphonic"
       ]
     },
     {
@@ -538,7 +539,8 @@
       "name": "DRM",
       "description": "Diode Ring Modulator",
       "tags": [
-        "Ring modulator"
+        "Ring modulator",
+        "Polyphonic"
       ]
     },
     {

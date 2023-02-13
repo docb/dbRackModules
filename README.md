@@ -171,7 +171,7 @@ There are several modules which can be phase driven:
 - The second oscillator uses its own v/oct input if connected.
 - The phase can be realigned using the reset input. (if the v/oct inputs differ the phases of the two oscillators will diverge)
 - Osc2 provides exponential FM and linear FM through zero.
-
+- Aliasing is suppressed via 16 times oversampling but is turned off by default (see menu).
 ### Osc3
 ![](images/Osc3.png?raw=true)
 - Osc3 is a polyphonic  oscillator making complex waveforms for a set of up to 16 given values via the polyphonic Pts input (similar to SPL).

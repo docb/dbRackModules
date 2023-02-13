@@ -22,9 +22,9 @@ struct StepOsc4 {
     }
   }
 
-  void updatePhs(float sampleTime,float_4 freq) {
+  void updatePhs(float_4 fms) {
     for(int k=0;k<4;k++) {
-      phs[k]+=(sampleTime*freq[k]*float(len));
+      phs[k]+=(fms[k]*float(len));
       if(phs[k]>1.f) {
         phs[k]=phs[k]-simd::floor(phs[k]);
         x[k]=pts[pos[k]];
@@ -68,9 +68,9 @@ struct LineOsc4 {
     }
   }
 
-  void updatePhs(float sampleTime,float_4 freq) {
+  void updatePhs(float_4 fms) {
     for(int k=0;k<4;k++) {
-      phs[k]+=(sampleTime*freq[k]*float(len));
+      phs[k]+=(fms[k]*float(len));
       if(phs[k]>1.f) {
         phs[k]=phs[k]-simd::floor(phs[k]);
         x0[k]=x1[k];
@@ -172,9 +172,10 @@ struct Osc3 : Module {
       }
       freq=simd::fmin(freq,args.sampleRate/2);
       float_4 v;
+      float_4 fms=args.sampleTime*freq/16.f;
       if(outputs[STEP_OUTPUT].isConnected()) {
         for(int k=0;k<16;k++) {
-          osc[c/4].updatePhs(args.sampleTime,freq/16.f);
+          osc[c/4].updatePhs(fms);
           v=osc[c/4].process();
           v=filters[c/4].process(v);
         }
@@ -185,7 +186,7 @@ struct Osc3 : Module {
       float_4 vL;
       if(outputs[LIN_OUTPUT].isConnected()) {
         for(int k=0;k<16;k++) {
-          oscL[c/4].updatePhs(args.sampleTime,freq/16.f);
+          oscL[c/4].updatePhs(fms);
           vL=oscL[c/4].process();
           vL=filtersL[c/4].process(vL);
         }
