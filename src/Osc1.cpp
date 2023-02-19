@@ -60,7 +60,7 @@ struct Osc1 : Module {
     NODES_PARAM,FREQ_PARAM,FM_PARAM,LIN_PARAM,PARAMS_LEN
   };
   enum InputId {
-    Y_INPUT,X_INPUT=Y_INPUT+14,VOCT_INPUT=X_INPUT+14,FM_INPUT,RST_INPUT,INPUTS_LEN
+    Y_INPUT,X_INPUT=Y_INPUT+16,VOCT_INPUT=X_INPUT+14,FM_INPUT,RST_INPUT,INPUTS_LEN
   };
   enum OutputId {
     CV_OUTPUT,OUTPUTS_LEN
@@ -88,8 +88,10 @@ struct Osc1 : Module {
     configParam(FM_PARAM,0,1,0,"FM Amount","%",0,100);
     configInput(FM_INPUT,"FM");
     getParamQuantity(NODES_PARAM)->snapEnabled=true;
+    for(int k=0;k<16;k++) {
+      configInput(Y_INPUT+k,"Y "+std::to_string(k+1));
+    }
     for(int k=0;k<14;k++) {
-      configInput(Y_INPUT+k,"Y "+std::to_string(k+2));
       configInput(X_INPUT+k,"X "+std::to_string(k+2));
     }
     configInput(VOCT_INPUT,"V/Oct");
@@ -158,16 +160,20 @@ struct Osc1 : Module {
     for(int k=0;k<14;k++) {
       if(k>=len-2)
         break;
-      if(inputs[Y_INPUT+k].isConnected()) {
-        py[k+1]=clamp(inputs[Y_INPUT+k].getVoltage(),-5.f,5.f);
-        points[k+1].x=px[k+1];
-        points[k+1].y=py[k+1];
-      }
       if(inputs[X_INPUT+k].isConnected()) {
         float pct=clamp(inputs[X_INPUT+k].getVoltage()*0.1f,0.f,1.f);
         px[k+1]=points[k].x+pct*(points[k+2].x-points[k].x);
         points[k+1].y=py[k+1];
         points[k+1].x=px[k+1];
+      }
+    }
+    for(int k=0;k<16;k++) {
+      if(k>=len)
+        break;
+      if(inputs[Y_INPUT+k].isConnected()) {
+        py[k]=clamp(inputs[Y_INPUT+k].getVoltage(),-5.f,5.f);
+        points[k].x=px[k];
+        points[k].y=py[k];
       }
     }
     if(rstTrigger.process(inputs[RST_INPUT].getVoltage())) {
@@ -268,17 +274,17 @@ struct Osc1Widget : ModuleWidget {
 		setModule(module);
 		setPanel(createPanel(asset::plugin(pluginInstance, "res/Osc1.svg")));
 
-    auto display=new LSegDisplay<Osc1>(module,mm2px(Vec(4,8)),mm2px(Vec(94,80)));
+    auto display=new LSegDisplay<Osc1>(module,mm2px(Vec(3,8)),mm2px(Vec(110.5,80)));
     addChild(display);
 
-    float x=2;
+    float x=3;
     float y=94;
-    for(int k=0;k<14;k++) {
+    for(int k=0;k<16;k++) {
       addInput(createInput<SmallPort>(mm2px(Vec(x,y)),module,Osc1::Y_INPUT+k));
       x+=7;
     }
     y=102;
-    x=2;
+    x=10;
     for(int k=0;k<14;k++) {
       addInput(createInput<SmallPort>(mm2px(Vec(x,y)),module,Osc1::X_INPUT+k));
       x+=7;
@@ -291,7 +297,7 @@ struct Osc1Widget : ModuleWidget {
     addParam(createParam<MLED>(mm2px(Vec(44,y)),module,Osc1::LIN_PARAM));
     addInput(createInput<SmallPort>(mm2px(Vec(57,y)),module,Osc1::RST_INPUT));
     addParam(createParam<TrimbotWhite>(mm2px(Vec(65,y)),module,Osc1::NODES_PARAM));
-    addOutput(createOutput<SmallPort>(mm2px(Vec(86,y)),module,Osc1::CV_OUTPUT));
+    addOutput(createOutput<SmallPort>(mm2px(Vec(101,y)),module,Osc1::CV_OUTPUT));
 	}
 };
 

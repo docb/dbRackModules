@@ -613,7 +613,7 @@ struct RangeSelectItem : MenuItem {
 };
 
 #define POINT_SIZE 6
-#define POINT_AREA 8
+#define POINT_AREA 10
 
 struct LPoint {
   float x;

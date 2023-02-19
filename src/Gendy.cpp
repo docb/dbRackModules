@@ -134,6 +134,7 @@ struct Gendy : Module {
   };
 
   DSS dss[16];
+  DCBlocker<float> dcb[16];
 
   Gendy() {
     config(PARAMS_LEN,INPUTS_LEN,OUTPUTS_LEN,LIGHTS_LEN);
@@ -217,7 +218,7 @@ struct Gendy : Module {
       float ampDistScl = params[AMPDISTSCL_PARAM].getValue() + clamp(inputs[AMPDISTSCL_INPUT].getPolyVoltage(k),0.f,10.f)*0.1f * params[AMPDISTSCL_CV_PARAM].getValue();
       float durDistScl = params[DURDISTSCL_PARAM].getValue() + clamp(inputs[DURDISTSCL_INPUT].getPolyVoltage(k),0.f,10.f)*0.1f * params[DURDISTSCL_CV_PARAM].getValue();
       float out = dss[k].process(args.sampleTime,numPoints,ampDist,ampDistParam,ampDistScl,durDist,durDistParam,durDistScl,minFreq,maxFreq);
-      outputs[V_OUTPUT].setVoltage(out,k);
+      outputs[V_OUTPUT].setVoltage(dcb[k].process(out),k);
     }
     outputs[V_OUTPUT].setChannels(channels);
   }
