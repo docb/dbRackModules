@@ -6,7 +6,7 @@ New modules in 2.1.0: [PAD2](#pad2), [µPad2](#%C2%B5pad2), [PhO](#pho), [PhS](#
 
 New modules in 2.1.1: [PHSR2](#phsr2), [CSOSC](#csosc), [BWF](#bwf), [EVA](#eva), [Ratio](#ratio)
 
-New modules in 2.2.0: [Osc1](#osc1), [Osc2](#osc2), [Osc3](#osc3), [Osc4](#osc4), [Osc5](#osc5), [PRB](#prb), [SPF](#spf), [SKF](#skf), [L4P](#l4p), [USVF](#usvf), [CHBY](#chby), [AP](#ap), [LWF](#lwf), [DRM](#drm), [SWF](#swf), [JWS](#jws), [CLP](#clp), [CWS](#cws), [RndH2](#rndh2),[AUX](#aux),[OFS and OFS3](#ofs-and-ofs3) 
+New modules in 2.2.0: [Osc1](#osc1), [Osc2](#osc2), [Osc3](#osc3), [Osc4](#osc4), [Osc5](#osc5), [Osc6](#osc6), [PRB](#prb), [SPF](#spf), [SKF](#skf), [L4P](#l4p), [USVF](#usvf), [CHBY](#chby), [AP](#ap), [LWF](#lwf), [DRM](#drm), [SWF](#swf), [JWS](#jws), [CLP](#clp), [CWS](#cws), [RndH2](#rndh2), [AUX](#aux), [OFS and OFS3](#ofs-and-ofs3) 
 
 ![](images/allmodules.png?raw=true)
 
@@ -26,6 +26,7 @@ New modules in 2.2.0: [Osc1](#osc1), [Osc2](#osc2), [Osc3](#osc3), [Osc4](#osc4)
   - [Osc3](#osc3)
   - [Osc4](#osc4)
   - [Osc5](#osc5)
+  - [Osc6](#osc6)
   - [PRB](#prb)
   - [CSOSC](#csosc)
   - [SPL](#spl)
@@ -175,7 +176,7 @@ There are several modules which can be phase driven:
 ### Osc3
 ![](images/Osc3.png?raw=true)
 - Osc3 is a polyphonic  oscillator making complex waveforms for a set of up to 16 given values via the polyphonic Pts input (similar to SPL).
-- It outputs the line segments ans the step segments.
+- It outputs the line segments and the step segments.
 - Aliasing is suppressed via 16 times oversampling.
 - Osc3 provides exponential FM and linear FM through zero.
 
@@ -198,6 +199,24 @@ There are several modules which can be phase driven:
   - The BP2 parameter controls the relative positions of the second and forth pulse
 - Osc5 provides exponential FM and linear FM through zero.
 - Aliasing is suppressed via 16 times oversampling.
+
+### Osc6
+![](images/Osc6.png?raw=true)
+- Osc6 is a polyphonic complex oscillator which generates its waves with integer arithmetic and byte logic.
+- i.e it computes its wave via the formula: 
+  ``` 
+  ((x&(t*xc>>xa))|t*xd>>xb)*(yadd+((y&(t*yc>>ya))|t*yd>>yb)*ym)
+  ```
+  where t is an increasing integer depending on the input frequency (via Freq, V/Oct and Oct)
+  (see also [bytebeat](http://canonical.org/~kragen/bytebeat/) but this module is not intended to be a bytebeat module - it is intended to be an oscillator). 
+- i.e if x and y = (2^bits-1) and only the parameters xc and yadd are 1 (the default preset) then a saw wave is produced
+- If XC>0, YM>0 and YC>0 then it gets very complex as then the term t*t is present in the formula,
+- e.g. sometimes the oct parameter should be down to -6 or -8 to get some interesting results.
+- There are some factory preset to check out.
+- The X, Y parameters are given in bits either set or unset. The X/Y inputs must provide polyphonic gates. The inputs and parameters are combined with a logical OR.
+- Note that the bits to be set in the X or Y parameter which are above the bit parameter value are ignored. 
+- Aliasing is suppressed via 16 times oversampling (can be turned off in the menu).
+
 
 ### PRB
 ![](images/prb1.png?raw=true)

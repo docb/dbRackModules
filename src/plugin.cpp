@@ -67,7 +67,7 @@ extern Model* modelLWF;
 extern Model* modelDRM;
 extern Model* modelCWS;
 extern Model* modelSWF;
-
+extern Model* modelOsc6;
 void init(Plugin* p) {
 	pluginInstance = p;
 
@@ -135,4 +135,5 @@ void init(Plugin* p) {
   p->addModel(modelDRM);
   p->addModel(modelCWS);
   p->addModel(modelSWF);
+  p->addModel(modelOsc6);
 }
