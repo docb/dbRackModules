@@ -203,19 +203,19 @@ There are several modules which can be phase driven:
 ### Osc6
 ![](images/Osc6.png?raw=true)
 - Osc6 is a polyphonic complex oscillator which generates its waves with integer arithmetic and byte logic.
-- i.e it computes its wave via the formula: 
+- i.e. it computes its wave via the formula: 
   ``` 
   ((x&(t*xc>>xa))|t*xd>>xb)*(yadd+((y&(t*yc>>ya))|t*yd>>yb)*ym)
   ```
   where t is an increasing integer depending on the input frequency (via Freq, V/Oct and Oct)
-  (see also [bytebeat](http://canonical.org/~kragen/bytebeat/) but this module is not intended to be a bytebeat module - it is intended to be an oscillator). 
-- i.e if x and y = (2^bits-1) and only the parameters xc and yadd are 1 (the default preset) then a saw wave is produced
-- If XC>0, YM>0 and YC>0 then it gets very complex as then the term t*t is present in the formula,
-- e.g. sometimes the oct parameter should be down to -6 or -8 to get some interesting results.
-- There are some factory preset to check out.
+  (see also [bytebeat](http://canonical.org/~kragen/bytebeat/) or ByteBeat from Voxglitch, however this module is more intended to be an oscillator.
+  In many cases a bytebeat can be obtained by going e.g. 6 octaves down). 
 - The X, Y parameters are given in bits either set or unset. The X/Y inputs must provide polyphonic gates. The inputs and parameters are combined with a logical OR.
-- Note that the bits to be set in the X or Y parameter which are above the bit parameter value are ignored. 
-- Aliasing is suppressed via 16 times oversampling (can be turned off in the menu).
+- Note that the bits to be set in the X or Y parameter which are above the bit parameter value are ignored.
+- If X and Y = 2^bits-1 (all bits set) and only the parameters xc and yadd are 1 (the default preset) then a saw wave is produced
+- If XC>0, YM>0 and YC>0 then it gets very complex as then the term t*t is present in the formula,
+- Aliasing is suppressed via 16 times oversampling (can be turned off in the menu, as DC blocking).
+- There are some factory presets to check out.
 
 
 ### PRB
