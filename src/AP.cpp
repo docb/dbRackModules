@@ -46,7 +46,7 @@ struct RB {
 };
 struct AP : Module {
 	enum ParamId {
-		FREQ_PARAM,DELAY_PARAM,DELAY_SAMP_PARAM,DELAY_CV_PARAM,PARAMS_LEN
+		FREQ_PARAM,DELAY_PARAM,DELAY_SAMP_PARAM,DELAY_CV_PARAM,FREQ_CV_PARAM,PARAMS_LEN
 	};
 	enum InputId {
 		CV_INPUT,FREQ_INPUT,DELAY_INPUT,INPUTS_LEN
@@ -64,6 +64,7 @@ struct AP : Module {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
     //configParam(FREQ_PARAM,-4.f,8.f,0.f,"Frequency"," Hz",2,dsp::FREQ_C4);
     configParam(FREQ_PARAM,0.001,0.49,0.125,"Frequency");
+    configParam(FREQ_CV_PARAM,0,1,0,"Freq CV");
     configInput(CV_INPUT,"CV");
     configInput(FREQ_INPUT,"Freq");
     configInput(DELAY_INPUT,"Delay");
@@ -87,7 +88,7 @@ struct AP : Module {
       float_4 in=inputs[CV_INPUT].getVoltageSimd<float_4>(c);
       float_4 freq4 = freq;
       if(inputs[FREQ_INPUT].isConnected()) {
-        freq4=clamp(inputs[FREQ_INPUT].getPolyVoltageSimd<float_4>(c)*0.05f,0.001f,0.49f);
+        freq4=simd::clamp(freq4+inputs[FREQ_INPUT].getPolyVoltageSimd<float_4>(c)*0.05f*params[FREQ_CV_PARAM].getValue(),0.001f,0.49f);
       }
       float_4 t=simd::tan(M_PI*freq4);
       float_4 a1=(t-1.f)/(t+1.f);
@@ -107,6 +108,7 @@ struct APWidget : ModuleWidget {
     float x=1.9;
     addParam(createParam<TrimbotWhite>(mm2px(Vec(x,10)),module,AP::FREQ_PARAM));
     addInput(createInput<SmallPort>(mm2px(Vec(x,18)),module,AP::FREQ_INPUT));
+    addParam(createParam<TrimbotWhite>(mm2px(Vec(x,26)),module,AP::FREQ_CV_PARAM));
     addParam(createParam<TrimbotWhite>(mm2px(Vec(x,54)),module,AP::DELAY_PARAM));
     addParam(createParam<TrimbotWhite>(mm2px(Vec(x,66)),module,AP::DELAY_SAMP_PARAM));
     addInput(createInput<SmallPort>(mm2px(Vec(x,74)),module,AP::DELAY_INPUT));

@@ -118,7 +118,7 @@ struct RndH : Module {
         seedParam/=10.f;
       }
       auto seedInput = (unsigned long long)(floor((double)seedParam*(double)ULONG_MAX));
-      INFO("%.8f %lld",seedParam,seedInput);
+      //INFO("%.8f %lld",seedParam,seedInput);
       rnd.reset(seedInput);
       next(bi>0.f);
     }
