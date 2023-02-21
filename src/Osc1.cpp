@@ -82,7 +82,7 @@ struct Osc1 : Module {
 
 	Osc1() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
-    configParam(FREQ_PARAM,-8.f,4.f,0.f,"Frequency"," Hz",2,dsp::FREQ_C4);
+    configParam(FREQ_PARAM,-4.f,4.f,0.f,"Frequency"," Hz",2,dsp::FREQ_C4);
     configParam(NODES_PARAM,3,16,9,"Length");
     configButton(LIN_PARAM,"Linear");
     configParam(FM_PARAM,0,1,0,"FM Amount","%",0,100);

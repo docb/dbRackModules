@@ -398,9 +398,9 @@ from Iannis Xenakis.
 ### SPF
 A fast polyphonic Steiner Parker filter.
 ### SKF
-A fast polyphonic Sallen Key filter
+A fast polyphonic stereo Sallen Key filter
 ### L4P
-A fast polyphonic linear 4 pole filter
+A fast polyphonic stereo linear 4 pole filter
 ### USVF
 A fast polyphonic unstable state variable filter with overdrive control
 ### CHBY
@@ -418,13 +418,13 @@ A cpu friendly polyphonic Rack v2 version of the Lockhard Wavefolder released in
 A cpu friendly polyphonic Rack v2 version of the Diode Rimg Modulator released in the JE-plugin for Rack v1.
 
 ### SWF
-A cpu friendly polyphonic Rack v2 version of the Sharp Wavefolder of the Agave Rack v1 plugin.
+A cpu friendly stereo polyphonic Rack v2 version of the Sharp Wavefolder of the Agave Rack v1 plugin.
 
 ### JWS
-A cpu friendly polyphonic waveshaper based on the De Jong Attractor algorithm of Nozoïd Sin WS.
+A cpu friendly stereo polyphonic waveshaper based on the De Jong Attractor algorithm of Nozoïd Sin WS.
 
 ### CLP
-A cpu frienfly polyphonic clipper/waveshaper with 9 different selectable algorithms.
+A cpu frienfly stereo polyphonic clipper/waveshaper with 9 different selectable algorithms.
 
 ### CWS
 A cpu friendly polyphonic chebyshev waveshaper with up to 16 coefficients (to be passed in the polyphonic input) 

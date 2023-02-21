@@ -92,7 +92,7 @@ struct Osc4 : Module {
   ESeg eseg{{{-.5f,0.3f,0.f},{0.f,0.3f,-5.f},{0.5f,0.4f,5.f},{0.98f,0.5f,0.f}}};
 	Osc4() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
-    configParam(FREQ_PARAM,-8.f,4.f,0.f,"Frequency"," Hz",2,dsp::FREQ_C4);
+    configParam(FREQ_PARAM,-4.f,4.f,0.f,"Frequency"," Hz",2,dsp::FREQ_C4);
     configInput(VOCT_INPUT,"V/Oct 1");
     configButton(LIN_PARAM,"Linear");
     configParam(FM_PARAM,0,1,0,"FM Amount","%",0,100);
