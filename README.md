@@ -677,7 +677,12 @@ This module applies a ratio to the incoming V/Oct signal. Designed for using wit
 ### AUX
 ![](images/AUX.png?raw=true)
 
-AUX mixes a stereo polyphonic signal down to a stereo monophonic signal
+AUX mixes a stereo polyphonic signal down to a stereo monophonic signal. It can either be used to sum a polyphonic signal
+and additionally attenuate single channels, or it can be used as 16 channel stereo mixer by merging monophonic stereo signals
+into a polyphonic signals.
+The values (0-10V) of the polyphonic Lvl input are divided by 10 and then multiplied with the corresponding parameter value.
+By using 10V Gates on the Lvl input single channels can be turned on and off. 
+To avoid clicks there is a slew limiter processing the incoming level values.
 
 ### FLA and FFL
 FLA applies integer arithmetic to a CV signal.

@@ -1,5 +1,5 @@
 #include "dcb.h"
-
+using simd::float_4;
 
 struct AUX : Module {
   enum ParamId {
@@ -18,7 +18,10 @@ struct AUX : Module {
   dsp::VuMeter2 vuMeterR;
   dsp::ClockDivider vuDivider;
   dsp::ClockDivider lightDivider;
-  dsp::ClockDivider paramDivider;
+  dsp::SlewLimiter slewLimiter[16];
+  dsp::SlewLimiter mainSlewLimiter;
+
+  float slew=0.04;
   AUX() {
     config(PARAMS_LEN,INPUTS_LEN,OUTPUTS_LEN,LIGHTS_LEN);
     for(int k=0;k<16;k++) {
@@ -35,30 +38,31 @@ struct AUX : Module {
     vuMeterR.lambda = 1 / 0.1f;
     vuDivider.setDivision(16);
     lightDivider.setDivision(512);
-    paramDivider.setDivision(16);
   }
 
   void process(const ProcessArgs &args) override {
     float outL=0.f;
     float outR=0.f;
-    if(paramDivider.process()) {
+    int channels=std::max(inputs[L_INPUT].getChannels(),inputs[R_INPUT].getChannels());
+
+    for(int k=0;k<channels;k++) {
+      float cLvl=params[k].getValue();
       if(inputs[LVL_INPUT].isConnected()) {
-        int channels=inputs[LVL_INPUT].getChannels();
-        for(int c=0;c<channels;c++) {
-          float inLvl=clamp(inputs[LVL_INPUT].getVoltage(c),0.f,10.f)*0.1f;
-          getParamQuantity(c)->setValue(inLvl);
-        }
+        slewLimiter[k].setRiseFall(slew,slew);
+        float lvl=slewLimiter[k].process(1.f,clamp(inputs[LVL_INPUT].getVoltage(k),0.f,10.f))*0.1f;
+        cLvl*=lvl;
       }
-      if(inputs[MAIN_INPUT].isConnected()) {
-        getParamQuantity(LEVEL_PARAM)->setValue(inputs[MAIN_INPUT].getVoltage()*0.1);
-      }
+      outL+=cLvl*inputs[L_INPUT].getVoltage(k);
+      outR+=cLvl*inputs[R_INPUT].getVoltage(k);
     }
-    for(int k=0;k<16;k++) {
-      outL+=params[k].getValue()*inputs[L_INPUT].getVoltage(k);
-      outR+=params[k].getValue()*inputs[R_INPUT].getVoltage(k);
+    float lvl=params[LEVEL_PARAM].getValue();
+    if(inputs[MAIN_INPUT].isConnected()) {
+      mainSlewLimiter.setRiseFall(slew,slew);
+      float mainLvl=mainSlewLimiter.process(1.f,clamp(inputs[MAIN_INPUT].getVoltage(),0.f,10.f))*0.1f;
+      lvl*=mainLvl;
     }
-    outL*=params[LEVEL_PARAM].getValue();
-    outR*=params[LEVEL_PARAM].getValue();
+    outL*=lvl;
+    outR*=lvl;
     outputs[L_OUTPUT].setVoltage(outL);
     outputs[R_OUTPUT].setVoltage(outR);
     if(vuDivider.process()) {
