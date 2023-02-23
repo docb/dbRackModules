@@ -4,8 +4,9 @@ using simd::float_4;
 // algorithm taken from csound Copyright (c) Victor Lazzarini, 2021
 template<typename T>
 struct L4PFilter {
-  T s[4];
-  T A, G[4];
+  T s[4]={};
+  T A=0.f;
+  T G[4]={};
   T process(T in,T freq, T r,float piosr) {
     T k=r*4;
     T g = simd::tan(freq*piosr);

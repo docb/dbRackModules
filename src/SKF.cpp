@@ -3,8 +3,9 @@ using simd::float_4;
 // algorithm taken from csound Copyright (c) Victor Lazzarini, 2021
 template<typename T>
 struct SKFFilter {
-  T s[2];
-  T a[2],b[2];
+  T s[2]={};
+  T a[2]={};
+  T b[2]={};
   T process(T in,T freq, T R_,float piosr) {
     float_4 R = 2.f - R_*2.f;
     T w = simd::tan(freq*piosr);
@@ -38,6 +39,8 @@ struct SKF : Module {
 
   SKFFilter<float_4> filter[4];
   SKFFilter<float_4> filterR[4];
+  dsp::TSlewLimiter<float_4> slews[4];
+  float slew=0.04f;
 	SKF() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
     configParam(FREQ_PARAM,4.f,14.f,11.f,"Frequency"," Hz",2,1);
@@ -52,6 +55,9 @@ struct SKF : Module {
     configInput(R_INPUT,"R");
     configBypass(CV_L_INPUT,CV_L_OUTPUT);
     configBypass(CV_R_INPUT,CV_R_OUTPUT);
+    for(int k=0;k<4;k++) {
+      slews[k].setRiseFall(16.f,16.f);
+    }
 	}
 
 	void process(const ProcessArgs& args) override {
@@ -63,9 +69,15 @@ struct SKF : Module {
     float freqCvParam = params[FREQ_CV_PARAM].getValue();
     int channels=inputs[CV_L_INPUT].getChannels();
     int channelsR=inputs[CV_R_INPUT].getChannels();
+    bool freqMod=inputs[FREQ_INPUT].isConnected();
     if(outputs[CV_L_OUTPUT].isConnected()) {
       for(int c=0;c<channels;c+=4) {
         float_4 pitch=freqParam+inputs[FREQ_INPUT].getPolyVoltageSimd<float_4>(c)*freqCvParam;
+        if(freqMod) {
+          float sl=(slew+0.001f)*1000.f;
+          slews[c/4].setRiseFall(1.f/sl,1.f/sl);
+          pitch=slews[c/4].process(1,pitch);
+        }
         float_4 cutoff=simd::clamp(simd::pow(2.f,pitch),2.f,args.sampleRate*0.33f);
         float_4 R=simd::clamp(r+inputs[R_INPUT].getPolyVoltageSimd<float_4>(c)*rCvParam*0.1f,0.0f,1.f);
         float_4 in=inputs[CV_L_INPUT].getVoltageSimd<float_4>(c);
@@ -76,6 +88,11 @@ struct SKF : Module {
     if(outputs[CV_R_OUTPUT].isConnected()) {
       for(int c=0;c<channelsR;c+=4) {
         float_4 pitch=freqParam+inputs[FREQ_INPUT].getPolyVoltageSimd<float_4>(c)*freqCvParam;
+        if(freqMod) {
+          float sl=(slew+0.001f)*1000.f;
+          slews[c/4].setRiseFall(1.f/sl,1.f/sl);
+          pitch=slews[c/4].process(1,pitch);
+        }
         float_4 cutoff=simd::clamp(simd::pow(2.f,pitch),2.f,args.sampleRate*0.33f);
         float_4 R=simd::clamp(r+inputs[R_INPUT].getPolyVoltageSimd<float_4>(c)*rCvParam*0.1f,0.0f,1.f);
         float_4 in=inputs[CV_R_INPUT].getVoltageSimd<float_4>(c);
@@ -86,6 +103,71 @@ struct SKF : Module {
     outputs[CV_L_OUTPUT].setChannels(channels);
     outputs[CV_R_OUTPUT].setChannels(channelsR);
 	}
+
+  json_t *dataToJson() override {
+    json_t *data=json_object();
+    json_object_set_new(data,"slew",json_real(slew));
+    return data;
+  }
+
+  void dataFromJson(json_t *rootJ) override {
+    json_t *jSlew = json_object_get(rootJ,"slew");
+    if(jSlew!=nullptr) slew = json_real_value(jSlew);
+  }
+
+};
+
+struct SlewQuantity : Quantity {
+  SKF* module;
+
+  SlewQuantity(SKF* m) : module(m) {}
+
+  void setValue(float value) override {
+    value = clamp(value, getMinValue(), getMaxValue());
+    if (module) {
+      module->slew = value;
+    }
+  }
+
+  float getValue() override {
+    if (module) {
+      return module->slew;
+    }
+    return 0.5f;
+  }
+
+  float getMinValue() override { return 0.0f; }
+  float getMaxValue() override { return 1.0f; }
+  float getDefaultValue() override { return 1.f/16.f; }
+  float getDisplayValue() override { return getValue(); }
+  void setDisplayValue(float displayValue) override { setValue(displayValue); }
+  std::string getLabel() override { return "Slew"; }
+  std::string getUnit() override { return ""; }
+};
+
+struct SlewSlider : ui::Slider {
+  SlewSlider(SKF* module) {
+    quantity = new SlewQuantity(module);
+    box.size.x = 200.0f;
+  }
+  virtual ~SlewSlider() {
+    delete quantity;
+  }
+};
+
+struct SlewMenuItem : MenuItem {
+  SKF* module;
+
+  SlewMenuItem(SKF* m) : module(m) {
+    this->text = "Freq Input";
+    this->rightText = "▸";
+  }
+
+  Menu* createChildMenu() override {
+    Menu* menu = new Menu;
+    menu->addChild(new SlewSlider(module));
+    return menu;
+  }
 };
 
 
@@ -116,6 +198,16 @@ struct SKFWidget : ModuleWidget {
     y+=12;
     addOutput(createOutput<SmallPort>(mm2px(Vec(x,y)),module,SKF::CV_R_OUTPUT));
 	}
+
+  void appendContextMenu(Menu* menu) override {
+    SKF *module=dynamic_cast<SKF *>(this->module);
+    assert(module);
+
+    menu->addChild(new MenuSeparator);
+
+    menu->addChild(new SlewMenuItem(module));
+  }
+
 };
 
 

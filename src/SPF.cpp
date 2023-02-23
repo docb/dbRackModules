@@ -3,8 +3,8 @@ using simd::float_4;
 // algorithm taken from csound Copyright (c) Victor Lazzarini, 2021
 template<typename T>
 struct SPFFilter {
-  T s[2],sl[2],sh[2],sb[2];
-  T al[2],ah[2],ab,b[2];
+  T s[2]={};T sl[2]={};T sh[2]={}; T sb[2]={};
+  T al[2]={};T ah[2]={};T ab=0.f;T b[2]={};
 
   T process(T lpIn,T bpIn,T hpIn,T freq, T R,float piosr) {
     T w = simd::tan(freq*piosr);

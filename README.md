@@ -398,7 +398,8 @@ from Iannis Xenakis.
 ### SPF
 A fast polyphonic Steiner Parker filter.
 ### SKF
-A fast polyphonic stereo Sallen Key filter
+A fast polyphonic stereo Sallen Key filter. As the filter is reacting very sensitive on changes of the cutoff frequency,
+there is a slew limiter on the frequency input. The slew amount can be configured in the menu.
 ### L4P
 A fast polyphonic stereo linear 4 pole filter
 ### USVF
@@ -521,6 +522,7 @@ Additions over RndH:
 - Can be seeded with a parameter knob
 - Has Range and Offset parameters which can be modulated
 - Has and additional Uni output which provides still a uniform distribution regardless of the strength parameter
+- Has a slew limiter
 
 ### RndG
 The module does the same as Count Modulas Clocked Random Gates but is full polyphonic, seedable and a bit smaller sized.

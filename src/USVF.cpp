@@ -3,10 +3,10 @@
 using simd::float_4;
 template<typename T>
 struct FilterOut {
-  T LP;
-  T BP;
-  T HP;
-  T BR;
+  T LP=0.f;
+  T BP=0.f;
+  T HP=0.f;
+  T BR=0.f;
 };
 
 template<typename T>
