@@ -205,7 +205,7 @@ There are several modules which can be phase driven:
 - Osc6 is a polyphonic complex oscillator which generates its waves with integer arithmetic and byte logic.
 - i.e. it computes its wave via the formula: 
   ``` 
-  ((x&(t*xc>>xa))|t*xd>>xb)*(yadd+((y&(t*yc>>ya))|t*yd>>yb)*ym)
+  ((x&(t*xc>>xa))|t*xd>>xb)*(yp+((y&(t*yc>>ya))|t*yd>>yb)*ym)
   ```
   where t is an increasing integer depending on the input frequency (via Freq, V/Oct and Oct)
   (see also [bytebeat](http://canonical.org/~kragen/bytebeat/) or ByteBeat from Voxglitch, however this module is more intended to be an oscillator.
@@ -425,7 +425,17 @@ A cpu friendly stereo polyphonic Rack v2 version of the Sharp Wavefolder of the 
 A cpu friendly stereo polyphonic waveshaper based on the De Jong Attractor algorithm of Nozoïd Sin WS.
 
 ### CLP
-A cpu frienfly stereo polyphonic clipper/waveshaper with 9 different selectable algorithms.
+A cpu frienfly stereo polyphonic clipper/waveshaper/satrurator/overdrive with 9 different selectable algorithms
+- Soft: Softclip via TANH approximation
+- Hard: Hardclip
+- Sin: Sinus as shaper function
+- OD: Overdrive 
+- Exp: `sgn(x)*(1-e^(-|x|))`
+- Sqr: `x/sqrt(1-x*x)`
+- Abs: `x/(1-|x|)`
+- AAS: Anti Aliased Softclip
+- AAH: Anti Aliased Hardclip
+
 
 ### CWS
 A cpu friendly polyphonic chebyshev waveshaper with up to 16 coefficients (to be passed in the polyphonic input) 
