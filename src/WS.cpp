@@ -55,7 +55,10 @@ struct WS : Module {
     float stw=params[STEREO_WIDTH_PARAM].getValue();
     for(int k=0;k<channels;k+=4) {
       float_4 in1=inputs[CV1_INPUT].getVoltageSimd<float_4>(k)*0.1f+0.5f;
-      float_4 in2=simd::ifelse(in2Connected,inputs[CV2_INPUT].getVoltageSimd<float_4>(k)*0.1f+0.5f,in1);
+      float_4 in2=in1;
+      if(in2Connected) {
+        in2=inputs[CV2_INPUT].getVoltageSimd<float_4>(k)*0.1f+0.5f;
+      }
 
       float_4 ap=simd::clamp(a+inputs[A_INPUT].getPolyVoltageSimd<float_4>(k)*av,0.f,5.f);
       float_4 bp=simd::clamp(b+inputs[B_INPUT].getPolyVoltageSimd<float_4>(k)*bv,0.f,5.f);
