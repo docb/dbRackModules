@@ -117,58 +117,6 @@ struct SKF : Module {
 
 };
 
-struct SlewQuantity : Quantity {
-  SKF* module;
-
-  SlewQuantity(SKF* m) : module(m) {}
-
-  void setValue(float value) override {
-    value = clamp(value, getMinValue(), getMaxValue());
-    if (module) {
-      module->slew = value;
-    }
-  }
-
-  float getValue() override {
-    if (module) {
-      return module->slew;
-    }
-    return 0.5f;
-  }
-
-  float getMinValue() override { return 0.0f; }
-  float getMaxValue() override { return 1.0f; }
-  float getDefaultValue() override { return 1.f/16.f; }
-  float getDisplayValue() override { return getValue(); }
-  void setDisplayValue(float displayValue) override { setValue(displayValue); }
-  std::string getLabel() override { return "Slew"; }
-  std::string getUnit() override { return ""; }
-};
-
-struct SlewSlider : ui::Slider {
-  SlewSlider(SKF* module) {
-    quantity = new SlewQuantity(module);
-    box.size.x = 200.0f;
-  }
-  virtual ~SlewSlider() {
-    delete quantity;
-  }
-};
-
-struct SlewMenuItem : MenuItem {
-  SKF* module;
-
-  SlewMenuItem(SKF* m) : module(m) {
-    this->text = "Freq Input";
-    this->rightText = "▸";
-  }
-
-  Menu* createChildMenu() override {
-    Menu* menu = new Menu;
-    menu->addChild(new SlewSlider(module));
-    return menu;
-  }
-};
 
 
 struct SKFWidget : ModuleWidget {
@@ -205,7 +153,7 @@ struct SKFWidget : ModuleWidget {
 
     menu->addChild(new MenuSeparator);
 
-    menu->addChild(new SlewMenuItem(module));
+    menu->addChild(new SlewMenuItem<SKF>(module));
   }
 
 };

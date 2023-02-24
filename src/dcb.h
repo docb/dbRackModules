@@ -564,7 +564,60 @@ struct DensMenuItem : MenuItem {
     return menu;
   }
 };
+template<typename T>
+struct SlewQuantity : Quantity {
+  T *module;
 
+  SlewQuantity(T *m) : module(m) {}
+
+  void setValue(float value) override {
+    value = clamp(value, getMinValue(), getMaxValue());
+    if (module) {
+      module->slew = value;
+    }
+  }
+
+  float getValue() override {
+    if (module) {
+      return module->slew;
+    }
+    return 0.5f;
+  }
+
+  float getMinValue() override { return 0.0f; }
+  float getMaxValue() override { return 1.0f; }
+  float getDefaultValue() override { return 1.f/16.f; }
+  float getDisplayValue() override { return getValue(); }
+  void setDisplayValue(float displayValue) override { setValue(displayValue); }
+  std::string getLabel() override { return "Slew"; }
+  std::string getUnit() override { return ""; }
+};
+template<typename T>
+struct SlewSlider : ui::Slider {
+  SlewSlider(T* module) {
+    quantity = new SlewQuantity<T>(module);
+    box.size.x = 200.0f;
+  }
+  virtual ~SlewSlider() {
+    delete quantity;
+  }
+};
+
+template<typename T>
+struct SlewMenuItem : MenuItem {
+  T *module;
+
+  SlewMenuItem(T *m) : module(m) {
+    this->text = "Level Input";
+    this->rightText = "▸";
+  }
+
+  Menu* createChildMenu() override {
+    Menu* menu = new Menu;
+    menu->addChild(new SlewSlider<T>(module));
+    return menu;
+  }
+};
 struct IntSelectItem : MenuItem {
   int *value;
   int min;

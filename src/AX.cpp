@@ -48,7 +48,8 @@ struct AUX : Module {
     for(int k=0;k<channels;k++) {
       float cLvl=params[k].getValue();
       if(inputs[LVL_INPUT].isConnected()) {
-        slewLimiter[k].setRiseFall(slew,slew);
+        float sl=(slew+0.001f)*1000.f;
+        slewLimiter[k].setRiseFall(1.f/sl,1.f/sl);
         float lvl=slewLimiter[k].process(1.f,clamp(inputs[LVL_INPUT].getVoltage(k),0.f,10.f))*0.1f;
         cLvl*=lvl;
       }
@@ -57,7 +58,8 @@ struct AUX : Module {
     }
     float lvl=params[LEVEL_PARAM].getValue();
     if(inputs[MAIN_INPUT].isConnected()) {
-      mainSlewLimiter.setRiseFall(slew,slew);
+      float sl=(slew+0.001f)*1000.f;
+      mainSlewLimiter.setRiseFall(1.f/sl,1.f/sl);
       float mainLvl=mainSlewLimiter.process(1.f,clamp(inputs[MAIN_INPUT].getVoltage(),0.f,10.f))*0.1f;
       lvl*=mainLvl;
     }
@@ -90,6 +92,18 @@ struct AUX : Module {
       lights[VU_LIGHTS_R+7].setBrightness(vuMeterR.getBrightness(-60,-48));
     }
   }
+
+  json_t *dataToJson() override {
+    json_t *data=json_object();
+    json_object_set_new(data,"slew",json_real(slew));
+    return data;
+  }
+
+  void dataFromJson(json_t *rootJ) override {
+    json_t *jSlew = json_object_get(rootJ,"slew");
+    if(jSlew!=nullptr) slew = json_real_value(jSlew);
+  }
+
 };
 
 
@@ -145,6 +159,16 @@ struct AUXWidget : ModuleWidget {
     addChild(createLight<SmallSimpleLight<GreenLight>>(mm2px(Vec(xL,y)),module,AUX::VU_LIGHTS_L+7));
     addChild(createLight<SmallSimpleLight<GreenLight>>(mm2px(Vec(xR,y)),module,AUX::VU_LIGHTS_R+7));
   }
+
+  void appendContextMenu(Menu* menu) override {
+    AUX *module=dynamic_cast<AUX *>(this->module);
+    assert(module);
+
+    menu->addChild(new MenuSeparator);
+
+    menu->addChild(new SlewMenuItem<AUX>(module));
+  }
+
 };
 
 
