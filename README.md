@@ -165,6 +165,7 @@ There are several modules which can be phase driven:
 - Osc1 is a polyphonic oscillator making complex waveforms out of up to 16 given points which can be modulated (see PHSR2).
 - Aliasing is suppressed via 16 times oversampling.
 - Osc1 provides exponential FM and linear FM through zero.
+- The PD output delivers an alias suppressed phase distorted sine wave using the given line segment.  
 ### Osc2
 ![](images/Osc2.png?raw=true)
 - Osc2 provides two sinus oscillators with adjustable phase difference.
