@@ -34,6 +34,11 @@ struct Interface : Module {
           outputs[i].setVoltage(inputs[i].getVoltage(k),k);
         }
         outputs[i].setChannels(channels);
+      } else {
+        int channels = std::max(inputs[i].getChannels(),1);
+        for(int k=0;k<channels;k++) {
+          outputs[i].setVoltage(0.f,k);
+        }
       }
     }
   }
