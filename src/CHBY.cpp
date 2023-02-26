@@ -1,5 +1,7 @@
 #include "dcb.h"
-
+/*
+ * ported from csound clfilt Copyright (C) 2002 Erik Spjut
+ */
 using simd::float_4;
 #define CL_LIM 8
 

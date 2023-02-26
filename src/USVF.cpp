@@ -1,5 +1,5 @@
 #include "dcb.h"
-
+#include "clipper.hpp"
 using simd::float_4;
 template<typename T>
 struct FilterOut {
@@ -13,7 +13,8 @@ template<typename T>
 struct SVFilter {
   T s1=0.f;
   T s2=0.f;
-
+  Clipper<T> clipper;
+  /*
   T df1(T drive,T in) {
     T n=in*drive;
     return simd::ifelse(n>1.5f,1.f,simd::ifelse(n<-1.5f,-1.f,n-(4.f/27.f)*n*n*n));
@@ -36,16 +37,17 @@ struct SVFilter {
       default: return df1(drive,in);
     }
   }
+   */
   FilterOut<T> process(T in,T freq,T res,T drive,float piosr,int mode=0) {
     FilterOut<T> y={};
     T w=simd::tan(freq*piosr);
     T R=1.f/res;
     T fac=1.f/(1.f+w*R+w*w);
     y.HP=(in-(R+w)*s1-s2)*fac;
-    T u=w*df(drive,y.HP,mode);
+    T u=w*clipper.process(drive,y.HP,mode);
     y.BP=u+s1;
     s1=y.BP+u;
-    u=w*df(drive,y.BP,mode);
+    u=w*clipper.process(drive,y.BP,mode);
     y.LP=u+s2;
     s2=y.LP+u;
     y.BR=y.HP+y.LP;
@@ -73,14 +75,17 @@ struct USVF : Module {
   };
   SVFilter<float_4> filter[4];
   int mode=0;
+  DCBlocker<float_4> dcbH[4];
+  DCBlocker<float_4> dcbB[4];
+  DCBlocker<float_4> dcbL[4];
   USVF() {
     config(PARAMS_LEN,INPUTS_LEN,OUTPUTS_LEN,LIGHTS_LEN);
-    configParam(FREQ_PARAM,4.f,14.4f,12.f,"Frequency"," Hz",2,1);
+    configParam(FREQ_PARAM,8.f,14.5f,12.f,"Frequency"," Hz",2,1);
     configInput(FREQ_INPUT,"Freq");
     configParam(FREQ_CV_PARAM,0,1,0,"Freq CV","%",0,100);
-    configParam(R_PARAM,0.5,4,0.5,"R");
-    configInput(R_INPUT,"R");
-    configParam(R_CV_PARAM,0,1,0,"R CV");
+    configParam(R_PARAM,0.5,20,0.5,"Q");
+    configInput(R_INPUT,"Q");
+    configParam(R_CV_PARAM,0,1,0,"Q CV");
     configParam(D_PARAM,0,1,0.2,"Drive");
     configInput(D_INPUT,"Drive");
     configParam(D_CV_PARAM,0,1,0,"Drive CV");
@@ -109,25 +114,37 @@ struct USVF : Module {
     if(outputs[HP_OUTPUT].isConnected()||outputs[BP_OUTPUT].isConnected()||outputs[LP_OUTPUT].isConnected()) {
       for(int c=0;c<channels;c+=4) {
         float_4 pitch=freqParam+inputs[FREQ_INPUT].getPolyVoltageSimd<float_4>(c)*freqCvParam;
-        float_4 cutoff=simd::clamp(simd::pow(2.f,pitch),2.f,args.sampleRate*0.33f);
-        float_4 R=simd::clamp(r+inputs[R_INPUT].getPolyVoltageSimd<float_4>(c)*rCvParam*0.1f,0.5f,4.f);
+        float_4 cutoff=simd::clamp(simd::pow(2.f,pitch),2.f,args.sampleRate*0.4f);
+        float_4 R=simd::clamp(r+inputs[R_INPUT].getPolyVoltageSimd<float_4>(c)*rCvParam*0.1f,0.5f,20.f);
         float_4 D=simd::clamp(drive+inputs[D_INPUT].getPolyVoltageSimd<float_4>(c)*driveCvParam*0.1f,0.0f,1.f);
         float_4 in=inputs[CV_INPUT].getVoltageSimd<float_4>(c);
         FilterOut<float_4> out=filter[c/4].process(in,cutoff,R,D,piosr,mode);
-        outputs[HP_OUTPUT].setVoltageSimd(out.HP,c);
-        outputs[BP_OUTPUT].setVoltageSimd(out.BP,c);
-        outputs[LP_OUTPUT].setVoltageSimd(out.LP,c);
+        if(outputs[HP_OUTPUT].isConnected()) outputs[HP_OUTPUT].setVoltageSimd(dcbH[c/4].process(out.HP),c);
+        if(outputs[BP_OUTPUT].isConnected()) outputs[BP_OUTPUT].setVoltageSimd(dcbB[c/4].process(out.BP),c);
+        if(outputs[LP_OUTPUT].isConnected()) outputs[LP_OUTPUT].setVoltageSimd(dcbL[c/4].process(out.LP),c);
       }
     }
     outputs[HP_OUTPUT].setChannels(channels);
     outputs[BP_OUTPUT].setChannels(channels);
     outputs[LP_OUTPUT].setChannels(channels);
   }
+
+  json_t *dataToJson() override {
+    json_t *data=json_object();
+    json_object_set_new(data,"mode",json_integer(mode));
+    return data;
+  }
+
+  void dataFromJson(json_t *rootJ) override {
+    json_t *jMode = json_object_get(rootJ,"mode");
+    if(jMode!=nullptr) mode = json_integer_value(jMode);
+  }
+
 };
 
 
 struct USVFWidget : ModuleWidget {
-  std::vector<std::string> labels={"tanh 1","tanh 2","sin"};
+  std::vector<std::string> labels={"Tanh","Hard Clip","Sin","Overdrive","Exp","Sqr","Abs"};
   USVFWidget(USVF *module) {
     setModule(module);
     setPanel(createPanel(asset::plugin(pluginInstance,"res/USVF.svg")));
