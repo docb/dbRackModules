@@ -8,6 +8,9 @@ New modules in 2.1.1: [PHSR2](#phsr2), [CSOSC](#csosc), [BWF](#bwf), [EVA](#eva)
 
 New modules in 2.2.0: [Osc1](#osc1), [Osc2](#osc2), [Osc3](#osc3), [Osc4](#osc4), [Osc5](#osc5), [Osc6](#osc6), [PRB](#prb), [SPF](#spf), [SKF](#skf), [L4P](#l4p), [USVF](#usvf), [CHBY](#chby), [AP](#ap), [LWF](#lwf), [DRM](#drm), [SWF](#swf), [JWS](#jws), [CLP](#clp), [CWS](#cws), [RndH2](#rndh2), [AUX](#aux), [OFS and OFS3](#ofs-and-ofs3) 
 
+See also the demo patches on [PatchStorage](https://patchstorage.com/author/docb/) or on [youtube](https://www.youtube.com/@docb7593)
+
+
 ![](images/allmodules.png?raw=true)
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
