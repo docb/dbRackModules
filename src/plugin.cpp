@@ -68,6 +68,7 @@ extern Model* modelDRM;
 extern Model* modelCWS;
 extern Model* modelSWF;
 extern Model* modelOsc6;
+
 void init(Plugin* p) {
 	pluginInstance = p;
 
