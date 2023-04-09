@@ -589,6 +589,14 @@
         "Oscillator",
         "Polyphonic"
       ]
+    },
+    {
+      "slug": "Drums",
+      "name": "Drums",
+      "description": "Sampled drums",
+      "tags": [
+        "Drums"
+      ]
     }
   ]
 }
