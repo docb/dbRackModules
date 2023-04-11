@@ -597,6 +597,14 @@
       "tags": [
         "Drums"
       ]
+    },
+    {
+      "slug": "PPD",
+      "name": "PPD",
+      "description": "Ping Pong Delay",
+      "tags": [
+        "Delay"
+      ]
     }
   ]
 }
