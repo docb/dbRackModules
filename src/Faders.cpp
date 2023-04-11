@@ -240,10 +240,10 @@ struct Faders : Module {
       }
     }
     for(int k=0;k<48;k++) {
-      getParamQuantity(k)->setValue(presets[pat].faderValues[k]);
+      getParamQuantity(k)->setImmediateValue(presets[pat].faderValues[k]);
     }
     for(int k=0;k<MAX_KNOBS;k++) {
-      getParamQuantity(KNOB_PARAMS+k)->setValue(presets[pat].knobValues[k]);
+      getParamQuantity(KNOB_PARAMS+k)->setImmediateValue(presets[pat].knobValues[k]);
     }
   }
 
@@ -342,7 +342,7 @@ struct Faders : Module {
   void _process(const ProcessArgs &args) {
     if(inputs[PAT_INPUT].isConnected() && params[EDIT_PARAM].getValue() == 0) {
       int c=clamp(inputs[PAT_INPUT].getVoltage(),0.f,9.99f)*float(MAX_PATS)/10.f;
-      getParamQuantity(PAT_PARAM)->setValue(c);
+      getParamQuantity(PAT_PARAM)->setImmediateValue(c);
     }
     int pat=params[PAT_PARAM].getValue();
     float glide=params[GLIDE_PARAM].getValue();
@@ -375,13 +375,13 @@ struct Faders : Module {
   void reconfig(int nr) {
     int pat=params[PAT_PARAM].getValue();
     for(int k=0;k<16;k++) {
-      float value=getParamQuantity(nr*16+k)->getValue();
+      float value=getParamQuantity(nr*16+k)->getImmediateValue();
       if(value>presets[pat].max[nr])
         value=presets[pat].max[nr];
       if(value<presets[pat].min[nr])
         value=presets[pat].min[nr];
       configParam(nr*16+k,presets[pat].min[nr],presets[pat].max[nr],0,rowLabels[nr] +" chn "+std::to_string(k+1));
-      getParamQuantity(nr*16+k)->setValue(value);
+      getParamQuantity(nr*16+k)->setImmediateValue(value);
     }
   }
 
@@ -411,14 +411,14 @@ struct Faders : Module {
     int pat=params[PAT_PARAM].getValue();
     for(int k=0;k<16;k++) {
       int id=nr*16+k;
-      getParamQuantity(id)->setValue(math::rescale(float(rnd.nextDouble()),0.f,1.f,presets[pat].min[nr],presets[pat].max[nr]));
+      getParamQuantity(id)->setImmediateValue(math::rescale(float(rnd.nextDouble()),0.f,1.f,presets[pat].min[nr],presets[pat].max[nr]));
     }
   }
 
   void onRandomize(const RandomizeEvent &e) override {
     for(int k=0;k<3;k++) {
       randomizeValues(k);
-      getParamQuantity(KNOB_PARAMS+k)->setValue(math::rescale(float(rnd.nextDouble()),0.f,1.f,-10.f,10.f));
+      getParamQuantity(KNOB_PARAMS+k)->setImmediateValue(math::rescale(float(rnd.nextDouble()),0.f,1.f,-10.f,10.f));
     }
   }
   void onAdd(const AddEvent &e) override {

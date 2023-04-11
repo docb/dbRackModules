@@ -67,9 +67,9 @@ struct BWF : Module {
     int channels=inputs[V_INPUT].getChannels();
     if(paramDivider.process()) {
       if(inputs[LO_INPUT].isConnected())
-        getParamQuantity(LO_PARAM)->setValue(clamp(inputs[LO_INPUT].getVoltage(),0.f,10.f)*0.1f);
+        getParamQuantity(LO_PARAM)->setImmediateValue(clamp(inputs[LO_INPUT].getVoltage(),0.f,10.f)*0.1f);
       if(inputs[HI_INPUT].isConnected())
-        getParamQuantity(HI_PARAM)->setValue(clamp(inputs[HI_INPUT].getVoltage(),0.f,10.f)*0.1f);
+        getParamQuantity(HI_PARAM)->setImmediateValue(clamp(inputs[HI_INPUT].getVoltage(),0.f,10.f)*0.1f);
     }
     float minF=params[LO_PARAM].getValue()*12000;
     float maxF=params[HI_PARAM].getValue()*12000;

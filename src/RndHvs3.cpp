@@ -185,14 +185,14 @@ struct RndHvs3 : Module {
 
     if(inputs[DIST_INPUT].isConnected()) {
       int dst = clamp(inputs[DIST_PARAM].getVoltage(),0.f, float(NUM_DISTS)-0.01f);
-      getParamQuantity(DIST_INPUT)->setValue(dst);
+      getParamQuantity(DIST_INPUT)->setImmediateValue(dst);
     }
     dist = params[DIST_PARAM].getValue();
     mustUpdate = (dist != lastDist);
 
     if(inputs[DENS_INPUT].isConnected()) {
       dens = clamp(inputs[DENS_INPUT].getVoltage(),0.f, 10.f)/10.f;
-      getParamQuantity(DENS_PARAM)->setValue(dens);
+      getParamQuantity(DENS_PARAM)->setImmediateValue(dens);
       mustUpdate = mustUpdate || (dens != lastDens);
     } else {
       if(updateDens) {
@@ -204,7 +204,7 @@ struct RndHvs3 : Module {
     }
     if(inputs[SEED_INPUT].isConnected()) {
       seed = clamp(inputs[SEED_INPUT].getVoltage(),0.f, 10.f)/10.f;
-      getParamQuantity(SEED_PARAM)->setValue(seed);
+      getParamQuantity(SEED_PARAM)->setImmediateValue(seed);
       mustUpdate = mustUpdate || (seed != lastSeed);
     } else {
       if(updateSeed) {

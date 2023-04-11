@@ -50,7 +50,7 @@ struct PhO : Module {
     float dmp=10.f-params[DMP_PARAM].getValue();
     if(inputs[DMP_INPUT].isConnected()) {
       dmp=10.f-clamp(inputs[DMP_INPUT].getVoltage(),0.f,10.f);
-      getParamQuantity(DMP_PARAM)->setValue(10.f-dmp);
+      getParamQuantity(DMP_PARAM)->setImmediateValue(10.f-dmp);
     }
     if(inputs[AMP_1_16_INPUT].isConnected()) {
       for(int k=0;k<16;k++) {

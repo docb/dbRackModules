@@ -159,44 +159,44 @@ struct Pad2 : Module {
       case EVEN_MIN:
         for(int k=0;k<48;k++) {
           if(k%2==1)
-            getParamQuantity(PARTIAL_PARAM+k)->setValue(rnd.nextMin(k/4));
+            getParamQuantity(PARTIAL_PARAM+k)->setImmediateValue(rnd.nextMin(k/4));
           else
-            getParamQuantity(PARTIAL_PARAM+k)->setValue(0);
+            getParamQuantity(PARTIAL_PARAM+k)->setImmediateValue(0);
         }
         break;
       case ODD_MIN:
         for(int k=0;k<48;k++) {
           if(k%2==0)
-            getParamQuantity(PARTIAL_PARAM+k)->setValue(rnd.nextMin(k/4));
+            getParamQuantity(PARTIAL_PARAM+k)->setImmediateValue(rnd.nextMin(k/4));
           else
-            getParamQuantity(PARTIAL_PARAM+k)->setValue(0);
+            getParamQuantity(PARTIAL_PARAM+k)->setImmediateValue(0);
         }
         break;
       case HARMONIC_WB:
         for(int k=0;k<48;k++) {
-          getParamQuantity(PARTIAL_PARAM+k)->setValue(rnd.nextWeibull(k/4.f));
+          getParamQuantity(PARTIAL_PARAM+k)->setImmediateValue(rnd.nextWeibull(k/4.f));
         }
         break;
       case EVEN_WB:
         for(int k=0;k<48;k++) {
           if(k%2==1)
-            getParamQuantity(PARTIAL_PARAM+k)->setValue(rnd.nextWeibull(k/4.f));
+            getParamQuantity(PARTIAL_PARAM+k)->setImmediateValue(rnd.nextWeibull(k/4.f));
           else
-            getParamQuantity(PARTIAL_PARAM+k)->setValue(0);
+            getParamQuantity(PARTIAL_PARAM+k)->setImmediateValue(0);
         }
         break;
       case ODD_WB:
         for(int k=0;k<48;k++) {
           if(k%2==0)
-            getParamQuantity(PARTIAL_PARAM+k)->setValue(rnd.nextWeibull(k/4.f));
+            getParamQuantity(PARTIAL_PARAM+k)->setImmediateValue(rnd.nextWeibull(k/4.f));
           else
-            getParamQuantity(PARTIAL_PARAM+k)->setValue(0);
+            getParamQuantity(PARTIAL_PARAM+k)->setImmediateValue(0);
         }
         break;
       case HARMONIC_MIN:
       default:
         for(int k=0;k<48;k++) {
-          getParamQuantity(PARTIAL_PARAM+k)->setValue(rnd.nextMin(k/4));
+          getParamQuantity(PARTIAL_PARAM+k)->setImmediateValue(rnd.nextMin(k/4));
         }
         break;
     }
@@ -242,7 +242,7 @@ struct Pad2 : Module {
           float oldParam=params[PARTIAL_PARAM+k*16+chn].getValue();
           float newParam=clamp(inputs[PARTIALS_INPUT+k].getVoltage(chn),0.f,10.f)/10.f;
           if(oldParam!=newParam) inputChanged=true;
-          getParamQuantity(PARTIAL_PARAM+k*16+chn)->setValue(newParam);
+          getParamQuantity(PARTIAL_PARAM+k*16+chn)->setImmediateValue(newParam);
         }
       }
     }

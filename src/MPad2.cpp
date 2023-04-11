@@ -157,11 +157,11 @@ struct MPad2 : Module {
       }
     }
     if(inputs[BW_INPUT].isConnected()) {
-      getParamQuantity(BW_PARAM)->setValue(rescale(inputs[BW_INPUT].getVoltage(),0.f,10.f,0.5f,60.f));
+      getParamQuantity(BW_PARAM)->setImmediateValue(rescale(inputs[BW_INPUT].getVoltage(),0.f,10.f,0.5f,60.f));
     }
     float bw=params[BW_PARAM].getValue();
     if(inputs[SCALE_INPUT].isConnected()) {
-      getParamQuantity(SCALE_PARAM)->setValue(rescale(inputs[SCALE_INPUT].getVoltage(),0.f,10.f,0.5f,4.f));
+      getParamQuantity(SCALE_PARAM)->setImmediateValue(rescale(inputs[SCALE_INPUT].getVoltage(),0.f,10.f,0.5f,4.f));
     }
     float scale=params[SCALE_PARAM].getValue();
     float pSeed=params[PSEED_PARAM].getValue();

@@ -148,7 +148,7 @@ struct Osc1 : Module {
     }
     if(random) {
       _len=rnd.nextRange(3,16);
-      getParamQuantity(NODES_PARAM)->setValue(_len);
+      getParamQuantity(NODES_PARAM)->setImmediateValue(_len);
       for(int k=0;k<_len;k++) {
         px[k]=float(k)/float(_len-1);
         py[k]=float(rnd.nextDouble())*10.f-5.f;
@@ -281,7 +281,7 @@ struct Osc1 : Module {
   }
 
   void onReset(const ResetEvent &e) override {
-    getParamQuantity(NODES_PARAM)->setValue(9);
+    getParamQuantity(NODES_PARAM)->setImmediateValue(9);
     resetPoints();
     changed=true;
   }

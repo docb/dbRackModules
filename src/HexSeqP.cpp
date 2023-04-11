@@ -199,7 +199,7 @@ struct HexSeqP : Module {
         for(int k=0;k<NUMPAT;k++) {
           if(patTrigger[k].process(inputs[PAT_INPUT].getVoltage(k))) {
             currentPattern=k;
-            getParamQuantity(PATTERN_PARAM)->setValue(k);
+            getParamQuantity(PATTERN_PARAM)->setImmediateValue(k);
             for(int j=0;j<NUMSEQ;j++) {
               setDirty(j,true);
             }
@@ -211,7 +211,7 @@ struct HexSeqP : Module {
         if(k!=currentPattern) {
           currentPattern=k;
           songpos = 0;
-          getParamQuantity(PATTERN_PARAM)->setValue(k);
+          getParamQuantity(PATTERN_PARAM)->setImmediateValue(k);
           for(int j=0;j<NUMSEQ;j++) {
             setDirty(j,true);
           }

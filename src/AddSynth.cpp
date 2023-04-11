@@ -213,7 +213,7 @@ struct AddSynth : Module {
     float dmp=10.f;
     if(inputs[DMP_INPUT].isConnected()) {
       dmp=10.f-clamp(inputs[DMP_INPUT].getVoltage(),0.f,10.f);
-      getParamQuantity(DMP_PARAM)->setValue(10.f-dmp);
+      getParamQuantity(DMP_PARAM)->setImmediateValue(10.f-dmp);
     } else {
       dmp=10.f-clamp(params[DMP_PARAM].getValue(),0.f,10.f);
     }

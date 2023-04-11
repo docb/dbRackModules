@@ -34,7 +34,7 @@ struct PLC : Module {
   void copyFromFaders(int row) {
     if(fadersModule) {
       for(int k=0;k<16;k++) {
-        getParamQuantity(k)->setValue(fadersModule->params[row*16+k].getValue());
+        getParamQuantity(k)->setImmediateValue(fadersModule->params[row*16+k].getValue());
       }
     }
   }
@@ -88,11 +88,11 @@ struct PLC : Module {
 
   void reconfig() {
     for(int k=0;k<16;k++) {
-      float value = getParamQuantity(k)->getValue();
+      float value = getParamQuantity(k)->getImmediateValue();
       if(value>max) value=max;
       if(value<min) value=min;
       configParam(k,min,max,0,"chn "+std::to_string(k+1));
-      getParamQuantity(k)->setValue(value);
+      getParamQuantity(k)->setImmediateValue(value);
       dirty=16;
     }
 
