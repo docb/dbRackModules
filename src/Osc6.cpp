@@ -117,7 +117,7 @@ struct Osc6 : Module {
 
   void setParamFromInput(ParamId param,InputId input) {
     if(inputs[input].isConnected()) {
-      getParamQuantity(param)->setImmediateValue(inputs[input].getVoltage()*3.2f);
+      setImmediateValue(getParamQuantity(param),inputs[input].getVoltage()*3.2f);
     }
   }
 

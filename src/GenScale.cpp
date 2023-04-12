@@ -41,7 +41,7 @@ struct GenScale : Module {
   void process(const ProcessArgs &args) override {
     if(inputs[SCL_INPUT].isConnected()) {
       for(int k=0;k<12;k++) {
-        getParamQuantity(SCALE_PARAM+k)->setImmediateValue(inputs[SCL_INPUT].getVoltage(k)>1.f);
+        setImmediateValue(getParamQuantity(SCALE_PARAM+k),inputs[SCL_INPUT].getVoltage(k)>1.f);
       }
     }
     float start=params[OCT_PARAM].getValue()+params[NOTE_PARAM].getValue()/12.f;

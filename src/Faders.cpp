@@ -240,10 +240,10 @@ struct Faders : Module {
       }
     }
     for(int k=0;k<48;k++) {
-      getParamQuantity(k)->setImmediateValue(presets[pat].faderValues[k]);
+      setImmediateValue(getParamQuantity(k),presets[pat].faderValues[k]);
     }
     for(int k=0;k<MAX_KNOBS;k++) {
-      getParamQuantity(KNOB_PARAMS+k)->setImmediateValue(presets[pat].knobValues[k]);
+      setImmediateValue(getParamQuantity(KNOB_PARAMS+k),presets[pat].knobValues[k]);
     }
   }
 
@@ -342,7 +342,7 @@ struct Faders : Module {
   void _process(const ProcessArgs &args) {
     if(inputs[PAT_INPUT].isConnected() && params[EDIT_PARAM].getValue() == 0) {
       int c=clamp(inputs[PAT_INPUT].getVoltage(),0.f,9.99f)*float(MAX_PATS)/10.f;
-      getParamQuantity(PAT_PARAM)->setImmediateValue(c);
+      setImmediateValue(getParamQuantity(PAT_PARAM),c);
     }
     int pat=params[PAT_PARAM].getValue();
     float glide=params[GLIDE_PARAM].getValue();
@@ -381,7 +381,7 @@ struct Faders : Module {
       if(value<presets[pat].min[nr])
         value=presets[pat].min[nr];
       configParam(nr*16+k,presets[pat].min[nr],presets[pat].max[nr],0,rowLabels[nr] +" chn "+std::to_string(k+1));
-      getParamQuantity(nr*16+k)->setImmediateValue(value);
+      setImmediateValue(getParamQuantity(nr*16+k),value);
     }
   }
 
@@ -411,14 +411,14 @@ struct Faders : Module {
     int pat=params[PAT_PARAM].getValue();
     for(int k=0;k<16;k++) {
       int id=nr*16+k;
-      getParamQuantity(id)->setImmediateValue(math::rescale(float(rnd.nextDouble()),0.f,1.f,presets[pat].min[nr],presets[pat].max[nr]));
+      setImmediateValue(getParamQuantity(id),math::rescale(float(rnd.nextDouble()),0.f,1.f,presets[pat].min[nr],presets[pat].max[nr]));
     }
   }
 
   void onRandomize(const RandomizeEvent &e) override {
     for(int k=0;k<3;k++) {
       randomizeValues(k);
-      getParamQuantity(KNOB_PARAMS+k)->setImmediateValue(math::rescale(float(rnd.nextDouble()),0.f,1.f,-10.f,10.f));
+      setImmediateValue(getParamQuantity(KNOB_PARAMS+k),math::rescale(float(rnd.nextDouble()),0.f,1.f,-10.f,10.f));
     }
   }
   void onAdd(const AddEvent &e) override {

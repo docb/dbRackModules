@@ -127,7 +127,7 @@ struct PHSR2 : Module {
     }
     if(random) {
       _len=rnd.nextRange(3,16);
-      getParamQuantity(NODES_PARAM)->setImmediateValue(_len);
+      setImmediateValue(getParamQuantity(NODES_PARAM),_len);
       for(int k=0;k<_len;k++) {
         px[k]=float(k)/float(_len-1);
         if(k==0) {
@@ -229,7 +229,7 @@ struct PHSR2 : Module {
   }
 
   void onReset(const ResetEvent &e) override {
-    getParamQuantity(NODES_PARAM)->setImmediateValue(5);
+    setImmediateValue(getParamQuantity(NODES_PARAM),5);
     len=5;
     for(int k=0;k<len;k++) {
       px[k]=float(k)/float(len-1);

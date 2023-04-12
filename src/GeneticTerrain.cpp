@@ -189,7 +189,7 @@ struct GeneticTerrain : Module {
 
   int getCurve() {
     int _curve=clamp(inputs[CURVE_TYPE_INPUT].getNormalVoltage(floorf(params[CURVE_TYPE_PARAM].getValue())),0.f,10.99f);
-    getParamQuantity(CURVE_TYPE_PARAM)->setImmediateValue(_curve);
+    setImmediateValue(getParamQuantity(CURVE_TYPE_PARAM),_curve);
     return _curve;
   }
 

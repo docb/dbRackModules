@@ -139,14 +139,14 @@ struct PPD : Module {
     if(paramDivider.process()) {
       if(inputs[BPM_INPUT].isConnected()) {
         float freq=powf(2,clamp(inputs[BPM_INPUT].getVoltage(),-2.f,1.f));
-        getParamQuantity(BPM_PARAM)->setImmediateValue(freq*120.f);
+        setImmediateValue(getParamQuantity(BPM_PARAM),freq*120.f);
       }
       currentBpm=params[BPM_PARAM].getValue();
       if(inputs[FEEDBACK_INPUT].isConnected()) {
-        getParamQuantity(FEEDBACK_PARAM)->setImmediateValue(inputs[FEEDBACK_INPUT].getVoltage()*0.1);
+        setImmediateValue(getParamQuantity(FEEDBACK_PARAM),inputs[FEEDBACK_INPUT].getVoltage()*0.1);
       }
       if(inputs[MIX_INPUT].isConnected()) {
-        getParamQuantity(MIX_PARAM)->setImmediateValue(inputs[MIX_INPUT].getVoltage()*0.1);
+        setImmediateValue(getParamQuantity(MIX_PARAM),inputs[MIX_INPUT].getVoltage()*0.1);
       }
     }
 

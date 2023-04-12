@@ -37,15 +37,15 @@ struct Ratio : Module {
       if(inputs[RATIO_INPUT].isConnected()) {
         float _r=clamp(inputs[RATIO_INPUT].getVoltage(),-10.f,10.f);
         float r=std::abs(_r);
-        getParamQuantity(RATIO_PARAM)->setImmediateValue(r*3.2f);
+        setImmediateValue(getParamQuantity(RATIO_PARAM),r*3.2f);
         if(_r<0)
-          getParamQuantity(INV_PARAM)->setImmediateValue(1.f);
+          setImmediateValue(getParamQuantity(INV_PARAM),1.f);
         else
-          getParamQuantity(INV_PARAM)->setImmediateValue(0.f);
+          setImmediateValue(getParamQuantity(INV_PARAM),0.f);
       }
       if(inputs[FINE_INPUT].isConnected()) {
         float f=clamp(inputs[FINE_INPUT].getVoltage(),-10.f,10.f);
-        getParamQuantity(FINE_PARAM)->setImmediateValue(f*0.1);
+        setImmediateValue(getParamQuantity(FINE_PARAM),f*0.1);
       }
     }
     float ratio=params[RATIO_PARAM].getValue();
