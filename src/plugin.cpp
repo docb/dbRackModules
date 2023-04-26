@@ -70,6 +70,10 @@ extern Model* modelSWF;
 extern Model* modelOsc6;
 extern Model* modelDrums;
 extern Model* modelPPD;
+extern Model* modelOsc7;
+extern Model* modelOsc8;
+extern Model* modelOsc9;
+
 
 void init(Plugin* p) {
 	pluginInstance = p;
@@ -141,5 +145,8 @@ void init(Plugin* p) {
   p->addModel(modelOsc6);
 	p->addModel(modelDrums);
   p->addModel(modelPPD);
+  p->addModel(modelOsc7);
+  p->addModel(modelOsc8);
+  p->addModel(modelOsc9);
 
 }

@@ -218,7 +218,7 @@ struct PPDWidget : ModuleWidget {
     bpmDisplay->box.size=mm2px(Vec(17,4));
     addChild(bpmDisplay);
     addParam(createParam<TrimbotWhite9>(mm2px(Vec(x1,32)),module,PPD::NOTE_PARAM));
-    auto selectParam=createParam<SelectParam>(mm2px(Vec(x2,33)),module,PPD::PT_PARAM);
+    auto selectParam=createParam<SelectParam>(mm2px(Vec(x2,32)),module,PPD::PT_PARAM);
     selectParam->box.size=mm2px(Vec(7,9));
     selectParam->init({"nn","dot","trip"});
     addParam(selectParam);

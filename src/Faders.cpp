@@ -375,7 +375,7 @@ struct Faders : Module {
   void reconfig(int nr) {
     int pat=params[PAT_PARAM].getValue();
     for(int k=0;k<16;k++) {
-      float value=getParamQuantity(nr*16+k)->getImmediateValue();
+      float value=getParamQuantity(nr*16+k)->getValue();
       if(value>presets[pat].max[nr])
         value=presets[pat].max[nr];
       if(value<presets[pat].min[nr])

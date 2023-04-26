@@ -121,6 +121,8 @@ struct Drums : Module {
     configParam(SMP_PARAM,0,15,0,"Sample selection");
     getParamQuantity(SMP_PARAM)->snapEnabled=true;
     configSwitch(TYPE_PARAM,0,5,0,"Type",{"BD","SN","CL","OH","PERC","CLAP"});
+    getParamQuantity(TYPE_PARAM)->snapEnabled=true;
+
     configParam(PITCH_PARAM,-1,1,0,"Pitch");
     configParam(DECAY_PARAM,0,1,1,"Decay");
     configParam(DECAY_CV_PARAM,0,1,0,"Decay CV");
@@ -256,7 +258,7 @@ struct Drums : Module {
     if(inputs[GAIN_INPUT].isConnected()) {
       gain*=(inputs[GAIN_INPUT].getVoltage()*0.1f);
     }
-    out*=env.env*gain;
+    out*=env.env*gain*3;
     outputs[OUTPUT].setVoltage(out);
     samplePlayers[type].step(args,getPitch());
   }

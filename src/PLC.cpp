@@ -88,7 +88,7 @@ struct PLC : Module {
 
   void reconfig() {
     for(int k=0;k<16;k++) {
-      float value = getParamQuantity(k)->getImmediateValue();
+      float value = getParamQuantity(k)->getValue();
       if(value>max) value=max;
       if(value<min) value=min;
       configParam(k,min,max,0,"chn "+std::to_string(k+1));
