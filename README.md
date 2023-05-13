@@ -234,7 +234,7 @@ There are several modules which can be phase driven:
 
 - Osc7 is a complex oscillator producing some harsh phase distorted waves. 
 - It provides 8 types of phase distortion which can be controlled via an amount parameter and input.
-- Aliasing is suppressed via 16 times oversampling (can be turned off in the menu, as DC blocking).
+- Aliasing is suppressed via 16 times oversampling.
 
 ### Osc8
 
