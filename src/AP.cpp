@@ -68,7 +68,7 @@ struct AP : Module {
     configInput(CV_INPUT,"CV");
     configInput(FREQ_INPUT,"Freq");
     configInput(DELAY_INPUT,"Delay");
-    configParam(DELAY_PARAM,0,0.5f,0.f,"Delay (s)");
+    configParam(DELAY_PARAM,0,1.f,0.f,"Delay (s)");
     configParam(DELAY_SAMP_PARAM,1,48,1,"Delay smps");
     getParamQuantity(DELAY_SAMP_PARAM)->snapEnabled=true;
     configParam(DELAY_CV_PARAM,0,1,0,"Delay CV"," %",0,100);

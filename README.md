@@ -8,6 +8,8 @@ New modules in 2.1.1: [PHSR2](#phsr2), [CSOSC](#csosc), [BWF](#bwf), [EVA](#eva)
 
 New modules in 2.2.0: [Osc1](#osc1), [Osc2](#osc2), [Osc3](#osc3), [Osc4](#osc4), [Osc5](#osc5), [Osc6](#osc6), [PRB](#prb), [SPF](#spf), [SKF](#skf), [L4P](#l4p), [USVF](#usvf), [CHBY](#chby), [AP](#ap), [LWF](#lwf), [DRM](#drm), [SWF](#swf), [JWS](#jws), [CLP](#clp), [CWS](#cws), [RndH2](#rndh2), [AUX](#aux), [OFS and OFS3](#ofs-and-ofs3) 
 
+New modules in 2.3.0: [Osc7](#osc7), [Osc8](#osc8), [Osc9](#osc9), [Drum](#drum), [PPD](#ppd)
+
 See also the demo patches on [PatchStorage](https://patchstorage.com/author/docb/) or on [youtube](https://www.youtube.com/@docb7593)
 
 
@@ -30,6 +32,9 @@ See also the demo patches on [PatchStorage](https://patchstorage.com/author/docb
   - [Osc4](#osc4)
   - [Osc5](#osc5)
   - [Osc6](#osc6)
+  - [Osc7](#osc7)
+  - [Osc8](#osc8)
+  - [Osc9](#osc9)
   - [PRB](#prb)
   - [CSOSC](#csosc)
   - [SPL](#spl)
@@ -41,6 +46,7 @@ See also the demo patches on [PatchStorage](https://patchstorage.com/author/docb
   - [PAD2](#pad2)
   - [µPad2](#%C2%B5pad2)
   - [Gendy](#gendy)
+  - [Drum](#drum)
 - [Some CPU friendly polyphonic filters](#some-cpu-friendly-polyphonic-filters)
   - [SPF](#spf)
   - [SKF](#skf)
@@ -62,6 +68,7 @@ See also the demo patches on [PatchStorage](https://patchstorage.com/author/docb
   - [MVerb](#mverb)
   - [YAC](#yac)
   - [BWF](#bwf)
+  - [PPD](#ppd)
 - [Random](#random)
   - [RndH,RndC](#rndhrndc)
   - [RndH2](#rndh2)
@@ -220,6 +227,29 @@ There are several modules which can be phase driven:
 - If XC>0, YM>0 and YC>0 then it gets very complex as then the term t*t is present in the formula,
 - Aliasing is suppressed via 16 times oversampling (can be turned off in the menu, as DC blocking).
 - There are some factory presets to check out.
+
+### Osc7
+
+![](images/Osc7.png?raw=true)
+
+- Osc7 is a complex oscillator producing some harsh phase distorted waves. 
+- It provides 8 types of phase distortion which can be controlled via an amount parameter and input.
+- Aliasing is suppressed via 16 times oversampling (can be turned off in the menu, as DC blocking).
+
+### Osc8
+
+![](images/Osc8.png?raw=true)
+
+- Osc8 has two additive oscillators
+- The oscillators can TZFM modulate each other (in both directions or cross modulation) controlled via the FM inputs.
+- They provide up to 16 partials which can be offset, stretched, decayed and filtered (odd/even)
+- There is a ratio and fine control for pitch
+
+### Osc9
+
+![](images/Osc9.png?raw=true)
+
+Osc9 is a wave shaping oscillator providing two controls for shaping the sound -- try out!
 
 
 ### PRB
@@ -397,6 +427,13 @@ https://user-images.githubusercontent.com/1134412/175530919-0f10c530-6997-4db3-b
 This is a port of Supercolliders gendy which is based on the work of Peter Hoffmann who has rebuild GENDYN
 from Iannis Xenakis.
 
+### Drum
+
+![](images/Drum.png?raw=true)
+
+A tiny sample based drum module with pitch, gain, decay controls.
+
+
 ## Some CPU friendly polyphonic filters
 ![](images/filters.png?raw=true)
 ### SPF
@@ -490,6 +527,11 @@ https://user-images.githubusercontent.com/1134412/171022165-66ec0706-2f26-4b07-a
 ### BWF
 A brickwall filter. Uses FFT to cut frequencies. It is more an effect as a filter ...
 The fft size which determines the latency can be configured in the menu.
+
+### PPD
+![](images/PPD.png?raw=true)
+
+A bpm controlled mono to stereo ping pong delay with sends and returns.
 
 
 ## Random

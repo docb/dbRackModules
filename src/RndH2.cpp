@@ -164,7 +164,7 @@ struct RndH2 : Module {
     }
     if(rstTrigger.process(inputs[RST_INPUT].getVoltage())) {
       if(inputs[SEED_INPUT].isConnected()) {
-        getParamQuantity(SEED_PARAM)->setValue(inputs[SEED_INPUT].getVoltage()*0.1);
+        setImmediateValue(getParamQuantity(SEED_PARAM),inputs[SEED_INPUT].getVoltage()*0.1);
       }
       float seedParam=params[SEED_PARAM].getValue();
       seedParam=floorf(seedParam*10000)/10000;

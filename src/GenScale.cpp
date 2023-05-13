@@ -6,7 +6,7 @@ struct GenScale : Module {
     NOTE_PARAM,OCT_PARAM,SCALE_PARAM,NUM_PARAMS=SCALE_PARAM+12
   };
   enum InputIds {
-    NUM_INPUTS
+    SCL_INPUT,NUM_INPUTS
   };
   enum OutputIds {
     VOCT_OUTPUT,NUM_OUTPUTS
@@ -34,11 +34,16 @@ struct GenScale : Module {
     configParam(SCALE_PARAM+9,0.f,1.f,0.f,"Major Sixth");
     configParam(SCALE_PARAM+10,0.f,1.f,0.f,"Minor Seventh");
     configParam(SCALE_PARAM+11,0.f,1.f,0.f,"Major Seventh");
+    configInput(SCL_INPUT,"Scale");
     configOutput(VOCT_OUTPUT,"V/Oct");
   }
 
   void process(const ProcessArgs &args) override {
-
+    if(inputs[SCL_INPUT].isConnected()) {
+      for(int k=0;k<12;k++) {
+        setImmediateValue(getParamQuantity(SCALE_PARAM+k),inputs[SCL_INPUT].getVoltage(k)>1.f);
+      }
+    }
     float start=params[OCT_PARAM].getValue()+params[NOTE_PARAM].getValue()/12.f;
     int pos=0;
     float sum=0;
@@ -92,11 +97,14 @@ struct GenScaleWidget : ModuleWidget {
     for(int k=0;k<12;k++) {
       addParam(createParam<SmallButton>(Vec(12,68+k*10),module,GenScale::SCALE_PARAM+(11-k)));
     }
+
+    addInput(createInput<SmallPort>(Vec(13,190),module,GenScale::SCL_INPUT));
+
     addParam(createParam<TrimbotWhite9Snap>(Vec(9,236),module,GenScale::NOTE_PARAM));
 
     addParam(createParam<TrimbotWhite9Snap>(Vec(9,278),module,GenScale::OCT_PARAM));
 
-    addOutput(createOutput<SmallPort>(Vec(12,320),module,GenScale::VOCT_OUTPUT));
+    addOutput(createOutput<SmallPort>(Vec(13,320),module,GenScale::VOCT_OUTPUT));
 
   }
 

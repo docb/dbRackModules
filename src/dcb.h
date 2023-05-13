@@ -848,6 +848,14 @@ struct LSeg {
   }
 };
 
+inline void setImmediateValue(ParamQuantity *pq,float value) {
+  if (!pq->module)
+    return;
+  value = math::clampSafe(value, pq->getMinValue(), pq->getMaxValue());
+  if (pq->snapEnabled)
+    value = std::round(value);
+  APP->engine->setParamValue(pq->module, pq->paramId, value);
+}
 #define TWOPIF 6.2831853f
 #define MHEIGHT 128.5f
 #define TY(x) MHEIGHT-(x)-6.237
