@@ -159,14 +159,14 @@ struct PPD : Module {
     float rate=msecs[noteIdx][ptIdx];
     rate=rescale(rate,0.0f,10000.0f,0.0f,10.0f);
     float in=inputs[INPUT].getVoltage();
-    float feedback=clamp(params[FEEDBACK_PARAM].getValue()+inputs[FEEDBACK_INPUT].getVoltage()/10.0f,0.0f,1.0f);
+    float feedback=clamp(params[FEEDBACK_PARAM].getValue(),0.0f,1.0f);
     float dry=in+(wetR*feedback);
     float delay=clamp(rate,0.0f,10.0f);
     float mix=params[MIX_PARAM].getValue();
-    float wetL=l.process(dry,delay,mix,args.sampleRate);
-    wetR=r.process(wetL,delay,mix,args.sampleRate);
-    outputs[L_OUTPUT].setVoltage(wetL);
-    outputs[R_OUTPUT].setVoltage(wetR);
+    float wetL=l.process(dry,delay,1,args.sampleRate);
+    wetR=r.process(wetL,delay,1,args.sampleRate);
+    outputs[L_OUTPUT].setVoltage(crossfade(in,wetL,mix));
+    outputs[R_OUTPUT].setVoltage(crossfade(in,wetR,mix));
   }
 };
 
