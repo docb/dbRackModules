@@ -116,7 +116,7 @@ struct PPD : Module {
   void computeMsecs(float bpm) {
     float mSecsPerBeat=60000.f/bpm;
     float secsPerBeat=60/bpm;
-    msecs[0][0]=msecs[0][1]=msecs[0][2]=secsPerBeat*4;
+    msecs[0][0]=msecs[0][1]=msecs[0][2]=mSecsPerBeat*4;
     msecs[1][1]=mSecsPerBeat*3;
     msecs[1][0]=mSecsPerBeat*2;
     msecs[1][2]=msecs[1][0]*0.666667f;

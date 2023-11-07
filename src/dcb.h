@@ -152,6 +152,13 @@ struct SmallPort : app::SvgPort {
     setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/SmallPort.svg")));
   }
 };
+
+struct HiddenPort : app::SvgPort {
+  HiddenPort() {
+    setSvg(APP->window->loadSvg(asset::plugin(pluginInstance,"res/HiddenPort.svg")));
+  }
+};
+
 template <typename TBase>
 struct DBSmallLight : TSvgLight<TBase> {
   DBSmallLight() {

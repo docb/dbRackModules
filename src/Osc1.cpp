@@ -85,6 +85,7 @@ struct Osc1 : Module {
   Cheby1_32_BandFilter<float_4> filtersPD[4];
   DCBlocker<float_4> dcBlocker[4];
   DCBlocker<float_4> dcBlockerPD[4];
+  bool cosWave=false;
 
   Osc1() {
     config(PARAMS_LEN,INPUTS_LEN,OUTPUTS_LEN,LIGHTS_LEN);
@@ -215,7 +216,7 @@ struct Osc1 : Module {
           out=lsegOsc[c/4].process(ch);
           lsegOsc[c/4].updatePhs(fms,ch);
           if(pdConnected) {
-            pdOut=simd::sin((out/10.f+0.5f)*TWOPIF);
+            pdOut=simd::sin((out/10.f+(cosWave?0.75f:0.5f))*TWOPIF);
             pdOut=filtersPD[c/4].process(pdOut);
           }
           if(outConnected)
@@ -251,6 +252,10 @@ struct Osc1 : Module {
           py[k]=json_real_value(json_array_get(jPY,k));
         }
       }
+      json_t *jCos=json_object_get(root,"cos");
+      if(jCos) {
+        cosWave=json_boolean_value(jCos);
+      }
       changed=true;
     }
 
@@ -267,6 +272,7 @@ struct Osc1 : Module {
     }
     json_object_set_new(root,"px",jPX);
     json_object_set_new(root,"py",jPY);
+    json_object_set_new(root,"cos",json_boolean(cosWave));
     return root;
   }
 
@@ -322,6 +328,15 @@ struct Osc1Widget : ModuleWidget {
     addParam(createParam<TrimbotWhite>(mm2px(Vec(66,y)),module,Osc1::NODES_PARAM));
     addOutput(createOutput<SmallPort>(mm2px(Vec(90,y)),module,Osc1::PD_OUTPUT));
     addOutput(createOutput<SmallPort>(mm2px(Vec(101,y)),module,Osc1::CV_OUTPUT));
+  }
+  void appendContextMenu(Menu* menu) override {
+    Osc1 *module=dynamic_cast<Osc1 *>(this->module);
+    assert(module);
+
+    menu->addChild(new MenuSeparator);
+
+    menu->addChild(createBoolPtrMenuItem("PD Cosine Wave","",&module->cosWave));
+
   }
 };
 

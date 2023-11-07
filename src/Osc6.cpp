@@ -64,6 +64,7 @@ struct Osc6 : Module {
   bool oversample=true;
   bool blockDC=true;
   dsp::ClockDivider paramDivider;
+  RND rnd;
   Osc6() {
     config(PARAMS_LEN,INPUTS_LEN,OUTPUTS_LEN,LIGHTS_LEN);
     configButton(RST_PARAM,"Rst");
@@ -197,6 +198,29 @@ struct Osc6 : Module {
     if(jOverSample!=nullptr) oversample = json_boolean_value(jOverSample);
     json_t *jDcBlock = json_object_get(rootJ,"blockDC");
     if(jDcBlock!=nullptr) blockDC = json_boolean_value(jDcBlock);
+  }
+
+  void onRandomize(const RandomizeEvent& e) override {
+    getParamQuantity(XA_PARAM)->setValue(rnd.nextRange(1,9));
+    getParamQuantity(XB_PARAM)->setValue(rnd.nextRange(1,9));
+    getParamQuantity(XC_PARAM)->setValue(rnd.nextRange(1,9));
+    getParamQuantity(XD_PARAM)->setValue(rnd.nextRange(1,9));
+    getParamQuantity(YA_PARAM)->setValue(rnd.nextRange(1,9));
+    getParamQuantity(YB_PARAM)->setValue(rnd.nextRange(1,9));
+    getParamQuantity(YC_PARAM)->setValue(rnd.nextRange(1,9));
+    getParamQuantity(YD_PARAM)->setValue(rnd.nextRange(1,9));
+    getParamQuantity(Y_MULT_PARAM)->setValue(rnd.nextRange(1,9));
+    getParamQuantity(Y_ADD_PARAM)->setValue(rnd.nextRange(1,9));
+    uint32_t bits = rnd.nextRange(4,12);
+    getParamQuantity(BIT_PARAM)->setValue(bits);
+    for(unsigned int k=0;k<bits;k++) {
+      getParamQuantity(X_PARAM+k)->setValue(rnd.nextCoin()?1.f:0.f);
+      getParamQuantity(Y_PARAM+k)->setValue(rnd.nextCoin()?1.f:0.f);
+    }
+    for(unsigned int k=bits;k<16;k++) {
+      getParamQuantity(X_PARAM+k)->setValue(0.f);
+      getParamQuantity(Y_PARAM+k)->setValue(0.f);
+    }
   }
 
 };

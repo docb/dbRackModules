@@ -1,5 +1,5 @@
 #include "dcb.h"
-
+#include "filter.hpp"
 
 using simd::float_4;
 
@@ -11,13 +11,6 @@ struct COSC {
     phase+=(sampleTime*freq);
     phase-=simd::floor(phase);
   }
-
-  // test phase modulation
-  void updatePhs(float sampleTime,T freq,T ain) {
-    phase+=(sampleTime*freq)+ain;
-    phase-=simd::floor(phase);
-  }
-
 
   void updateExtPhs(T phs) {
     phase=simd::fmod(phs,1);
@@ -32,11 +25,14 @@ struct COSC {
     return modPhs;
   }
 
-  T process2(T skew,T clip) {
-    T cl=simd::fmin(skew*clip,(1-skew)*clip);
-    T ct1=skew-cl;
-    T ct2=1-cl;
-    T modPhs=simd::ifelse(phase<ct1,phase*(0.5/ct1),simd::ifelse(phase<ct2,0.5,0.5+(phase-ct2)*(0.5/(1-ct2))));
+  T process(T skew,T clip,T fms) {
+    phase+=fms;
+    phase-=simd::floor(phase);
+    T cl1=skew*(1-clip);
+    T cl2=(1-skew)*clip;
+    T ct1=cl1;
+    T ct2=1-cl2;
+    T modPhs=simd::ifelse(phase<skew,simd::ifelse(phase<ct1,phase*(0.5/ct1),0.5),simd::ifelse(phase<ct2,0.5+(phase-skew)*(0.5/(ct2-skew)),1));
     return modPhs;
   }
 };
@@ -55,6 +51,9 @@ struct CSOSC : Module {
     LIGHTS_LEN
   };
   COSC<float_4> osc[4];
+  Cheby1_32_BandFilter<float_4> filter24[4];
+  bool oversample=false;
+  bool blockDC=false;
 
   CSOSC() {
     config(PARAMS_LEN,INPUTS_LEN,OUTPUTS_LEN,LIGHTS_LEN);
@@ -83,13 +82,14 @@ struct CSOSC : Module {
       channels=inputs[PHS_INPUT].getChannels();
     float skew=params[SKEW_PARAM].getValue();
     float clip=params[CLIP_PARAM].getValue();
+    bool over = oversample && !inputs[PHS_INPUT].isConnected() && outputs[CV_OUTPUT].isConnected();
+    float_4 freq=0.f;
     for(int c=0;c<channels;c+=4) {
       auto *oscil=&osc[c/4];
       if(inputs[PHS_INPUT].isConnected()) {
         oscil->updateExtPhs(inputs[PHS_INPUT].getVoltageSimd<float_4>(c)/10.f+0.5f);
       } else {
         float_4 pitch=freqParam+inputs[VOCT_INPUT].getPolyVoltageSimd<float_4>(c);
-        float_4 freq;
         if(linear) {
           freq=dsp::FREQ_C4*dsp::approxExp2_taylor5(pitch+30.f)/std::pow(2.f,30.f);
           freq+=dsp::FREQ_C4*inputs[FM_INPUT].getPolyVoltageSimd<float_4>(c)*fmParam;
@@ -98,17 +98,44 @@ struct CSOSC : Module {
           freq=dsp::FREQ_C4*dsp::approxExp2_taylor5(pitch+30.f)/std::pow(2.f,30.f);
         }
         freq=simd::fmin(freq,args.sampleRate/2);
-        oscil->updatePhs(args.sampleTime,freq);
+        if(!over) oscil->updatePhs(args.sampleTime,freq);
       }
       float_4 skewIn=simd::clamp(inputs[SKEW_INPUT].getVoltageSimd<float_4>(c)*params[SKEW_CV_PARAM].getValue()*0.1+skew,0.f,1.f);
       float_4 clipIn=simd::clamp(inputs[CLIP_INPUT].getVoltageSimd<float_4>(c)*params[CLIP_CV_PARAM].getValue()*0.1+clip,0.f,1.f);
-      float_4 out=oscil->process(skewIn,clipIn);
-      outputs[PHS_OUTPUT].setVoltageSimd(out*10.f-5.f,c);
-      if(outputs[CV_OUTPUT].isConnected())
-        outputs[CV_OUTPUT].setVoltageSimd(simd::cos(out*TWOPIF)*5.f,c);
+      if(over) {
+        float_4 fms=freq*args.sampleTime/16.f;
+        float_4 out;
+        float_4 phs;
+        for(int k=0;k<16;k++) {
+          phs=oscil->process(skewIn,clipIn,fms);
+          out=simd::cos(phs*TWOPIF);
+          out=filter24->process(out);
+        }
+        outputs[PHS_OUTPUT].setVoltageSimd(phs*10.f-5.f,c);
+        outputs[CV_OUTPUT].setVoltageSimd(out*5.f,c);
+      } else {
+        float_4 out=oscil->process(skewIn,clipIn);
+        outputs[PHS_OUTPUT].setVoltageSimd(out*10.f-5.f,c);
+        if(outputs[CV_OUTPUT].isConnected())
+          outputs[CV_OUTPUT].setVoltageSimd(simd::cos(out*TWOPIF)*5.f,c);
+      }
     }
     outputs[CV_OUTPUT].setChannels(channels);
     outputs[PHS_OUTPUT].setChannels(channels);
+  }
+
+  json_t *dataToJson() override {
+    json_t *data=json_object();
+    json_object_set_new(data,"oversample",json_boolean(oversample));
+    json_object_set_new(data,"blockDC",json_boolean(blockDC));
+    return data;
+  }
+
+  void dataFromJson(json_t *rootJ) override {
+    json_t *jOverSample = json_object_get(rootJ,"oversample");
+    if(jOverSample!=nullptr) oversample = json_boolean_value(jOverSample);
+    json_t *jDcBlock = json_object_get(rootJ,"blockDC");
+    if(jDcBlock!=nullptr) blockDC = json_boolean_value(jDcBlock);
   }
 };
 
@@ -139,6 +166,14 @@ struct CSOSCWidget : ModuleWidget {
     addInput(createInput<SmallPort>(mm2px(Vec(7,94)),module,CSOSC::PHS_INPUT));
     addOutput(createOutput<SmallPort>(mm2px(Vec(2,112)),module,CSOSC::PHS_OUTPUT));
     addOutput(createOutput<SmallPort>(mm2px(Vec(11.9,112)),module,CSOSC::CV_OUTPUT));
+  }
+
+  void appendContextMenu(Menu* menu) override {
+    auto module=dynamic_cast<CSOSC *>(this->module);
+    assert(module);
+    menu->addChild(new MenuSeparator);
+    menu->addChild(createBoolPtrMenuItem("Oversample","",&module->oversample));
+    //menu->addChild(createBoolPtrMenuItem("block DC","",&module->blockDC));
   }
 };
 
