@@ -176,4 +176,4 @@ struct RungModWidget : ModuleWidget {
 };
 
 
-Model *modelRungMod=createModel<RungMod,RungModWidget>("RungMod");
+Model *modelRungMod=createModel<RungMod,RungModWidget>("Rungi");

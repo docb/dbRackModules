@@ -636,14 +636,14 @@
     {
       "slug": "Benny",
       "name": "Benny",
-      "description": "A benjolin chaotic core",
+      "description": "A Benjolin chaotic core",
       "tags": [
         "Oscillator"
       ]
     },
     {
-      "slug": "RungMod",
-      "name": "RungMod",
+      "slug": "Rungi",
+      "name": "Rungi",
       "description": "A rungler with Modulation",
       "tags": [
         "Sequencer",
