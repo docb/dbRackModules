@@ -32,6 +32,18 @@ struct OFS : Module {
 	void process(const ProcessArgs& args) override {
     ofsW.process(this,offsetThenScale);
 	}
+  void dataFromJson(json_t *root) override {
+    json_t *jOffsetThenScale=json_object_get(root,"offsetThenScale");
+    if(jOffsetThenScale) {
+      offsetThenScale=json_boolean_value(jOffsetThenScale);
+    }
+  }
+
+  json_t *dataToJson() override {
+    json_t *root=json_object();
+    json_object_set_new(root,"offsetThenScale",json_boolean(offsetThenScale));
+    return root;
+  }
 };
 
 

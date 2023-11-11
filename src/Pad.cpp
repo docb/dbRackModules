@@ -231,6 +231,7 @@ struct Pad : Module {
 
   void onAdd(const AddEvent &e) override {
     generatePartials();
+    counter = 0;
   }
 
   void setFadeTime(float value) {

@@ -3,7 +3,7 @@
 
 struct RndC : Module {
   enum ParamIds {
-    SEED_PARAM,BI_PARAM,FREQ_PARAM,FM_PARAM,STRENGTH_PARAM,CHANNELS_PARAM,NUM_PARAMS
+    SEED_PARAM,BI_PARAM,FREQ_PARAM,STRENGTH_PARAM,CHANNELS_PARAM,FM_PARAM,NUM_PARAMS
   };
   enum InputIds {
     RST_INPUT,FM_INPUT,NUM_INPUTS
@@ -20,7 +20,7 @@ struct RndC : Module {
     configParam(FM_PARAM,0.f,1.f,0.f,"FM Amount","%",0,100);
     configParam(SEED_PARAM,0.f,1.f,0.f,"SEED");
     configParam(BI_PARAM,0.f,1.f,1.f,"BI-Polar");
-    configParam(FREQ_PARAM,-8.f,12.f,0.f,"Frequency"," Hz",2,1);
+    configParam(FREQ_PARAM,-8.f,8.f,0.f,"Frequency"," Hz",2,1);
     configSwitch(STRENGTH_PARAM,1.f,20.f,1.f,"STRENGTH",{"Uniform","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20"});
     configSwitch(CHANNELS_PARAM,1.f,16.f,8.f,"Polyphonic Channels",{"1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16"});
     configInput(RST_INPUT,"Reset");

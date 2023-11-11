@@ -44,6 +44,22 @@ struct OFS3 : Module {
       ofsw[k].process(this,offsetThenScale[k]);
     }
 	}
+  void dataFromJson(json_t *root) override {
+    json_t *jOffsetThenScale=json_object_get(root,"offsetThenScale");
+    size_t len=json_array_size(jOffsetThenScale);
+    for(unsigned int k=0;k<len;k++) {
+      offsetThenScale[k]=json_boolean_value(json_array_get(jOffsetThenScale,k));
+    }
+  }
+
+  json_t *dataToJson() override {
+    json_t *root=json_object();
+    json_t *jOffsetThenScale=json_array();
+    for(int k=0;k<NUM_OFS;k++)
+      json_array_append(jOffsetThenScale,json_boolean(offsetThenScale[k]));
+    json_object_set_new(root,"offsetThenScale",jOffsetThenScale);
+    return root;
+  }
 };
 
 
