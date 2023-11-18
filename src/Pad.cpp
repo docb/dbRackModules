@@ -296,6 +296,18 @@ struct Pad : Module {
     Module::fromJson(rootJ);
     generateThreaded();
   }
+
+  json_t *dataToJson() override {
+    json_t *data=json_object();
+    json_object_set_new(data,"fade",json_real(fade));
+    return data;
+  }
+
+  void dataFromJson(json_t *rootJ) override {
+    json_t *jFade = json_object_get(rootJ,"fade");
+    if(jFade!=nullptr) fade = json_real_value(jFade);
+  }
+
 };
 
 

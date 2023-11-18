@@ -84,10 +84,10 @@ struct SquareOsc {
 
 struct Benny : Module {
   enum ParamId {
-    FM1_PARAM,FM2_PARAM,FREQ1_PARAM,FREQ2_PARAM,R1_PARAM,R2_PARAM,CMP_PARAM,LOOP_PARAM,PARAMS_LEN
+    FM1_PARAM,FM2_PARAM,FREQ1_PARAM,FREQ2_PARAM,R1_PARAM,R2_PARAM,CMP_PARAM,LOOP_PARAM,R1_CV_PARAM,R2_CV_PARAM,FM1_CV_PARAM,FM2_CV_PARAM,PARAMS_LEN
   };
   enum InputId {
-    VOCT1_INPUT,VOCT2_INPUT,FM1_INPUT,FM2_INPUT,LOOP_INPUT,RST_INPUT,INPUTS_LEN
+    VOCT1_INPUT,VOCT2_INPUT,FM1_INPUT,FM2_INPUT,LOOP_INPUT,RST_INPUT,FM1_CV_INPUT, FM2_CV_INPUT, R1_CV_INPUT, R2_CV_INPUT,INPUTS_LEN
   };
   enum OutputId {
     TRI1_OUTPUT,TRI2_OUTPUT,SQR1_OUTPUT,SQR2_OUTPUT,R_OUTPUT,CMP_OUTPUT,XOR_OUTPUT,OUTPUTS_LEN
@@ -124,8 +124,12 @@ struct Benny : Module {
       configInput(VOCT1_INPUT+k,"V/Oct "+strNr);
       configParam(FREQ1_PARAM+k,-14.f,4.f,0.f,"Freq "+strNr," Hz",2,dsp::FREQ_C4);
       configParam(FM1_PARAM+k,0,1,0,"FM "+strNr);
-      configInput(FM1_INPUT+k,"FM CV "+strNr);
+      configInput(FM1_INPUT+k,"FM Extern "+strNr);
+      configInput(FM1_CV_INPUT+k,"FM CV "+strNr);
+      configParam(FM1_CV_PARAM+k,0,1,0,"FM "+strNr,"%",0,100);
+      configParam(R1_CV_PARAM+k,0,1,0,"Rungler CV "+strNr,"%",0,100);
       configParam(R1_PARAM+k,0,1,0,"Rungler "+strNr);
+      configInput(R1_CV_INPUT+k,"Rungler CV"+strNr);
 
       configOutput(TRI1_OUTPUT+k,"Tri "+strNr);
       configOutput(SQR1_OUTPUT+k,"Sqr "+strNr);
@@ -148,8 +152,12 @@ struct Benny : Module {
     float freqParam2=params[FREQ2_PARAM].getValue();
     float fmParam1=params[FM1_PARAM].getValue();
     float fmParam2=params[FM2_PARAM].getValue();
+    float fmParamCV1=params[FM1_CV_PARAM].getValue();
+    float fmParamCV2=params[FM2_CV_PARAM].getValue();
     float runglerParam1=params[R1_PARAM].getValue();
     float runglerParam2=params[R2_PARAM].getValue();
+    float runglerParamCV1=params[R1_CV_PARAM].getValue();
+    float runglerParamCV2=params[R2_CV_PARAM].getValue();
     float cmp=params[CMP_PARAM].getValue();
     float pitch1=freqParam1+inputs[VOCT1_INPUT].getVoltage();
     float pitch2=freqParam2+inputs[VOCT2_INPUT].getVoltage();
@@ -161,8 +169,16 @@ struct Benny : Module {
     float p2=pitch2;
     bool fm1Ext=inputs[FM1_INPUT].isConnected();
     bool fm2Ext=inputs[FM2_INPUT].isConnected();
+    float runglerCVIn1=inputs[R1_CV_INPUT].getVoltage();
+    float runglerCVIn2=inputs[R2_CV_INPUT].getVoltage();
+    float fmCVIn1=inputs[FM1_CV_INPUT].getVoltage()*fmParamCV1;
+    float fmCVIn2=inputs[FM2_CV_INPUT].getVoltage()*fmParamCV2;
     float fmIn1=inputs[FM1_INPUT].getVoltage();
     float fmIn2=inputs[FM2_INPUT].getVoltage();
+    float rungler1=clamp(runglerParam1+runglerCVIn1*runglerParamCV1);
+    float rungler2=clamp(runglerParam2+runglerCVIn2*runglerParamCV2);
+    float fm1=clamp(fmParam1+fmCVIn1*fmParamCV1);
+    float fm2=clamp(fmParam2+fmCVIn2*fmParamCV2);
     for(int k=0;k<count;k++) {
       float freq1;
       float freq2;
@@ -175,11 +191,11 @@ struct Benny : Module {
       }
       float in1=fm1Ext?fmIn1:osc2;
       float in2=fm2Ext?fmIn2:osc1;
-      p1+=in1*fmParam1*3;
-      p1+=rungler.out*runglerParam1*fac;
+      p1+=in1*fm1*3;
+      p1+=rungler.out*rungler1*fac;
       freq1=dsp::FREQ_C4*dsp::approxExp2_taylor5(p1+30.f)/std::pow(2.f,30.f);
-      p2+=in2*fmParam2*3;
-      p2+=rungler.out*runglerParam2*fac;
+      p2+=in2*fm2*3;
+      p2+=rungler.out*rungler2*fac;
       freq2=dsp::FREQ_C4*dsp::approxExp2_taylor5(p2+30.f)/std::pow(2.f,30.f);
       freq1=simd::fmin(freq1,args.sampleRate/2)/float(count);
       freq2=simd::fmin(freq2,args.sampleRate/2)/float(count);
@@ -243,29 +259,44 @@ struct BennyWidget : ModuleWidget {
   BennyWidget(Benny *module) {
     setModule(module);
     setPanel(createPanel(asset::plugin(pluginInstance,"res/Benny.svg")));
-    float x=4.5;
-    float ofs=10;
-    for(int k=0;k<2;k++) {
-      float y=10;
-      addParam(createParam<TrimbotWhite>(mm2px(Vec(x+ofs*k,y)),module,Benny::FREQ1_PARAM+k));
-      y+=12;
-      addInput(createInput<SmallPort>(mm2px(Vec(x+ofs*k,y)),module,Benny::VOCT1_INPUT+k));
-      y+=12;
-      addParam(createParam<TrimbotWhite>(mm2px(Vec(x+ofs*k,y)),module,Benny::FM1_PARAM+k));
-      y+=8;
-      addInput(createInput<SmallPort>(mm2px(Vec(x+ofs*k,y)),module,Benny::FM1_INPUT+k));
-      y+=12;
-      addParam(createParam<TrimbotWhite>(mm2px(Vec(x+ofs*k,y)),module,Benny::R1_PARAM+k));
-      addOutput(createOutput<SmallPort>(mm2px(Vec(x+ofs*k,80)),module,Benny::TRI1_OUTPUT+k));
-      addOutput(createOutput<SmallPort>(mm2px(Vec(x+ofs*k,92)),module,Benny::SQR1_OUTPUT+k));
-    }
-    addParam(createParam<MLED>(mm2px(Vec(x,66)),module,Benny::LOOP_PARAM));
-    addInput(createInput<SmallPort>(mm2px(Vec(x+10,66)),module,Benny::LOOP_INPUT));
-    addOutput(createOutput<SmallPort>(mm2px(Vec(x,104)),module,Benny::R_OUTPUT));
-    addOutput(createOutput<SmallPort>(mm2px(Vec(x+10,104)),module,Benny::XOR_OUTPUT));
-    addInput(createInput<HiddenPort>(mm2px(Vec(9.5,110)),module,Benny::RST_INPUT));
-    addParam(createParam<TrimbotWhite>(mm2px(Vec(x,116)),module,Benny::CMP_PARAM));
-    addOutput(createOutput<SmallPort>(mm2px(Vec(x+10,116)),module,Benny::CMP_OUTPUT));
+    float y=13.5;
+    addParam(createParam<TrimbotWhite9>(mm2px(Vec(9.5,y)),module,Benny::FREQ1_PARAM));
+    addParam(createParam<TrimbotWhite9>(mm2px(Vec(33,y)),module,Benny::FREQ2_PARAM));
+    y=29;
+    addParam(createParam<TrimbotWhite>(mm2px(Vec(14.5,y)),module,Benny::FM1_CV_PARAM));
+    addParam(createParam<TrimbotWhite>(mm2px(Vec(30.5,y)),module,Benny::FM2_CV_PARAM));
+    addParam(createParam<TrimbotWhite9>(mm2px(Vec(4.5,y+2)),module,Benny::FM1_PARAM));
+    addParam(createParam<TrimbotWhite9>(mm2px(Vec(38,y+2)),module,Benny::FM2_PARAM));
+    addInput(createInput<SmallPort>(mm2px(Vec(14.5,y+8)),module,Benny::FM1_CV_INPUT));
+    addInput(createInput<SmallPort>(mm2px(Vec(30.5,y+8)),module,Benny::FM2_CV_INPUT));
+    y=49;
+    addInput(createInput<SmallPort>(mm2px(Vec(10,y)),module,Benny::FM1_INPUT));
+    addInput(createInput<SmallPort>(mm2px(Vec(34.5,y)),module,Benny::FM2_INPUT));
+    y=63;
+    addParam(createParam<TrimbotWhite>(mm2px(Vec(14.5,y)),module,Benny::R1_CV_PARAM));
+    addParam(createParam<TrimbotWhite>(mm2px(Vec(30.5,y)),module,Benny::R2_CV_PARAM));
+    addParam(createParam<TrimbotWhite9>(mm2px(Vec(4.5,y+3)),module,Benny::R1_PARAM));
+    addParam(createParam<TrimbotWhite9>(mm2px(Vec(38,y+3)),module,Benny::R2_PARAM));
+    addInput(createInput<SmallPort>(mm2px(Vec(14.5,y+8)),module,Benny::R1_CV_INPUT));
+    addInput(createInput<SmallPort>(mm2px(Vec(30.5,y+8)),module,Benny::R2_CV_INPUT));
+    y=86;
+    addParam(createParam<MLED>(mm2px(Vec(4.5,y)),module,Benny::LOOP_PARAM));
+    addInput(createInput<SmallPort>(mm2px(Vec(14.5,y)),module,Benny::LOOP_INPUT));
+    addInput(createInput<SmallPort>(mm2px(Vec(30,y)),module,Benny::VOCT1_INPUT));
+    addInput(createInput<SmallPort>(mm2px(Vec(40,y)),module,Benny::VOCT2_INPUT));
+
+    y=104;
+    addOutput(createOutput<SmallPort>(mm2px(Vec(30,y)),module,Benny::TRI1_OUTPUT));
+    addOutput(createOutput<SmallPort>(mm2px(Vec(40,y)),module,Benny::TRI2_OUTPUT));
+    addOutput(createOutput<SmallPort>(mm2px(Vec(4.5,y)),module,Benny::R_OUTPUT));
+    addOutput(createOutput<SmallPort>(mm2px(Vec(14.5,y)),module,Benny::XOR_OUTPUT));
+
+    y=116;
+    addOutput(createOutput<SmallPort>(mm2px(Vec(30,y)),module,Benny::SQR1_OUTPUT));
+    addOutput(createOutput<SmallPort>(mm2px(Vec(40,y)),module,Benny::SQR2_OUTPUT));
+    addParam(createParam<TrimbotWhite>(mm2px(Vec(4.5,y)),module,Benny::CMP_PARAM));
+    addOutput(createOutput<SmallPort>(mm2px(Vec(14.5,y)),module,Benny::CMP_OUTPUT));
+    addInput(createInput<SmallPort>(mm2px(Vec(22,110.5)),module,Benny::RST_INPUT));
   }
 
   void appendContextMenu(Menu *menu) override {
