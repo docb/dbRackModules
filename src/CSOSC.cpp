@@ -109,7 +109,7 @@ struct CSOSC : Module {
         for(int k=0;k<16;k++) {
           phs=oscil->process(skewIn,clipIn,fms);
           out=simd::cos(phs*TWOPIF);
-          out=filter24->process(out);
+          out=filter24[c/4].process(out);
         }
         outputs[PHS_OUTPUT].setVoltageSimd(phs*10.f-5.f,c);
         outputs[CV_OUTPUT].setVoltageSimd(out*5.f,c);

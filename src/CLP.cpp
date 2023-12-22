@@ -16,6 +16,7 @@ struct CLP : Module {
 	};
 
   Clipper<float_4> clipper[4];
+  Clipper<float_4> clipperR[4];
 
 	CLP() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -31,19 +32,29 @@ struct CLP : Module {
 	}
 
 	void process(const ProcessArgs& args) override {
-    int channels=inputs[L_INPUT].getChannels();
+    bool rConnected = inputs[R_INPUT].isConnected();
+    int lChannels=inputs[L_INPUT].getChannels();
+    int rChannels=rConnected?inputs[R_INPUT].getChannels():inputs[L_INPUT].getChannels();
     float driveParam=params[DRIVE_PARAM].getValue();
     int mode=params[TYPE_PARAM].getValue();
-    for(int c=0;c<channels;c+=4) {
+    for(int c=0;c<lChannels;c+=4) {
       float_4 inL=inputs[L_INPUT].getVoltageSimd<float_4>(c)*0.2f;
-      float_4 inR=inputs[R_INPUT].getVoltageSimd<float_4>(c)*0.2f;
       float_4 drive=simd::clamp(driveParam+inputs[DRIVE_INPUT].getPolyVoltageSimd<float_4>(c)*params[DRIVE_CV_PARAM].getValue(),0.f,10.f);
-      outputs[L_OUTPUT].setVoltageSimd(clipper[c/4].process(drive,inL,mode)*5.f,c);
-      outputs[R_OUTPUT].setVoltageSimd(clipper[c/4].process(drive,inR,mode)*5.f,c);
+      float_4 out=clipper[c/4].process(drive,inL,mode)*5.f;
+      outputs[L_OUTPUT].setVoltageSimd(out,c);
+      if(!rConnected) outputs[R_OUTPUT].setVoltageSimd(out,c);
     }
-    outputs[L_OUTPUT].setChannels(channels);
-    outputs[R_OUTPUT].setChannels(channels);
+    if(rConnected) {
+      for(int c=0;c<rChannels;c+=4) {
+        float_4 inR=inputs[R_INPUT].getVoltageSimd<float_4>(c)*0.2f;
+        float_4 drive=simd::clamp(driveParam+inputs[DRIVE_INPUT].getPolyVoltageSimd<float_4>(c)*params[DRIVE_CV_PARAM].getValue(),0.f,10.f);
+        float_4 out=clipperR[c/4].process(drive,inR,mode)*5.f;
+        outputs[R_OUTPUT].setVoltageSimd(out,c);
+      }
+    }
 
+    outputs[L_OUTPUT].setChannels(lChannels);
+    outputs[R_OUTPUT].setChannels(rChannels);
 	}
 };
 

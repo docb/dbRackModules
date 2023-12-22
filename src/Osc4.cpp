@@ -96,10 +96,11 @@ struct Osc4 : Module {
     configInput(VOCT_INPUT,"V/Oct 1");
     configButton(LIN_PARAM,"Linear");
     configParam(FM_PARAM,0,1,0,"FM Amount","%",0,100);
-    //configParam(WAVE_PARAM,-0.5,0.95,0.5,"Wave");
     configParam(WAVE_PARAM,0,1,0.6,"Wave");
     configParam(WAVE_CV_PARAM,0,1,0,"Wave CV"," %",0,100);
 
+    configButton(SYNC_PARAM,"Sync");
+    configInput(SYNC_INPUT,"Sync");
     configInput(FM_INPUT,"FM");
     configInput(WAVE_CV_INPUT,"Wave CV");
     configOutput(CV_OUTPUT,"CV");
