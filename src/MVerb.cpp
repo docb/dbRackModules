@@ -195,6 +195,8 @@ struct MVerb : Module {
   gam::BlockDC<> blockDcOutL;
   gam::BlockDC<> blockDcOutR;
 
+  float defaultRes[25]={1.6959938131099002, 3.382667252745041, 2.4802651220544627, 6.7227392362967135, 4.023255352300303, 6.036942844798256, 7.757089937599157, 1.269033146455237, 7.936107872030512, 2.2047667506546134, 8.44881837695051, 7.0669502439246275, 8.795036351712055, 5.695715488609975, 5.018812185742817, 1.4489009511451278, 4.683696454306515, 6.379378367071262, 1.9373443921502325, 7.411765185006983, 2.771885578515366, 5.356143810225276, 3.700439718141092, 3.0738202332916713, 4.351910961103077};
+
   Multitaps multiTapsLeft;
   Multitaps multiTapsRight;
   Data data;
@@ -240,15 +242,15 @@ struct MVerb : Module {
 
   MVerb() {
     config(PARAMS_LEN,INPUTS_LEN,OUTPUTS_LEN,LIGHTS_LEN);
-    configSwitch(ER_PRESET_PARAM,0,data.getERPresetSize()-1,0,"Early Reflection Presets",data.getERPresetLabels());
+    configSwitch(ER_PRESET_PARAM,0,data.getERPresetSize()-1,4,"Early Reflection Presets",data.getERPresetLabels());
     getParamQuantity(ER_PRESET_PARAM)->snapEnabled=true;
-    configParam(ER_AMP_PARAM,0,1,0,"Early Reflection Amp");
+    configParam(ER_AMP_PARAM,0,1,0.8,"Early Reflection Amp");
     configParam(WET_PARAM,0,1,0.5,"Wet");
-    configParam(FB_PARAM,0,1,0.5,"Feedback");
-    configParam(MOD_AMT_PARAM,0,1,0.f,"Mod Amount"," %",0.f,100.f);
+    configParam(FB_PARAM,0,1,0.37,"Feedback");
+    configParam(MOD_AMT_PARAM,0,1,0.5f,"Mod Amount"," %",0.f,100.f);
 
     for(int k=0;k<25;k++) {
-      configParam(RES_PARAMS+k,1,14,1,"Freq "+std::to_string(k+1)," HZ",2,1);
+      configParam(RES_PARAMS+k,1,14,defaultRes[k],"Freq "+std::to_string(k+1)," HZ",2,1);
     }
     configInput(L_INPUT,"Left");
     configInput(R_INPUT,"Right");
@@ -385,6 +387,7 @@ struct MVerb : Module {
     json_t *jBufferSizeIndex =json_object_get(rootJ,"bufferSizeIndex");
     if(jBufferSizeIndex!=nullptr)
       setBufferSize(json_integer_value(jBufferSizeIndex));
+    updateER=true;
   }
 
 

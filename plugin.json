@@ -649,6 +649,34 @@
         "Sequencer",
         "Random"
       ]
+    },
+    {
+      "slug": "Swen",
+      "name": "Swen",
+      "description": "A Chaos Module",
+      "tags": [
+        "Sequencer",
+        "Random"
+      ]
+    },
+    {
+      "slug": "Map",
+      "name": "Map",
+      "description": "Polyphonic Chaos Maps",
+      "tags": [
+        "Sequencer",
+        "Random",
+        "Polyphonic"
+      ]
+    },
+    {
+      "slug": "Map2",
+      "name": "Map2",
+      "description": "Chaotic Maps 2",
+      "tags": [
+        "Sequencer",
+        "Polyphonic"
+      ]
     }
   ]
 }

@@ -75,6 +75,9 @@ extern Model* modelOsc8;
 extern Model* modelOsc9;
 extern Model* modelBenny;
 extern Model* modelRungMod;
+extern Model *modelSwen;
+extern Model *modelMap;
+extern Model* modelMap2;
 
 void init(Plugin* p) {
 	pluginInstance = p;
@@ -151,4 +154,7 @@ void init(Plugin* p) {
   p->addModel(modelOsc9);
   p->addModel(modelBenny);
 	p->addModel(modelRungMod);
+  p->addModel(modelSwen);
+  p->addModel(modelMap);
+	p->addModel(modelMap2);
 }
