@@ -143,6 +143,7 @@ struct RndH2 : Module {
   }
 
   void process(const ProcessArgs &args) override {
+    bool slewOn = params[SLEW_PARAM].getValue()!=0.f;
     float slew=(params[SLEW_PARAM].getValue()+0.001f)*1000;
     float bi=params[BI_PARAM].getValue();
     int channels=params[CHANNELS_PARAM].getValue();
@@ -191,13 +192,13 @@ struct RndH2 : Module {
       }
       for(int c=0;c<channels;c++) {
         if(outputs[UNI_OUTPUT].isConnected())
-          outputs[UNI_OUTPUT].setVoltage(slewLimiterUni[c].process(1.f,modify(uniH.get(c),c)),c);
+          outputs[UNI_OUTPUT].setVoltage(slewOn?slewLimiterUni[c].process(1.f,modify(uniH.get(c),c)):modify(uniH.get(c),c),c);
         if(outputs[MIN_OUTPUT].isConnected())
-          outputs[MIN_OUTPUT].setVoltage(slewLimiterMin[c].process(1.f,modify(minH.get(c),c)),c);
+          outputs[MIN_OUTPUT].setVoltage(slewOn?slewLimiterMin[c].process(1.f,modify(minH.get(c),c)):modify(minH.get(c),c),c);
         if(outputs[WB_OUTPUT].isConnected())
-          outputs[WB_OUTPUT].setVoltage(slewLimiterWB[c].process(1.f,modify(wbH.get(c),c)),c);
+          outputs[WB_OUTPUT].setVoltage(slewOn?slewLimiterWB[c].process(1.f,modify(wbH.get(c),c)):modify(wbH.get(c),c),c);
         if(outputs[TRI_OUTPUT].isConnected())
-          outputs[TRI_OUTPUT].setVoltage(slewLimiterTri[c].process(1.f,modify(triH.get(c),c)),c);
+          outputs[TRI_OUTPUT].setVoltage(slewOn?slewLimiterTri[c].process(1.f,modify(triH.get(c),c)):modify(triH.get(c),c),c);
       }
     } else {
       for(int c=0;c<channels;c++) {

@@ -87,8 +87,8 @@ struct Map2 : Module {
     configParam(P1_CV_PARAM,0,1,0,"R CV","%",0,100);
     configParam(P2_PARAM,0.f,1.f,0.5f,"P2");
     configParam(P2_CV_PARAM,0,1,0,"R CV","%",0,100);
-    configParam(X0_PARAM,0.1f,0.9f,0.5f,"X0");
-    configParam(Y0_PARAM,0.1f,0.9f,0.5f,"X0");
+    configParam(X0_PARAM,0.f,1.f,0.5f,"X0");
+    configParam(Y0_PARAM,0.f,1.f,0.5f,"X0");
     configInput(VOCT_INPUT,"V/Oct");
     configInput(P1_INPUT,"P1");
     configInput(P2_INPUT,"P2");
