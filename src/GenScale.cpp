@@ -15,7 +15,7 @@ struct GenScale : Module {
     NUM_LIGHTS
   };
 
-  int maxChannels=8;
+  int maxChannels=16;
 
   GenScale() {
     config(NUM_PARAMS,NUM_INPUTS,NUM_OUTPUTS,NUM_LIGHTS);

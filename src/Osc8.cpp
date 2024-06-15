@@ -6,7 +6,8 @@ using simd::int32_4;
 template<typename T>
 struct SinPOsc {
   T phs=0.f;
-
+  float g1=TWOPIF-5.f;
+  float g2=M_PI-3;
   T sin2pi_pade_05_5_4(T x) {
     x-=0.5f;
     T x2=x*x;
@@ -16,6 +17,15 @@ struct SinPOsc {
     return (T(-6.283185307)*x+T(33.19863968)*x3-T(32.44191367)*x5)/(1+T(1.296008659)*x2+T(0.7028072946)*x4);
   }
 
+  T process5P() {
+    T po = phs*4.f;
+    T mask = phs<0.5f;
+    T x=simd::ifelse(mask,po,po-2.f)-1.f;
+    T x2=x*x;
+    T y=0.5f*(x*(M_PI-x2*(g1-x2*g2)));
+    return simd::ifelse(mask,y,-y);
+  }
+
   void updatePhs(float sampleTime,T freq) {
     phs+=simd::fmin(freq*sampleTime,0.5f);
     phs-=simd::floor(phs);
@@ -23,7 +33,8 @@ struct SinPOsc {
 
   T process(float sampleTime,T freq) {
     updatePhs(sampleTime,freq);
-    return sin2pi_pade_05_5_4(phs);
+    //return sin2pi_pade_05_5_4(phs);
+    return process5P();
   }
 
   void reset(T trigger) {

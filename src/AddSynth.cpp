@@ -243,23 +243,20 @@ struct AddSynthWidget : ModuleWidget {
     setModule(module);
     setPanel(APP->window->loadSvg(asset::plugin(pluginInstance,"res/AddSynth.svg")));
 
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH,0)));
-    addChild(createWidget<ScrewSilver>(Vec(box.size.x-2*RACK_GRID_WIDTH,0)));
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH,RACK_GRID_HEIGHT-RACK_GRID_WIDTH)));
-    addChild(createWidget<ScrewSilver>(Vec(box.size.x-2*RACK_GRID_WIDTH,RACK_GRID_HEIGHT-RACK_GRID_WIDTH)));
+
 
     float xpos=1.9f;
-    addParam(createParam<TrimbotWhite>(mm2px(Vec(2,MHEIGHT-112.5f)),module,AddSynth::WAVE_PARAM));
-    addParam(createParam<TrimbotWhite>(mm2px(Vec(2,MHEIGHT-100.5f)),module,AddSynth::RATIO_PARAM));
-    addParam(createParam<TrimbotWhite>(mm2px(Vec(2,MHEIGHT-89.0f)),module,AddSynth::DMP_PARAM));
+    addParam(createParam<TrimbotWhite>(mm2px(Vec(xpos,12)),module,AddSynth::WAVE_PARAM));
+    addParam(createParam<TrimbotWhite>(mm2px(Vec(xpos,24)),module,AddSynth::RATIO_PARAM));
+    addParam(createParam<TrimbotWhite>(mm2px(Vec(xpos,42)),module,AddSynth::DMP_PARAM));
 
-    addInput(createInput<SmallPort>(mm2px(Vec(xpos,MHEIGHT-78.f)),module,AddSynth::DMP_INPUT));
-    addInput(createInput<SmallPort>(mm2px(Vec(xpos,MHEIGHT-65.f)),module,AddSynth::VOCT_INPUT));
+    addInput(createInput<SmallPort>(mm2px(Vec(xpos,52)),module,AddSynth::DMP_INPUT));
+    addInput(createInput<SmallPort>(mm2px(Vec(xpos,64)),module,AddSynth::VOCT_INPUT));
 
-    addInput(createInput<SmallPort>(mm2px(Vec(xpos,MHEIGHT-51.f)),module,AddSynth::AMP_1_16_INPUT));
-    addInput(createInput<SmallPort>(mm2px(Vec(xpos,MHEIGHT-37.f)),module,AddSynth::AMP_16_32_INPUT));
+    addInput(createInput<SmallPort>(mm2px(Vec(xpos,78)),module,AddSynth::AMP_1_16_INPUT));
+    addInput(createInput<SmallPort>(mm2px(Vec(xpos,92)),module,AddSynth::AMP_16_32_INPUT));
 
-    addOutput(createOutput<SmallPort>(mm2px(Vec(xpos,MHEIGHT-19.f)),module,AddSynth::MONO_OUTPUT));
+    addOutput(createOutput<SmallPort>(mm2px(Vec(xpos,116)),module,AddSynth::MONO_OUTPUT));
 
 
   }

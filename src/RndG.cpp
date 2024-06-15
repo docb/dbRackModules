@@ -135,25 +135,20 @@ struct RndGWidget : ModuleWidget {
     setModule(module);
     setPanel(createPanel(asset::plugin(pluginInstance,"res/RndG.svg")));
 
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH,0)));
-    addChild(createWidget<ScrewSilver>(Vec(box.size.x-2*RACK_GRID_WIDTH,0)));
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH,RACK_GRID_HEIGHT-RACK_GRID_WIDTH)));
-    addChild(createWidget<ScrewSilver>(Vec(box.size.x-2*RACK_GRID_WIDTH,RACK_GRID_HEIGHT-RACK_GRID_WIDTH)));
-
     float xpos=1.9f;
-    addInput(createInput<SmallPort>(mm2px(Vec(xpos,MHEIGHT-115.f)),module,RndG::CLK_INPUT));
-    addInput(createInput<SmallPort>(mm2px(Vec(xpos,MHEIGHT-103.f)),module,RndG::RST_INPUT));
-    addInput(createInput<SmallPort>(mm2px(Vec(xpos,MHEIGHT-91.f)),module,RndG::SEED_INPUT));
-    addInput(createInput<SmallPort>(mm2px(Vec(xpos,MHEIGHT-79.f)),module,RndG::PROB_INPUT));
+    addInput(createInput<SmallPort>(mm2px(Vec(xpos,9)),module,RndG::CLK_INPUT));
+    addInput(createInput<SmallPort>(mm2px(Vec(xpos,21)),module,RndG::RST_INPUT));
+    addInput(createInput<SmallPort>(mm2px(Vec(xpos,38)),module,RndG::SEED_INPUT));
+    addInput(createInput<SmallPort>(mm2px(Vec(xpos,50)),module,RndG::PROB_INPUT));
 
 
-    auto multiButton=createParam<SmallButtonWithLabel>(mm2px(Vec(1.5,MHEIGHT-63.f)),module,RndG::MULTI_PARAM);
+    auto multiButton=createParam<SmallButtonWithLabel>(mm2px(Vec(1.5,68)),module,RndG::MULTI_PARAM);
     multiButton->setLabel("Mlt");
     addParam(multiButton);
-    addOutput(createOutput<SmallPort>(mm2px(Vec(xpos,MHEIGHT-55.f)),module,RndG::GATE_OUTPUT));
-    addOutput(createOutput<SmallPort>(mm2px(Vec(xpos,MHEIGHT-43.f)),module,RndG::TRIG_OUTPUT));
-    addOutput(createOutput<SmallPort>(mm2px(Vec(xpos,MHEIGHT-31.f)),module,RndG::CLK_OUTPUT));
-    addParam(createParam<TrimbotWhite>(mm2px(Vec(2,MHEIGHT-19.f)),module,RndG::CHANNELS_PARAM));
+    addOutput(createOutput<SmallPort>(mm2px(Vec(xpos,80)),module,RndG::GATE_OUTPUT));
+    addOutput(createOutput<SmallPort>(mm2px(Vec(xpos,92)),module,RndG::TRIG_OUTPUT));
+    addOutput(createOutput<SmallPort>(mm2px(Vec(xpos,104)),module,RndG::CLK_OUTPUT));
+    addParam(createParam<TrimbotWhite>(mm2px(Vec(2,116)),module,RndG::CHANNELS_PARAM));
   }
 };
 

@@ -149,24 +149,20 @@ struct RndHWidget : ModuleWidget {
     setModule(module);
     setPanel(APP->window->loadSvg(asset::plugin(pluginInstance,"res/RndH.svg")));
 
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH,0)));
-    addChild(createWidget<ScrewSilver>(Vec(box.size.x-2*RACK_GRID_WIDTH,0)));
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH,RACK_GRID_HEIGHT-RACK_GRID_WIDTH)));
-    addChild(createWidget<ScrewSilver>(Vec(box.size.x-2*RACK_GRID_WIDTH,RACK_GRID_HEIGHT-RACK_GRID_WIDTH)));
     float xpos=1.9f;
-    addInput(createInput<SmallPort>(mm2px(Vec(xpos,MHEIGHT-115.f)),module,RndH::CLOCK_INPUT));
-    addInput(createInput<SmallPort>(mm2px(Vec(xpos,MHEIGHT-103.f)),module,RndH::RST_INPUT));
-    addInput(createInput<SmallPort>(mm2px(Vec(xpos,MHEIGHT-91.5f)),module,RndH::SEED_INPUT));
-    addParam(createParam<TrimbotWhite>(mm2px(Vec(2,MHEIGHT-79.0f)),module,RndH::STRENGTH_PARAM));
-    addInput(createInput<SmallPort>(mm2px(Vec(xpos,MHEIGHT-71.5f)),module,RndH::STRENGTH_INPUT));
-    auto biPolarButton=createParam<SmallButtonWithLabel>(mm2px(Vec(1.5,MHEIGHT-63.f)),module,RndH::BI_PARAM);
+    addInput(createInput<SmallPort>(mm2px(Vec(xpos,9)),module,RndH::CLOCK_INPUT));
+    addInput(createInput<SmallPort>(mm2px(Vec(xpos,21)),module,RndH::RST_INPUT));
+    addInput(createInput<SmallPort>(mm2px(Vec(xpos,38)),module,RndH::SEED_INPUT));
+    addParam(createParam<TrimbotWhite>(mm2px(Vec(2,50)),module,RndH::STRENGTH_PARAM));
+    addInput(createInput<SmallPort>(mm2px(Vec(xpos,58)),module,RndH::STRENGTH_INPUT));
+    auto biPolarButton=createParam<SmallButtonWithLabel>(mm2px(Vec(1.5,68)),module,RndH::BI_PARAM);
     biPolarButton->setLabel("BiP");
     addParam(biPolarButton);
-    addOutput(createOutput<SmallPort>(mm2px(Vec(xpos,MHEIGHT-55.f)),module,RndH::MIN_OUTPUT));
-    addOutput(createOutput<SmallPort>(mm2px(Vec(xpos,MHEIGHT-43.f)),module,RndH::WB_OUTPUT));
-    addOutput(createOutput<SmallPort>(mm2px(Vec(xpos,MHEIGHT-31.f)),module,RndH::TRI_OUTPUT));
+    addOutput(createOutput<SmallPort>(mm2px(Vec(xpos,80)),module,RndH::MIN_OUTPUT));
+    addOutput(createOutput<SmallPort>(mm2px(Vec(xpos,92)),module,RndH::WB_OUTPUT));
+    addOutput(createOutput<SmallPort>(mm2px(Vec(xpos,104)),module,RndH::TRI_OUTPUT));
 
-    addParam(createParam<TrimbotWhite>(mm2px(Vec(2,MHEIGHT-19.f)),module,RndH::CHANNELS_PARAM));
+    addParam(createParam<TrimbotWhite>(mm2px(Vec(2,116)),module,RndH::CHANNELS_PARAM));
 
   }
 

@@ -98,21 +98,16 @@ struct FracWidget : ModuleWidget {
 		setModule(module);
 		setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/Frac.svg")));
 
-		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
-		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0)));
-		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-
     float xpos = 1.9f;
-    addInput(createInput<SmallPort>(mm2px(Vec(xpos,MHEIGHT-115.f)),module,Frac::CLOCK_INPUT));
-    addInput(createInput<SmallPort>(mm2px(Vec(xpos,MHEIGHT-103.f)),module,Frac::RST_INPUT));
-    addParam(createParam<TrimbotWhiteSnap>(mm2px(Vec(2,MHEIGHT-91.5f)),module,Frac::N_PARAM));
-    addParam(createParam<TrimbotWhiteSnap>(mm2px(Vec(2,MHEIGHT-79.0f)),module,Frac::D_PARAM));
-    addParam(createParam<TrimbotWhiteSnap>(mm2px(Vec(2,MHEIGHT-67.0f)),module,Frac::BASE_PARAM));
-    addParam(createParam<TrimbotWhiteSnap>(mm2px(Vec(2,MHEIGHT-55.5f)),module,Frac::OFS_PARAM));
-    addParam(createParam<TrimbotWhite>(mm2px(Vec(2,MHEIGHT-43.5f)),module,Frac::SCL_PARAM));
-    addParam(createParam<TrimbotWhite>(mm2px(Vec(2,MHEIGHT-31.5f)),module,Frac::BV_PARAM));
-    addOutput(createOutput<SmallPort>(mm2px(Vec(xpos,MHEIGHT-19.5f)),module,Frac::CV_OUTPUT));
+    addInput(createInput<SmallPort>(mm2px(Vec(xpos,9)),module,Frac::CLOCK_INPUT));
+    addInput(createInput<SmallPort>(mm2px(Vec(xpos,21)),module,Frac::RST_INPUT));
+    addParam(createParam<TrimbotWhiteSnap>(mm2px(Vec(xpos,38)),module,Frac::N_PARAM));
+    addParam(createParam<TrimbotWhiteSnap>(mm2px(Vec(xpos,50)),module,Frac::D_PARAM));
+    addParam(createParam<TrimbotWhiteSnap>(mm2px(Vec(xpos,62)),module,Frac::BASE_PARAM));
+    addParam(createParam<TrimbotWhiteSnap>(mm2px(Vec(xpos,74)),module,Frac::OFS_PARAM));
+    addParam(createParam<TrimbotWhite>(mm2px(Vec(xpos,86)),module,Frac::SCL_PARAM));
+    addParam(createParam<TrimbotWhite>(mm2px(Vec(xpos,98)),module,Frac::BV_PARAM));
+    addOutput(createOutput<SmallPort>(mm2px(Vec(xpos,116)),module,Frac::CV_OUTPUT));
     
 	}
 };

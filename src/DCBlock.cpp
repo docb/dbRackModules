@@ -222,17 +222,12 @@ struct DCBlockWidget : ModuleWidget {
   explicit DCBlockWidget(DCBlock *module) {
     setModule(module);
     setPanel(APP->window->loadSvg(asset::plugin(pluginInstance,"res/DCBlock.svg")));
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH,0)));
-    addChild(createWidget<ScrewSilver>(Vec(box.size.x-2*RACK_GRID_WIDTH,0)));
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH,RACK_GRID_HEIGHT-RACK_GRID_WIDTH)));
-    addChild(createWidget<ScrewSilver>(Vec(box.size.x-2*RACK_GRID_WIDTH,RACK_GRID_HEIGHT-RACK_GRID_WIDTH)));
+    addParam(createParam<TrimbotWhiteSnap>(mm2px(Vec(2,38)),module,DCBlock::ORDER_PARAM));
 
-    addParam(createParam<TrimbotWhiteSnap>(mm2px(Vec(2,MHEIGHT-94.5f)),module,DCBlock::ORDER_PARAM));
-
-    addInput(createInput<SmallPort>(mm2px(Vec(1.9f,MHEIGHT-55.f)),module,DCBlock::V_INPUT_L));
-    addInput(createInput<SmallPort>(mm2px(Vec(1.9f,MHEIGHT-43.f)),module,DCBlock::V_INPUT_R));
-    addOutput(createOutput<SmallPort>(mm2px(Vec(1.9f,MHEIGHT-31.f)),module,DCBlock::V_OUTPUT_L));
-    addOutput(createOutput<SmallPort>(mm2px(Vec(1.9f,MHEIGHT-19.f)),module,DCBlock::V_OUTPUT_R));
+    addInput(createInput<SmallPort>(mm2px(Vec(1.9f,80)),module,DCBlock::V_INPUT_L));
+    addInput(createInput<SmallPort>(mm2px(Vec(1.9f,92)),module,DCBlock::V_INPUT_R));
+    addOutput(createOutput<SmallPort>(mm2px(Vec(1.9f,104)),module,DCBlock::V_OUTPUT_L));
+    addOutput(createOutput<SmallPort>(mm2px(Vec(1.9f,116)),module,DCBlock::V_OUTPUT_R));
   }
 };
 

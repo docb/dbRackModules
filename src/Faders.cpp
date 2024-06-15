@@ -67,6 +67,16 @@ struct FadersPreset {
     }
   }
 
+  std::string getValuesAsString() {
+    std::string s;
+    for(int j=0;j<48;j++) {
+      if(j>0) s.append(",");
+      int n=j/16;
+      s.append(std::to_string(rescale(faderValues[j],min[n],max[n],0.f,1.f)));
+    }
+    return s;
+  }
+
   json_t *toJson() {
     json_t *data=json_object();
     json_t *valueList=json_array();
@@ -659,6 +669,24 @@ struct MDelButton : SmallButtonWithLabel {
     }
   }
 };
+struct FMCopyButton : SmallButtonWithLabel {
+  Faders *module;
+
+  FMCopyButton() : SmallButtonWithLabel() {
+    momentary=true;
+  }
+
+  void onChange(const ChangeEvent &e) override {
+    SvgSwitch::onChange(e);
+    if(module) {
+      if(module->params[Faders::COPY_PARAM].getValue()>0) {
+        module->copy();
+        std::string values=module->clipBoard.getValuesAsString();
+        glfwSetClipboardString(APP->window->win,values.c_str());
+      }
+    }
+  }
+};
 struct FadersWidget : ModuleWidget {
   FadersWidget(Faders *module) {
     setModule(module);
@@ -690,7 +718,7 @@ struct FadersWidget : ModuleWidget {
     y+=4;
     addInput(createInput<SmallPort>(mm2px(Vec(x+0.4,y)),module,Faders::PAT_INPUT));
     y+=8;
-    auto copyButton=createParam<MCopyButton<Faders>>(mm2px(Vec(x,y)),module,Faders::COPY_PARAM);
+    auto copyButton=createParam<FMCopyButton>(mm2px(Vec(x,y)),module,Faders::COPY_PARAM);
     copyButton->label="Cpy";
     copyButton->module=module;
     addParam(copyButton);

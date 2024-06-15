@@ -104,19 +104,14 @@ struct BWFWidget : ModuleWidget {
   BWFWidget(BWF *module) {
     setModule(module);
     setPanel(createPanel(asset::plugin(pluginInstance,"res/BWF.svg")));
-
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH,0)));
-    addChild(createWidget<ScrewSilver>(Vec(box.size.x-2*RACK_GRID_WIDTH,0)));
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH,RACK_GRID_HEIGHT-RACK_GRID_WIDTH)));
-    addChild(createWidget<ScrewSilver>(Vec(box.size.x-2*RACK_GRID_WIDTH,RACK_GRID_HEIGHT-RACK_GRID_WIDTH)));
     float x=1.9f;
-    addInput(createInput<SmallPort>(mm2px(Vec(x,MHEIGHT-108-6.287f)),module,BWF::LO_INPUT));
-    addParam(createParam<TrimbotWhite>(mm2px(Vec(x,MHEIGHT-99-6.3)),module,BWF::LO_PARAM));
-    addInput(createInput<SmallPort>(mm2px(Vec(x,MHEIGHT-84-6.287f)),module,BWF::HI_INPUT));
-    addParam(createParam<TrimbotWhite>(mm2px(Vec(x,MHEIGHT-75-6.3)),module,BWF::HI_PARAM));
+    addParam(createParam<TrimbotWhite>(mm2px(Vec(x,9)),module,BWF::LO_PARAM));
+    addInput(createInput<SmallPort>(mm2px(Vec(x,17)),module,BWF::LO_INPUT));
+    addParam(createParam<TrimbotWhite>(mm2px(Vec(x,32)),module,BWF::HI_PARAM));
+    addInput(createInput<SmallPort>(mm2px(Vec(x,40)),module,BWF::HI_INPUT));
 
-    addInput(createInput<SmallPort>(mm2px(Vec(x,MHEIGHT-31)),module,BWF::V_INPUT));
-    addOutput(createOutput<SmallPort>(mm2px(Vec(x,MHEIGHT-19)),module,BWF::V_OUTPUT));
+    addInput(createInput<SmallPort>(mm2px(Vec(x,104)),module,BWF::V_INPUT));
+    addOutput(createOutput<SmallPort>(mm2px(Vec(x,116)),module,BWF::V_OUTPUT));
   }
 
   void appendContextMenu(Menu *menu) override {

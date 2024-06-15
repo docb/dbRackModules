@@ -417,30 +417,27 @@ struct PadWidget : ModuleWidget {
     setModule(module);
     setPanel(createPanel(asset::plugin(pluginInstance,"res/Pad.svg")));
 
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH,0)));
-    addChild(createWidget<ScrewSilver>(Vec(box.size.x-2*RACK_GRID_WIDTH,0)));
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH,RACK_GRID_HEIGHT-RACK_GRID_WIDTH)));
-    addChild(createWidget<ScrewSilver>(Vec(box.size.x-2*RACK_GRID_WIDTH,RACK_GRID_HEIGHT-RACK_GRID_WIDTH)));
+
     float xpos=1.9f;
-    auto bwParam=createParam<UpdateKnob<Pad>>(mm2px(Vec(xpos,MHEIGHT-115.f)),module,Pad::BW_PARAM);
+    auto bwParam=createParam<UpdateKnob<Pad>>(mm2px(Vec(xpos,9)),module,Pad::BW_PARAM);
     bwParam->module=module;
     addParam(bwParam);
-    auto scaleParam=createParam<UpdateKnob<Pad>>(mm2px(Vec(xpos,MHEIGHT-103.f)),module,Pad::SCALE_PARAM);
+    auto scaleParam=createParam<UpdateKnob<Pad>>(mm2px(Vec(xpos,21)),module,Pad::SCALE_PARAM);
     scaleParam->module=module;
     addParam(scaleParam);
-    auto seedParam=createParam<UpdatePartialsKnob<Pad>>(mm2px(Vec(xpos,MHEIGHT-91.f)),module,Pad::SEED_PARAM);
+    auto seedParam=createParam<UpdatePartialsKnob<Pad>>(mm2px(Vec(xpos,38)),module,Pad::SEED_PARAM);
     seedParam->module=module;
     addParam(seedParam);
-    auto mth=createParam<UpdatePartialsKnob<Pad>>(mm2px(Vec(xpos,MHEIGHT-79.f)),module,Pad::MTH_PARAM);
+    auto mth=createParam<UpdatePartialsKnob<Pad>>(mm2px(Vec(xpos,50)),module,Pad::MTH_PARAM);
     mth->module=module;
     addParam(mth);
-    auto amp=createParam<UpdatePartialsKnob<Pad>>(mm2px(Vec(xpos,MHEIGHT-67.f)),module,Pad::AMP_PARAM);
+    auto amp=createParam<UpdatePartialsKnob<Pad>>(mm2px(Vec(xpos,62)),module,Pad::AMP_PARAM);
     amp->module=module;
     addParam(amp);
-    addInput(createInput<SmallPort>(mm2px(Vec(xpos,MHEIGHT-55.f)),module,Pad::TRIG_INPUT));
-    addInput(createInput<SmallPort>(mm2px(Vec(xpos,MHEIGHT-43.f)),module,Pad::VOCT_INPUT));
-    addOutput(createOutput<SmallPort>(mm2px(Vec(xpos,MHEIGHT-31.f)),module,Pad::L_OUTPUT));
-    addOutput(createOutput<SmallPort>(mm2px(Vec(xpos,MHEIGHT-19.f)),module,Pad::R_OUTPUT));
+    addInput(createInput<SmallPort>(mm2px(Vec(xpos,80)),module,Pad::TRIG_INPUT));
+    addInput(createInput<SmallPort>(mm2px(Vec(xpos,92)),module,Pad::VOCT_INPUT));
+    addOutput(createOutput<SmallPort>(mm2px(Vec(xpos,104)),module,Pad::L_OUTPUT));
+    addOutput(createOutput<SmallPort>(mm2px(Vec(xpos,116)),module,Pad::R_OUTPUT));
   }
 
   void appendContextMenu(Menu* menu) override {

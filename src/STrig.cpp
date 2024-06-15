@@ -64,16 +64,13 @@ struct STrigWidget : ModuleWidget {
     setModule(module);
     setPanel(createPanel(asset::plugin(pluginInstance,"res/STrig.svg")));
 
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH,0)));
-    addChild(createWidget<ScrewSilver>(Vec(box.size.x-2*RACK_GRID_WIDTH,0)));
-    addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH,RACK_GRID_HEIGHT-RACK_GRID_WIDTH)));
-    addChild(createWidget<ScrewSilver>(Vec(box.size.x-2*RACK_GRID_WIDTH,RACK_GRID_HEIGHT-RACK_GRID_WIDTH)));
-    addInput(createInput<SmallPort>(mm2px(Vec(2,MHEIGHT-115.5f)),module,STrig::CV_INPUT));
-    addParam(createParam<TrimbotWhite>(mm2px(Vec(2,MHEIGHT-103.5f)),module,STrig::HIGH_PARAM));
-    addInput(createInput<SmallPort>(mm2px(Vec(2,MHEIGHT-91.5f)),module,STrig::HIGH_INPUT));
-    addParam(createParam<TrimbotWhite>(mm2px(Vec(2,MHEIGHT-79.5f)),module,STrig::LOW_PARAM));
-    addInput(createInput<SmallPort>(mm2px(Vec(2,MHEIGHT-67.5f)),module,STrig::LOW_INPUT));
-    addOutput(createOutput<SmallPort>(mm2px(Vec(2,MHEIGHT-55.5f)),module,STrig::GATE_OUTPUT));
+
+    addParam(createParam<TrimbotWhite>(mm2px(Vec(1.9,9)),module,STrig::LOW_PARAM));
+    addInput(createInput<SmallPort>(mm2px(Vec(1.9,17)),module,STrig::LOW_INPUT));
+    addParam(createParam<TrimbotWhite>(mm2px(Vec(1.9,32)),module,STrig::HIGH_PARAM));
+    addInput(createInput<SmallPort>(mm2px(Vec(1.9,40)),module,STrig::HIGH_INPUT));
+    addInput(createInput<SmallPort>(mm2px(Vec(1.9,104)),module,STrig::CV_INPUT));
+    addOutput(createOutput<SmallPort>(mm2px(Vec(1.9,116)),module,STrig::GATE_OUTPUT));
   }
 };
 

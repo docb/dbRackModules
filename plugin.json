@@ -164,6 +164,7 @@
       "slug": "FLA",
       "name": "FLA",
       "description": "applies integer arithmetic to a CV signal",
+      "hidden": true,
       "tags": [
         "Distortion"
       ]
@@ -172,6 +173,7 @@
       "slug": "FLL",
       "name": "FLL",
       "description": "applies integer bit operations to a CV signal",
+      "hidden": true,
       "tags": [
         "Distortion"
       ]
@@ -631,32 +633,6 @@
       "description": "Ping Pong Delay",
       "tags": [
         "Delay"
-      ]
-    },
-    {
-      "slug": "Benny",
-      "name": "Benny",
-      "description": "A Benjolin chaotic core",
-      "tags": [
-        "Oscillator"
-      ]
-    },
-    {
-      "slug": "Rungi",
-      "name": "Rungi",
-      "description": "A rungler with Modulation",
-      "tags": [
-        "Sequencer",
-        "Random"
-      ]
-    },
-    {
-      "slug": "Map2",
-      "name": "Map2",
-      "description": "Chaotic Maps 2",
-      "tags": [
-        "Sequencer",
-        "Polyphonic"
       ]
     }
   ]
