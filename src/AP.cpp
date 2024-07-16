@@ -10,7 +10,7 @@ struct RB {
     clear();
   }
 
-  void setLen(int l) {
+  void setLen(unsigned int l) {
     if(l>1&&l<=S)
       len=l;
   }
@@ -59,6 +59,7 @@ struct AP : Module {
 	};
   RB<float_4,48000> rb[4];
   DCBlocker<float_4> db[4];
+  bool highCV=false;
 
   AP() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -83,7 +84,7 @@ struct AP : Module {
     int channels=inputs[CV_INPUT].getChannels();
     float freq=params[FREQ_PARAM].getValue();
     int del=params[DELAY_SAMP_PARAM].getValue()+
-      clamp(inputs[DELAY_INPUT].getVoltage()*0.001f*params[DELAY_CV_PARAM].getValue()+params[DELAY_PARAM].getValue(),0.f,0.5f)*args.sampleRate;
+      clamp(inputs[DELAY_INPUT].getVoltage()*(highCV?0.01f:0.001f)*params[DELAY_CV_PARAM].getValue()+params[DELAY_PARAM].getValue(),0.f,0.5f)*args.sampleRate;
     for(int c=0;c<channels;c+=4) {
       float_4 in=inputs[CV_INPUT].getVoltageSimd<float_4>(c);
       float_4 freq4 = freq;
@@ -98,8 +99,19 @@ struct AP : Module {
     }
     outputs[CV_OUTPUT].setChannels(channels);
 	}
-};
 
+  json_t *dataToJson() override {
+    json_t *data=json_object();
+    json_object_set_new(data,"highCV",json_boolean(highCV));
+    return data;
+  }
+
+  void dataFromJson(json_t *rootJ) override {
+    json_t *jhighCV = json_object_get(rootJ,"highCV");
+    if(jhighCV!=nullptr) highCV = json_boolean_value(jhighCV);
+  }
+
+};
 
 struct APWidget : ModuleWidget {
 	APWidget(AP* module) {
@@ -115,8 +127,15 @@ struct APWidget : ModuleWidget {
     addParam(createParam<TrimbotWhite>(mm2px(Vec(x,82)),module,AP::DELAY_CV_PARAM));
     addInput(createInput<SmallPort>(mm2px(Vec(x,104)),module,AP::CV_INPUT));
     addOutput(createOutput<SmallPort>(mm2px(Vec(x,116)),module,AP::CV_OUTPUT));
-
   }
+
+  void appendContextMenu(Menu* menu) override {
+    AP *module=dynamic_cast<AP *>(this->module);
+    assert(module);
+    menu->addChild(new MenuSeparator);
+    menu->addChild(createBoolPtrMenuItem("High CV","",&module->highCV));
+  }
+
 };
 
 
