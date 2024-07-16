@@ -120,8 +120,8 @@ struct Pad2 : Module {
 #endif
 
   void onAdd(const AddEvent &e) override {
-    update(APP->engine->getSampleRate());
-    updateFund=true;
+    //update(APP->engine->getSampleRate());
+    //updateFund=true;
   }
 
   void generatePartials() {

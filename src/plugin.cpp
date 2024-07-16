@@ -73,6 +73,11 @@ extern Model* modelPPD;
 extern Model* modelOsc7;
 extern Model* modelOsc8;
 extern Model* modelOsc9;
+extern Model* modelFS6;
+extern Model* modelPulsar;
+extern Model* modelOscA1;
+extern Model* modelOscS;
+extern Model* modelOscP;
 
 
 void init(Plugin* p) {
@@ -148,5 +153,10 @@ void init(Plugin* p) {
   p->addModel(modelOsc7);
   p->addModel(modelOsc8);
   p->addModel(modelOsc9);
+  p->addModel(modelFS6);
+  p->addModel(modelPulsar);
+  p->addModel(modelOscA1);
+  p->addModel(modelOscS);
+  p->addModel(modelOscP);
 
 }

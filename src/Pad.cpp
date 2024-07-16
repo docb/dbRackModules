@@ -111,7 +111,7 @@ struct Pad : Module {
   float sr=48000.f;
   float bw=10.f;
   float scl=1.f;
-  int counter=-1;
+  int counter=0;
   float fade=0;
 
   void generatePartials() {
@@ -230,8 +230,8 @@ struct Pad : Module {
   }
 
   void onAdd(const AddEvent &e) override {
-    generatePartials();
-    counter = 0;
+    //generatePartials();
+    //counter = 0;
   }
 
   void setFadeTime(float value) {
@@ -269,6 +269,8 @@ struct Pad : Module {
 
       float outL=pt.lookupS(phs[k],mix);
       float outR=pt.lookupS(phs[k]+0.5,mix);
+      if(outR>15) outR=0;
+      if(outL>15) outL=0;
       outputs[L_OUTPUT].setVoltage(outL/2.5f,k);
       outputs[R_OUTPUT].setVoltage(outR/2.5f,k);
     }

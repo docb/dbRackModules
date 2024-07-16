@@ -634,6 +634,51 @@
       "tags": [
         "Delay"
       ]
+    },
+    {
+      "slug": "FS6",
+      "name": "FS6",
+      "description": "Fast Sine approximations",
+      "tags": [
+        "Oscillator",
+        "Polyphonic"
+      ]
+    },
+    {
+      "slug": "Pulsar",
+      "name": "Pulsar",
+      "description": "Pulsar Synthesis Oscillator",
+      "tags": [
+        "Oscillator",
+        "Polyphonic"
+      ]
+    },
+    {
+      "slug": "OscA1",
+      "name": "OscA1",
+      "description": "Additive Oscillator with up to 256 partials and comb filter",
+      "tags": [
+        "Oscillator",
+        "Polyphonic"
+      ]
+    },
+    {
+      "slug": "OscS",
+      "name": "OscS",
+      "description": "An alias free sawtooth oscillator",
+      "tags": [
+        "Oscillator",
+        "Polyphonic"
+      ]
+    },
+    {
+      "slug": "OscP",
+      "name": "OscP",
+      "description": "An alias free pulsewave oscillator",
+      "tags": [
+        "Oscillator",
+        "Polyphonic"
+      ]
     }
   ]
 }

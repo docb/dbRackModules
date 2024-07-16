@@ -863,6 +863,29 @@ inline void setImmediateValue(ParamQuantity *pq,float value) {
     value = std::round(value);
   APP->engine->setParamValue(pq->module, pq->paramId, value);
 }
+
+
+template<typename M>
+struct BufferSizeSelectItem : MenuItem {
+  M *module;
+  std::vector<std::string> labels={"32","64","128","256","512","1024"};
+
+  BufferSizeSelectItem(M *m) : module(m) {
+  }
+
+  Menu *createChildMenu() override {
+    Menu *menu=new Menu;
+    for(unsigned k=0;k<labels.size();k++) {
+      menu->addChild(createCheckMenuItem(labels[k],"",[=]() {
+        return module->getBufferSize()==int(k);
+      },[=]() {
+        module->setBufferSize(k);
+      }));
+    }
+    return menu;
+  }
+};
+
 #define TWOPIF 6.2831853f
 #define MHEIGHT 128.5f
 #define TY(x) MHEIGHT-(x)-6.237

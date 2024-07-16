@@ -4,78 +4,7 @@
 #include <Gamma/Delay.h>
 #include <Gamma/Filter.h>
 #include <thread>
-struct RBufferBase {
-  virtual bool in_empty()=0;
-  virtual bool in_full()=0;
-  virtual Vec in_shift()=0;
-  virtual void in_push(Vec val)=0;
-  virtual bool out_empty()=0;
-  virtual bool out_full()=0;
-  virtual Vec out_shift()=0;
-  virtual void out_push(Vec val)=0;
-};
-template<int S>
-struct RBuffer : RBufferBase {
-  rack::dsp::RingBuffer<Vec,S> outBuffer;
-  rack::dsp::RingBuffer<Vec,S> inBuffer;
-  bool in_empty() override {
-    return inBuffer.empty();
-  };
-  bool in_full() override {
-    return inBuffer.full();
-  };
-  Vec in_shift() override {
-    return inBuffer.shift();
-  }
-  void in_push(Vec val) override {
-    inBuffer.push(val);
-  }
-  bool out_empty() override {
-    return outBuffer.empty();
-  };
-  bool out_full() override {
-    return outBuffer.full();
-  };
-  Vec out_shift() override {
-    return outBuffer.shift();
-  }
-  void out_push(Vec val) override {
-    outBuffer.push(val);
-  }
-};
-
-struct RBufferMgr {
-  int bufferSizeIndex=3;
-  RBufferMgr() {
-    buffer=&b256;
-  }
-  RBufferBase *buffer;
-  RBuffer<32> b32;
-  RBuffer<64> b64;
-  RBuffer<128> b128;
-  RBuffer<256> b256;
-  RBuffer<512> b512;
-  RBuffer<1024> b1024;
-  void setBufferSize(int s) {
-    bufferSizeIndex=s;
-    switch(s) {
-      case 0:
-        buffer=&b32;break;
-      case 1:
-        buffer=&b64;break;
-      case 2:
-        buffer=&b128;break;
-      case 3:
-        buffer=&b256;break;
-      case 4:
-        buffer=&b512;break;
-      case 5:
-        buffer=&b1024;break;
-      default: break;
-    }
-  }
-};
-
+#include "buffer.hpp"
 struct EarlyReturnPreset {
   std::string name;
   std::vector<float> tapsLeft;
@@ -209,7 +138,7 @@ struct MVerb : Module {
   float sampleTime=1.f/48000;
   bool useThread=true;
   std::atomic<bool> run;
-  RBufferMgr bufMgr;
+  RBufferMgr<Vec> bufMgr;
 
   dsp::ClockDivider paramDivider;
 
