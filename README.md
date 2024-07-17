@@ -10,6 +10,8 @@ New modules in 2.2.0: [Osc1](#osc1), [Osc2](#osc2), [Osc3](#osc3), [Osc4](#osc4)
 
 New modules in 2.3.0: [Osc7](#osc7), [Osc8](#osc8), [Osc9](#osc9), [Drum](#drum), [PPD](#ppd)
 
+New modules in 2.4.0: [FS6](#fs6), [Pulsar](#pulsar), [OscA1](#osca1), [OscS](#oscs), [OscP](#oscp)  
+
 See also the demo patches on [PatchStorage](https://patchstorage.com/author/docb/) or on [youtube](https://www.youtube.com/@docb7593)
 
 
@@ -36,6 +38,7 @@ See also the demo patches on [PatchStorage](https://patchstorage.com/author/docb
   - [Osc8](#osc8)
   - [Osc9](#osc9)
   - [PRB](#prb)
+  - [FS6](#fs6)
   - [CSOSC](#csosc)
   - [SPL](#spl)
   - [Geneticterrain](#geneticterrain)
@@ -47,6 +50,11 @@ See also the demo patches on [PatchStorage](https://patchstorage.com/author/docb
   - [µPad2](#%C2%B5pad2)
   - [Gendy](#gendy)
   - [Drum](#drum)
+  - [Pulsar](#pulsar)
+- [Additive Oscillators](#additive-oscillators)
+  - [OscA1](#osca1)
+  - [OscS](#oscs)
+  - [OscP](#oscp)
 - [Some CPU friendly polyphonic filters](#some-cpu-friendly-polyphonic-filters)
   - [SPF](#spf)
   - [SKF](#skf)
@@ -86,7 +94,6 @@ See also the demo patches on [PatchStorage](https://patchstorage.com/author/docb
   - [EVA](#eva)
   - [Ratio](#ratio)
   - [AUX](#aux)
-  - [FLA and FFL](#fla-and-ffl)
   - [STrg](#strg)
   - [JTScaler](#jtscaler)
   - [GenScale](#genscale)
@@ -159,6 +166,7 @@ The inner points (2 up to (Len-2)) can be modulated via the modulation inputs:
 
 ### Other modules which can be phase driven
 There are several modules which can be phase driven:
+- FS6 (new in 2.4.0)
 - PRB (new in 2.2.0)
 - CSOSC (new in 2.1.1)
 - SPL (new, see below): generates spline waveforms from up to 16 points
@@ -260,6 +268,11 @@ Osc9 is a wave shaping oscillator providing two controls for shaping the sound -
 ![](images/prb-2.png?raw=true)
 - PRB provides exponential FM and linear FM through zero.
 - PRB has a phs input for phase distortion synthesis
+
+### FS6
+![](images/fs6.png?raw=true)
+- FS6 provides 6 very fast sinus wave approximations with far less harmonic content than PRB
+- It is useful for FM Synthesis via linear FM through zero and phase distortion synthesis
 
 ### CSOSC
 ![](images/CSOSC.png?raw=true)
@@ -432,6 +445,41 @@ from Iannis Xenakis.
 ![](images/Drum.png?raw=true)
 
 A tiny sample based drum module with pitch, gain, decay controls.
+
+### Pulsar
+![](images/pulsar.png?raw=true)
+- Pulsar is a pulsar synthesis oscillator
+- It produces trains of short wave forms adjustable with the duty parameter 
+- The wave form can be smoothly controlled from sine to triangle to square to saw
+
+![](images/pulsar2.png?raw=true)
+- The pulses can be clustered and enveloped via the cluster and window parameters
+- Aliasing is suppressed via 16 times oversampling.
+
+## Additive Oscillators
+![](images/additive.png?raw=true)
+
+Some alias-free oscillators which generate the wave form via adding 256-512 partials.
+The computation is done in the background and not in the main audio thread.
+Therefore, there is a menu which controls the buffer size used to communicate between the generator
+and audio output. If the oscillator makes noisy sounds the buffer size should be increased.
+The communication via the buffer on higher sizes may introduce a small delay of the audio output 
+which can be compensated via a delay of e.g. 10ms on the trigger gates for vca/env module connected behind
+
+![](images/OscSwithDelay.png?raw=true)
+
+### OscA1
+- An additive oscillator similar to Osc8 (see there for the parameter descriptions)
+- OscA1 provides additionally a spectral comb filter
+
+![](images/OscA1.png?raw=true)
+
+### OscS
+- Produces an additive generated alias-free saw wave
+
+### OscP
+- Produces an additive generated alias-free pulse wave
+- Provides PWM
 
 
 ## Some CPU friendly polyphonic filters
@@ -739,15 +787,6 @@ into a polyphonic signals.
 The values (0-10V) of the polyphonic Lvl input are divided by 10 and then multiplied with the corresponding parameter value.
 By using 10V Gates on the Lvl input single channels can be turned on and off. 
 To avoid clicks there is a slew limiter processing the incoming level values.
-
-### FLA and FFL
-FLA applies integer arithmetic to a CV signal.
-FLL applies integer bit operations to a CV signal.
-
-The CV input is converted to a 24 bit integer and converted back after the operation.
-The purpose of these modules was originally to have a method for arbitrary formulas used in the classic
-"Experimental music from very short C programs (Viznut)".
-However it turns out that also wired sounds can be made with this method.
 
 ### STrg
 A polyphonic Schmitt Trigger module
