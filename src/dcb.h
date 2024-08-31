@@ -886,6 +886,105 @@ struct BufferSizeSelectItem : MenuItem {
   }
 };
 
+
+struct ColorKnobWidget : Widget {
+  NVGcolor color=nvgRGB(0,0,0);
+  void setAlpha(float a) {
+    if(a==0.f) {
+      color.r=0.f;
+      color.g=0.f;
+      color.b=0.f;
+      color.a=0.2;
+    } else {
+      color.r=0.3f;
+      color.g=1.0f;
+      color.b=0.7f;
+      color.a=a;
+    }
+  }
+  void draw(const DrawArgs& args) override {
+    float c = box.size.x * 0.5f;
+
+    nvgBeginPath(args.vg);
+    nvgCircle(args.vg, c, c, c);
+    nvgFillColor(args.vg, nvgRGB(0xbe,0xb5,0xd5));
+    nvgFill(args.vg);
+
+    nvgBeginPath(args.vg);
+    nvgCircle(args.vg, c, c, c-2);
+    nvgFillColor(args.vg,nvgRGB(0xd8,0xd8,0xd8));
+    nvgFill(args.vg);
+    nvgBeginPath(args.vg);
+    nvgCircle(args.vg, c, c, c-2);
+    nvgFillColor(args.vg, color);
+    nvgFill(args.vg);
+
+    nvgBeginPath(args.vg);
+    nvgMoveTo(args.vg,c,0);
+    nvgLineTo(args.vg,c,c);
+    nvgStrokeWidth(args.vg,2);
+    nvgStrokeColor(args.vg,nvgRGB(0x24,0x31,0xa5));
+    nvgStroke(args.vg);
+  }
+};
+
+struct ColorKnob : Knob {
+  FramebufferWidget* fb;
+  CircularShadow* shadow;
+  TransformWidget* tw;
+  ColorKnobWidget *w;
+  ColorKnob() {
+    fb = new widget::FramebufferWidget;
+    addChild(fb);
+    box.size=mm2px(Vec(6.23f,6.23f));
+    fb->box.size = box.size;
+    shadow = new CircularShadow;
+    fb->addChild(shadow);
+    shadow->box.size = box.size;
+    shadow->box.pos = math::Vec(0, box.size.y * 0.1f);
+    tw = new TransformWidget;
+    tw->box.size = box.size;
+    fb->addChild(tw);
+
+    w = new ColorKnobWidget;
+    w->box.size=box.size;
+    tw->addChild(w);
+    minAngle=-0.83f * M_PI;
+    maxAngle=0.83f * M_PI;
+  }
+
+  void onChange(const ChangeEvent& e) override {
+    // Re-transform the widget::TransformWidget
+    engine::ParamQuantity* pq = getParamQuantity();
+    if (pq) {
+      float value = pq->getSmoothValue();
+      float angle;
+      if (!pq->isBounded()) {
+        // Number of rotations equals value for unbounded range
+        angle = value * (2 * M_PI);
+      }
+      else if (pq->getRange() == 0.f) {
+        // Center angle for zero range
+        angle = (minAngle + maxAngle) / 2.f;
+      }
+      else {
+        // Proportional angle for finite range
+        angle = math::rescale(value, pq->getMinValue(), pq->getMaxValue(), minAngle, maxAngle);
+      }
+      angle = std::fmod(angle, 2 * M_PI);
+      w->setAlpha(math::rescale(value, pq->getMinValue(), pq->getMaxValue(), 0,1));
+      tw->identity();
+      // Rotate SVG
+      math::Vec center = w->box.getCenter();
+      tw->translate(center);
+      tw->rotate(angle);
+      tw->translate(center.neg());
+      fb->dirty = true;
+    }
+    Knob::onChange(e);
+  }
+};
+
 #define TWOPIF 6.2831853f
 #define MHEIGHT 128.5f
 #define TY(x) MHEIGHT-(x)-6.237

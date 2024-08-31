@@ -78,7 +78,10 @@ extern Model* modelPulsar;
 extern Model* modelOscA1;
 extern Model* modelOscS;
 extern Model* modelOscP;
-
+extern Model* modelX16;
+extern Model* modelX8;
+extern Model* modelX4;
+extern Model* modelX6;
 
 void init(Plugin* p) {
 	pluginInstance = p;
@@ -158,5 +161,8 @@ void init(Plugin* p) {
   p->addModel(modelOscA1);
   p->addModel(modelOscS);
   p->addModel(modelOscP);
-
+	p->addModel(modelX16);
+  p->addModel(modelX8);
+  p->addModel(modelX4);
+  p->addModel(modelX6);
 }
