@@ -150,8 +150,15 @@ struct Osc1 : Module {
     if(random) {
       _len=rnd.nextRange(3,16);
       setImmediateValue(getParamQuantity(NODES_PARAM),_len);
+      bool disc=false;
       for(int k=0;k<_len;k++) {
-        px[k]=float(k)/float(_len-1);
+        if(rnd.nextCoin(0.6f) && k>2 && !disc && k<_len-1) {
+          px[k]=float(k-1)/float(_len-1);
+          disc=true;
+        } else {
+          px[k]=float(k)/float(_len-1);
+          disc=false;
+        }
         py[k]=float(rnd.nextDouble())*10.f-5.f;
       }
       changed=true;

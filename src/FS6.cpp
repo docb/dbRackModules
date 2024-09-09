@@ -63,6 +63,19 @@ struct SineOsc {
   }
 
 
+  T firstHalfBI(T po) {
+    T z = po*(.5f-po);
+    return 4.f*z/(.3125f-z);
+  }
+  T secondHalfBI(T po) {
+    T z = (po-0.5f)*(po-1.f);
+    return 4.f*z/(.3125f+z);
+  }
+
+  T processBI() {
+    return simd::ifelse(phs<0.5f,firstHalfBI(phs),secondHalfBI(phs));
+  }
+
   T process(int type) {
     switch(type) {
       case 0: return process4();
@@ -71,6 +84,7 @@ struct SineOsc {
       case 3: return process4P();
       case 4: return process5P();
       case 5: return process554();
+      case 6: return processBI();
       default: return 0.f;
     }
   }
@@ -125,7 +139,7 @@ struct FS6 : Module {
     configParam(FREQ_PARAM,-14.f,4.f,0.f,"Frequency"," Hz",2,dsp::FREQ_C4);
     configParam(FM_PARAM,0,1,0,"FM Amount","%",0,100);
     configParam(FINE_PARAM,-100,100,0,"Fine tune"," cents");
-    configSwitch(OSC_PARAM,0,5,4,"Osc", {"P4","P5","P6","P4P","P5P","Pad554"});
+    configSwitch(OSC_PARAM,0,6,4,"Osc", {"P4","P5","P6","P4P","P5P","Pad554","BI"});
     getParamQuantity(OSC_PARAM)->snapEnabled=true;
     configInput(FM_INPUT,"FM");
     configButton(LIN_PARAM,"Linear");

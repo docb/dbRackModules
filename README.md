@@ -743,6 +743,25 @@ ynew=a-x
 If the CLK input is not connected it outputs the hopalong attractor as audio. In order to hear this
 interesting sound it is best to filter out the 10K band a much as possible and push the lower bands.
 
+## Matrix Mixer
+![](images/matrixmixer.png?raw=true)
+
+Some compact polyphonic matrix mixers with modulation.
+
+### X16
+- The inputs and outputs are polyphonic.
+- The polyphonic channels of the modulation inputs are applied to the corresponding input.
+- So there is only monophonic modulation per input and column.
+### X8
+- All inputs and outputs are full polyphonic. 
+- The polyphonic modulation inputs take 0-10V and scale the value to 0-1V. 
+  Then te value is multiplied with the knob value.
+### X6
+- All inputs and outputs are full polyphonic.
+- Each modulation input has a cv attenuator and is added to the knob value.
+### X4
+- See X6.
+
 
 ## Others
 ![](images/others.png?raw=true)
@@ -810,3 +829,35 @@ It does not apply anything to the inputs.
 
 ### Plotter
 Plots a polyphonic 2D Signal.
+
+### CVS
+![](images/cvs.png?raw=true)
+- CVS has 16 polyphonic inputs and the polyphonic inputs P1-P4.
+- the channel Y of PX is used for input number Y channel X (vertical assignment)
+  if the input Y is not connected.
+- The CV input can address continuously the 16 inputs in the range from 0-10V 
+  E.g. 0.625 would output input1, `0.625+0.625/2 = 0.9375` would output `input1*0.5 + input2*0.5`. 
+- The address value is always taken by modulo Len. So if e.g. Len = 2 0.125 would output input1
+- The trig output is high (10V) whenever the output changed.
+This seems to be very complicated but the following examples show some easy understandable usecases:
+
+#### A simple cv addressable sequencer
+![](images/cvsseq.png?raw=true)
+P16 delivers exactly the values for addressing the inputs (no interpolation).
+
+#### A contineous cv addressable sequencer
+![](images/cvsseq2.png?raw=true)
+In this example the rndh delivers arbitrary values between 0-10V. So the inputs are interpolated.
+#### a scanner
+![](images/cvsscan.png?raw=true)
+Here a lfo is used to scan 4 pulsars (continuously)
+
+#### a polyphonic scanner
+![](images/cvspolyscan.png?raw=true)
+In this example rndc with 4 channels scans each note of the chord differently. 
+
+### DTrg
+![](images/dtrig.png?raw=true)
+- a simple cv change detector
+- if the window is 0 the output is high if the input changes (compared to the last sample).
+- otherwise the output is high if the current sample is in the interval last-window, last+window. 

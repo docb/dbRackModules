@@ -1,7 +1,7 @@
 {
   "slug": "dbRackModules",
   "name": "dbRackModules",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "license": "GPL-3.0-or-later",
   "brand": "docB",
   "author": "docB",
@@ -698,6 +698,15 @@
       ]
     },
     {
+      "slug": "X6",
+      "name": "X6",
+      "description": "6x6 Matrix Mixer with modulation",
+      "tags": [
+        "Mixer",
+        "Polyphonic"
+      ]
+    },
+    {
       "slug": "X4",
       "name": "X4",
       "description": "4x4 Matrix Mixer with modulation",
@@ -707,11 +716,22 @@
       ]
     },
     {
-      "slug": "X6",
-      "name": "X6",
-      "description": "6x6 Matrix Mixer with modulation",
+      "slug": "CVS",
+      "name": "CVS",
+      "description": "CV controlled polyphonic switch, sequencer, crossfader, scanner",
       "tags": [
+        "Switch",
         "Mixer",
+        "Sequencer",
+        "Polyphonic"
+      ]
+    },
+    {
+      "slug": "DTrig",
+      "name": "DTrig",
+      "description": "CV change detector",
+      "tags": [
+        "Utility",
         "Polyphonic"
       ]
     }

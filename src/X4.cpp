@@ -64,6 +64,7 @@ struct XX : Module {
               float_4 modIn=float_4::load(&this->inputs[MOD_INPUT+k*MSIZE+j].voltages[chn])*0.1f;
               //float_4 modIn=this->inputs[MOD_INPUT+k*MSIZE+j].getPolyVoltageSimd<float_4>(chn)*0.1f;
               param+=(modIn*modParam);
+              param=clamp(param,0.f,1.f);
             }
           }
           sum += param*inCV[k];
