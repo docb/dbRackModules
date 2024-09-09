@@ -12,6 +12,8 @@ New modules in 2.3.0: [Osc7](#osc7), [Osc8](#osc8), [Osc9](#osc9), [Drum](#drum)
 
 New modules in 2.4.0: [FS6](#fs6), [Pulsar](#pulsar), [OscA1](#osca1), [OscS](#oscs), [OscP](#oscp)  
 
+New modules in 2.5.0: [X16](#x16), [X8](#x8), [X6](#x6), [X4](#x4), [CVS](#cvs), [DTrg](#dtrg)
+
 See also the demo patches on [PatchStorage](https://patchstorage.com/author/docb/) or on [youtube](https://www.youtube.com/@docb7593)
 
 
@@ -87,6 +89,11 @@ See also the demo patches on [PatchStorage](https://patchstorage.com/author/docb
   - [HexSeq](#hexseq)
   - [HexSeqP](#hexseqp)
   - [Frac and Hopa](#frac-and-hopa)
+- [Matrix Mixer](#matrix-mixer)
+  - [X16](#x16)
+  - [X8](#x8)
+  - [X6](#x6)
+  - [X4](#x4)
 - [Others](#others)
   - [Faders](#faders)
   - [PLC](#plc)
@@ -99,6 +106,12 @@ See also the demo patches on [PatchStorage](https://patchstorage.com/author/docb
   - [GenScale](#genscale)
   - [Interface](#interface)
   - [Plotter](#plotter)
+  - [CVS](#cvs)
+    - [A simple cv addressable sequencer](#a-simple-cv-addressable-sequencer)
+    - [A contineous cv addressable sequencer](#a-contineous-cv-addressable-sequencer)
+    - [a scanner](#a-scanner)
+    - [a polyphonic scanner](#a-polyphonic-scanner)
+  - [DTrg](#dtrg)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
