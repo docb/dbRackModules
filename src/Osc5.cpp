@@ -1,14 +1,17 @@
 #include "dcb.h"
 #include "filter.hpp"
+
 using simd::float_4;
 
 struct PulseOsc {
   float phs=0.f;
   int stage=0;
+
   void updatePhs(float fms) {
     phs+=fms;
     phs-=std::floor(phs);
   }
+
   float process(float bp=0.5f,float bp1=0.5f) {
 
     float o=0.f;
@@ -43,13 +46,16 @@ struct PulseOsc {
     return o;
   }
 };
+
 struct PulseOsc4 {
   PulseOsc osc[4];
+
   void updatePhs(float_4 fms) {
     for(int k=0;k<4;k++) {
       osc[k].updatePhs(fms[k]);
     }
   }
+
   float_4 process(float_4 bp1,float_4 bp2) {
     float ret[4];
     for(int k=0;k<4;k++) {
@@ -60,27 +66,28 @@ struct PulseOsc4 {
 };
 
 struct Osc5 : Module {
-	enum ParamId {
+  enum ParamId {
     FREQ_PARAM,FM_PARAM,LIN_PARAM,BP1_PARAM,BP1_CV_PARAM,BP2_PARAM,BP2_CV_PARAM,PARAMS_LEN
-	};
-	enum InputId {
+  };
+  enum InputId {
     VOCT_INPUT,FM_INPUT,BP1_INPUT,BP2_INPUT,INPUTS_LEN
-	};
-	enum OutputId {
-		CV_OUTPUT,OUTPUTS_LEN
-	};
-	enum LightId {
-		LIGHTS_LEN
-	};
+  };
+  enum OutputId {
+    CV_OUTPUT,OUTPUTS_LEN
+  };
+  enum LightId {
+    LIGHTS_LEN
+  };
 
   PulseOsc4 osc[4];
   Cheby1_32_BandFilter<float_4> filter24[4];
-	Osc5() {
-		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
+
+  Osc5() {
+    config(PARAMS_LEN,INPUTS_LEN,OUTPUTS_LEN,LIGHTS_LEN);
     configParam(FREQ_PARAM,-8.f,4.f,0.f,"Frequency"," Hz",2,dsp::FREQ_C4);
     configInput(VOCT_INPUT,"V/Oct 1");
     configButton(LIN_PARAM,"Linear");
-    configParam(FM_PARAM,0,1,0,"FM Amount","%",0,100);
+    configParam(FM_PARAM,0,3,0,"FM Amount","%",0,100);
     configParam(BP1_PARAM,0.01,0.98,0.5,"Breakpoint 1");
     configInput(BP1_INPUT,"Wave CV");
     configParam(BP1_CV_PARAM,0,0.1,0,"Breakpoint 1 CV");
@@ -89,9 +96,9 @@ struct Osc5 : Module {
     configParam(BP2_CV_PARAM,0,0.1,0,"Breakpoint 2 CV");
     configInput(FM_INPUT,"FM");
     configOutput(CV_OUTPUT,"CV");
-	}
+  }
 
-	void process(const ProcessArgs& args) override {
+  void process(const ProcessArgs &args) override {
     float freqParam=params[FREQ_PARAM].getValue();
     float fmParam=params[FM_PARAM].getValue();
     bool linear=params[LIN_PARAM].getValue()>0;
@@ -101,11 +108,13 @@ struct Osc5 : Module {
     for(int c=0;c<channels;c+=4) {
       float_4 bp1=bp1f;
       if(inputs[BP1_INPUT].isConnected()) {
-        bp1=clamp(bp1+inputs[BP1_INPUT].getPolyVoltageSimd<float_4>(c)*params[BP1_CV_PARAM].getValue(),0.01f,0.99f);
+        bp1=clamp(bp1+inputs[BP1_INPUT].getPolyVoltageSimd<float_4>(c)*params[BP1_CV_PARAM].getValue(),
+                  0.01f,0.99f);
       }
       float_4 bp2=bp2f;
       if(inputs[BP2_INPUT].isConnected()) {
-        bp2=clamp(bp2+inputs[BP2_INPUT].getPolyVoltageSimd<float_4>(c)*params[BP2_CV_PARAM].getValue(),0.01f,0.99f);
+        bp2=clamp(bp2+inputs[BP2_INPUT].getPolyVoltageSimd<float_4>(c)*params[BP2_CV_PARAM].getValue(),
+                  0.01f,0.99f);
       }
       auto *oscil=&osc[c/4];
       float_4 pitch1=freqParam+inputs[VOCT_INPUT].getVoltageSimd<float_4>(c);
@@ -129,14 +138,14 @@ struct Osc5 : Module {
       outputs[CV_OUTPUT].setVoltageSimd(o*10.f,c);
     }
     outputs[CV_OUTPUT].setChannels(channels);
-	}
+  }
 };
 
 
 struct Osc5Widget : ModuleWidget {
-	Osc5Widget(Osc5* module) {
-		setModule(module);
-		setPanel(createPanel(asset::plugin(pluginInstance, "res/Osc5.svg")));
+  Osc5Widget(Osc5 *module) {
+    setModule(module);
+    setPanel(createPanel(asset::plugin(pluginInstance,"res/Osc5.svg")));
     float x=1.9;
     addParam(createParam<TrimbotWhite>(mm2px(Vec(x,9)),module,Osc5::FREQ_PARAM));
     addInput(createInput<SmallPort>(mm2px(Vec(x,21)),module,Osc5::VOCT_INPUT));
@@ -151,8 +160,8 @@ struct Osc5Widget : ModuleWidget {
     addParam(createParam<TrimbotWhite>(mm2px(Vec(x,104)),module,Osc5::BP2_CV_PARAM));
     addOutput(createOutput<SmallPort>(mm2px(Vec(x,116)),module,Osc5::CV_OUTPUT));
 
-	}
+  }
 };
 
 
-Model* modelOsc5 = createModel<Osc5, Osc5Widget>("Osc5");
+Model *modelOsc5=createModel<Osc5,Osc5Widget>("Osc5");

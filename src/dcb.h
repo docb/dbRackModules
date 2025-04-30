@@ -1,28 +1,32 @@
 #ifndef __DCB
 #define __DCB
+
 #include "plugin.hpp"
 #include <sstream>
 #include <iomanip>
 #include <utility>
 #include "rnd.h"
 #include <bitset>
+
 struct SelectButton : Widget {
   int _value;
   std::string _label;
   std::basic_string<char> fontPath;
-  SelectButton(int value, std::string  label) : _value(value),_label(std::move(label)) {
-    fontPath = asset::plugin(pluginInstance, "res/FreeMonoBold.ttf");
-  }
-  void draw(const DrawArgs& args) override {
-    std::shared_ptr<Font> font =  APP->window->loadFont(fontPath);
-    int currentValue = 0;
-    auto paramWidget = getAncestorOfType<ParamWidget>();
-    assert(paramWidget);
-    engine::ParamQuantity* pq = paramWidget->getParamQuantity();
-    if (pq)
-       currentValue = std::round(pq->getValue());
 
-    if (currentValue == _value) {
+  SelectButton(int value,std::string label) : _value(value),_label(std::move(label)) {
+    fontPath=asset::plugin(pluginInstance,"res/FreeMonoBold.ttf");
+  }
+
+  void draw(const DrawArgs &args) override {
+    std::shared_ptr<Font> font=APP->window->loadFont(fontPath);
+    int currentValue=0;
+    auto paramWidget=getAncestorOfType<ParamWidget>();
+    assert(paramWidget);
+    engine::ParamQuantity *pq=paramWidget->getParamQuantity();
+    if(pq)
+      currentValue=std::round(pq->getValue());
+
+    if(currentValue==_value) {
       nvgFillColor(args.vg,nvgRGB(0x7e,0xa6,0xd3));
     } else {
       nvgFillColor(args.vg,nvgRGB(0x3c,0x4c,0x71));
@@ -30,43 +34,45 @@ struct SelectButton : Widget {
     nvgStrokeColor(args.vg,nvgRGB(0xc4,0xc9,0xc2));
     nvgBeginPath(args.vg);
     nvgRoundedRect(args.vg,0,0,box.size.x,box.size.y,3.f);
-    nvgFill(args.vg);nvgStroke(args.vg);
-    nvgFontSize(args.vg, box.size.y-2);
-    nvgFontFaceId(args.vg, font->handle);
-    NVGcolor textColor = nvgRGB(0xff, 0xff, 0xaa);
-    nvgTextAlign(args.vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
-    nvgFillColor(args.vg, textColor);
-    nvgText(args.vg, box.size.x/2.f, box.size.y/2.f, _label.c_str(), NULL);
+    nvgFill(args.vg);
+    nvgStroke(args.vg);
+    nvgFontSize(args.vg,box.size.y-2);
+    nvgFontFaceId(args.vg,font->handle);
+    NVGcolor textColor=nvgRGB(0xff,0xff,0xaa);
+    nvgTextAlign(args.vg,NVG_ALIGN_CENTER|NVG_ALIGN_MIDDLE);
+    nvgFillColor(args.vg,textColor);
+    nvgText(args.vg,box.size.x/2.f,box.size.y/2.f,_label.c_str(),NULL);
   }
 
-  void onDragHover(const event::DragHover& e) override {
-    if (e.button == GLFW_MOUSE_BUTTON_LEFT) {
+  void onDragHover(const event::DragHover &e) override {
+    if(e.button==GLFW_MOUSE_BUTTON_LEFT) {
       e.consume(this);
     }
     Widget::onDragHover(e);
   }
 
-  void onDragEnter(const event::DragEnter& e) override;
+  void onDragEnter(const event::DragEnter &e) override;
 };
+
 struct SelectParam : ParamWidget {
 
   void init(std::vector<std::string> labels) {
-    const float margin = 0;
-    float height = box.size.y - 2 * margin;
-    unsigned int len = labels.size();
-    for (unsigned int i = 0; i < len; i++) {
-      auto selectButton = new SelectButton(i,labels[i]);
-      selectButton->box.pos = Vec(0,height/len*i+margin);
-      selectButton->box.size = Vec(box.size.x,height/len);
+    const float margin=0;
+    float height=box.size.y-2*margin;
+    unsigned int len=labels.size();
+    for(unsigned int i=0;i<len;i++) {
+      auto selectButton=new SelectButton(i,labels[i]);
+      selectButton->box.pos=Vec(0,height/len*i+margin);
+      selectButton->box.size=Vec(box.size.x,height/len);
       addChild(selectButton);
     }
   }
 
-  void draw(const DrawArgs& args) override {
+  void draw(const DrawArgs &args) override {
     // Background
     nvgBeginPath(args.vg);
-    nvgRect(args.vg, 0, 0, box.size.x, box.size.y);
-    nvgFillColor(args.vg, nvgRGB(0, 0, 0));
+    nvgRect(args.vg,0,0,box.size.x,box.size.y);
+    nvgFillColor(args.vg,nvgRGB(0,0,0));
     nvgFill(args.vg);
 
     ParamWidget::draw(args);
@@ -74,82 +80,91 @@ struct SelectParam : ParamWidget {
 };
 
 
-
 struct SmallButton : SvgSwitch {
   SmallButton() {
-    momentary = false;
-    addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/SmallButton0.svg")));
-    addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/SmallButton1.svg")));
+    momentary=false;
+    addFrame(APP->window->loadSvg(asset::plugin(pluginInstance,"res/SmallButton0.svg")));
+    addFrame(APP->window->loadSvg(asset::plugin(pluginInstance,"res/SmallButton1.svg")));
     fb->removeChild(shadow);
     delete shadow;
   }
 };
+
 struct SmallButtonWithLabel : SvgSwitch {
   std::string label;
   std::basic_string<char> fontPath;
+
   SmallButtonWithLabel() {
-    fontPath = asset::plugin(pluginInstance, "res/FreeMonoBold.ttf");
-    momentary = false;
-    addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/SmallButton0.svg")));
-    addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/SmallButton1.svg")));
+    fontPath=asset::plugin(pluginInstance,"res/FreeMonoBold.ttf");
+    momentary=false;
+    addFrame(APP->window->loadSvg(asset::plugin(pluginInstance,"res/SmallButton0.svg")));
+    addFrame(APP->window->loadSvg(asset::plugin(pluginInstance,"res/SmallButton1.svg")));
     fb->removeChild(shadow);
     delete shadow;
   }
+
   void setLabel(const std::string &lbl) {
-    label = lbl;
+    label=lbl;
   }
+
   void draw(const DrawArgs &args) override;
 
 };
+
 struct SmallRoundButton : SvgSwitch {
-    SmallRoundButton() {
-        momentary = false;
-        addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/button_9px_off.svg")));
-        addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/button_9px_active.svg")));
-        fb->removeChild(shadow);
-        delete shadow;
-    }
+  SmallRoundButton() {
+    momentary=false;
+    addFrame(APP->window->loadSvg(asset::plugin(pluginInstance,"res/button_9px_off.svg")));
+    addFrame(APP->window->loadSvg(asset::plugin(pluginInstance,"res/button_9px_active.svg")));
+    fb->removeChild(shadow);
+    delete shadow;
+  }
 };
-template <typename TLightBase = RedLight>
+
+template<typename TLightBase = RedLight>
 struct LEDLightSliderFixed : LEDLightSlider<TLightBase> {
-    LEDLightSliderFixed() {
-        this->setHandleSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/LEDSliderHandle.svg")));
-    }
+  LEDLightSliderFixed() {
+    this->setHandleSvg(APP->window->loadSvg(asset::plugin(pluginInstance,"res/LEDSliderHandle.svg")));
+  }
 };
 
 struct TrimbotWhite : SvgKnob {
   TrimbotWhite() {
-    minAngle = -0.8 * M_PI;
-    maxAngle = 0.8 * M_PI;
-    setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/TrimpotWhite.svg")));
+    minAngle=-0.8*M_PI;
+    maxAngle=0.8*M_PI;
+    setSvg(APP->window->loadSvg(asset::plugin(pluginInstance,"res/TrimpotWhite.svg")));
   }
 };
+
 struct TrimbotWhiteSnap : SvgKnob {
   TrimbotWhiteSnap() {
-    snap = true;
-    minAngle = -0.8 * M_PI;
-    maxAngle = 0.8 * M_PI;
-    setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/TrimpotWhite.svg")));
+    snap=true;
+    minAngle=-0.8*M_PI;
+    maxAngle=0.8*M_PI;
+    setSvg(APP->window->loadSvg(asset::plugin(pluginInstance,"res/TrimpotWhite.svg")));
   }
 };
+
 struct TrimbotWhite9 : SvgKnob {
   TrimbotWhite9() {
-    minAngle = -0.8 * M_PI;
-    maxAngle = 0.8 * M_PI;
-    setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/TrimpotWhite9mm.svg")));
+    minAngle=-0.8*M_PI;
+    maxAngle=0.8*M_PI;
+    setSvg(APP->window->loadSvg(asset::plugin(pluginInstance,"res/TrimpotWhite9mm.svg")));
   }
 };
+
 struct TrimbotWhite9Snap : SvgKnob {
   TrimbotWhite9Snap() {
-    snap = true;
-    minAngle = -0.8 * M_PI;
-    maxAngle = 0.8 * M_PI;
-    setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/TrimpotWhite9mm.svg")));
+    snap=true;
+    minAngle=-0.8*M_PI;
+    maxAngle=0.8*M_PI;
+    setSvg(APP->window->loadSvg(asset::plugin(pluginInstance,"res/TrimpotWhite9mm.svg")));
   }
 };
+
 struct SmallPort : app::SvgPort {
   SmallPort() {
-    setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/SmallPort.svg")));
+    setSvg(APP->window->loadSvg(asset::plugin(pluginInstance,"res/SmallPort.svg")));
   }
 };
 
@@ -159,10 +174,10 @@ struct HiddenPort : app::SvgPort {
   }
 };
 
-template <typename TBase>
+template<typename TBase>
 struct DBSmallLight : TSvgLight<TBase> {
   DBSmallLight() {
-    this->setSvg(Svg::load(asset::plugin(pluginInstance, "res/SmallLight.svg")));
+    this->setSvg(Svg::load(asset::plugin(pluginInstance,"res/SmallLight.svg")));
   }
 };
 
@@ -186,20 +201,22 @@ struct Scale {
         throw Exception(string::f("Scale entry must be an array of length 2"));
       unsigned int n=json_integer_value(json_array_get(entry,0));
       unsigned int p=json_integer_value(json_array_get(entry,1));
-      labels[k]=std::to_string(n) + "/" + std::to_string(p);
+      labels[k]=std::to_string(n)+"/"+std::to_string(p);
       values[k]=float(n)/float(p);
     }
   }
 };
+
 struct UpdateOnReleaseKnob : TrimbotWhite {
   bool *update=nullptr;
   bool contextMenu;
+
   UpdateOnReleaseKnob() : TrimbotWhite() {
 
   }
 
-  void onButton(const ButtonEvent& e) override {
-    if (e.action == GLFW_PRESS && e.button == GLFW_MOUSE_BUTTON_RIGHT && (e.mods & RACK_MOD_MASK) == 0) {
+  void onButton(const ButtonEvent &e) override {
+    if(e.action==GLFW_PRESS&&e.button==GLFW_MOUSE_BUTTON_RIGHT&&(e.mods&RACK_MOD_MASK)==0) {
       contextMenu=true;
     } else {
       contextMenu=false;
@@ -207,7 +224,7 @@ struct UpdateOnReleaseKnob : TrimbotWhite {
     Knob::onButton(e);
   }
 
-  void onChange(const ChangeEvent& e) override {
+  void onChange(const ChangeEvent &e) override {
     SvgKnob::onChange(e);
     if(update!=nullptr) {
       if(contextMenu) INFO("SET UPDATE");
@@ -227,8 +244,9 @@ struct UpdateOnReleaseKnob : TrimbotWhite {
 template<typename M>
 struct MKnob : TrimbotWhite {
   M *module=nullptr;
+
   void step() override {
-    if(module && module->dirty) {
+    if(module&&module->dirty) {
       ChangeEvent c;
       SvgKnob::onChange(c);
       module->dirty--;
@@ -236,6 +254,7 @@ struct MKnob : TrimbotWhite {
     SvgKnob::step();
   }
 };
+
 struct MLED : public SvgSwitch {
   MLED() {
     momentary=false;
@@ -244,6 +263,7 @@ struct MLED : public SvgSwitch {
     addFrame(Svg::load(asset::plugin(pluginInstance,"res/RButton1.svg")));
   }
 };
+
 struct MLEDM : public SvgSwitch {
   MLEDM() {
     momentary=true;
@@ -363,7 +383,7 @@ struct DownButtonWidget : Widget {
 
 struct NumberDisplayWidget : Widget {
   std::basic_string<char> fontPath;
-  bool highLight = false;
+  bool highLight=false;
 
   NumberDisplayWidget() : Widget() {
     fontPath=asset::plugin(pluginInstance,"res/FreeMonoBold.ttf");
@@ -418,6 +438,7 @@ struct SpinParamWidget : ParamWidget {
   UpButtonWidget *up;
   DownButtonWidget *down;
   NumberDisplayWidget *text;
+
   void init() {
     box.size.x=20;
     box.size.y=30;
@@ -455,14 +476,14 @@ struct SpinParamWidget : ParamWidget {
   void onDragStart(const event::DragStart &e) override {
     if(pressed) {
       dragY=APP->scene->rack->getMousePos().y;
-      text->highLight = true;
+      text->highLight=true;
     }
   }
 
-  void onDragEnd(const event::DragEnd& e) override {
-    up->pressed = false;
-    down->pressed = false;
-    text->highLight = false;
+  void onDragEnd(const event::DragEnd &e) override {
+    up->pressed=false;
+    down->pressed=false;
+    text->highLight=false;
   }
 
   void onDragMove(const event::DragMove &e) override {
@@ -493,18 +514,21 @@ struct SpinParamWidget : ParamWidget {
 
 template<typename T>
 struct DCBlocker {
-  T x = 0.f;
-  T y = 0.f;
+  T x=0.f;
+  T y=0.f;
+
   T process(T v) {
-    y = v - x + y * 0.99f;
-    x = v;
+    y=v-x+y*0.99f;
+    x=v;
     return y;
   }
+
   void reset() {
-    x = 0.f;
-    y = 0.f;
+    x=0.f;
+    y=0.f;
   }
 };
+
 template<size_t S>
 struct Averager {
   rack::dsp::RingBuffer<float,S> buffer;
@@ -520,57 +544,67 @@ struct Averager {
 
 template<typename T>
 struct DensQuantity : Quantity {
-  T* module;
+  T *module;
 
-  DensQuantity(T* m) : module(m) {}
+  DensQuantity(T *m) : module(m) {}
 
   void setValue(float value) override {
-    value = clamp(value, getMinValue(), getMaxValue());
-    if (module) {
-      module->randomDens = value;
+    value=clamp(value,getMinValue(),getMaxValue());
+    if(module) {
+      module->randomDens=value;
     }
   }
 
   float getValue() override {
-    if (module) {
+    if(module) {
       return module->randomDens;
     }
     return 0.5f;
   }
 
   float getMinValue() override { return 0.0f; }
+
   float getMaxValue() override { return 1.0f; }
+
   float getDefaultValue() override { return 0.5f; }
-  float getDisplayValue() override { return getValue() *100.f; }
+
+  float getDisplayValue() override { return getValue()*100.f; }
+
   void setDisplayValue(float displayValue) override { setValue(displayValue/100.f); }
+
   std::string getLabel() override { return "Random density"; }
+
   std::string getUnit() override { return "%"; }
 };
+
 template<typename T>
 struct DensSlider : ui::Slider {
-  DensSlider(T* module) {
-    quantity = new DensQuantity<T>(module);
-    box.size.x = 200.0f;
+  DensSlider(T *module) {
+    quantity=new DensQuantity<T>(module);
+    box.size.x=200.0f;
   }
+
   virtual ~DensSlider() {
     delete quantity;
   }
 };
+
 template<typename T>
 struct DensMenuItem : MenuItem {
-  T* module;
+  T *module;
 
-  DensMenuItem(T* m) : module(m) {
-    this->text = "Random";
-    this->rightText = "▸";
+  DensMenuItem(T *m) : module(m) {
+    this->text="Random";
+    this->rightText="▸";
   }
 
-  Menu* createChildMenu() override {
-    Menu* menu = new Menu;
+  Menu *createChildMenu() override {
+    Menu *menu=new Menu;
     menu->addChild(new DensSlider<T>(module));
     return menu;
   }
 };
+
 template<typename T>
 struct SlewQuantity : Quantity {
   T *module;
@@ -578,33 +612,41 @@ struct SlewQuantity : Quantity {
   SlewQuantity(T *m) : module(m) {}
 
   void setValue(float value) override {
-    value = clamp(value, getMinValue(), getMaxValue());
-    if (module) {
-      module->slew = value;
+    value=clamp(value,getMinValue(),getMaxValue());
+    if(module) {
+      module->slew=value;
     }
   }
 
   float getValue() override {
-    if (module) {
+    if(module) {
       return module->slew;
     }
     return 0.5f;
   }
 
   float getMinValue() override { return 0.0f; }
+
   float getMaxValue() override { return 1.0f; }
+
   float getDefaultValue() override { return 1.f/16.f; }
+
   float getDisplayValue() override { return getValue(); }
+
   void setDisplayValue(float displayValue) override { setValue(displayValue); }
+
   std::string getLabel() override { return "Slew"; }
+
   std::string getUnit() override { return ""; }
 };
+
 template<typename T>
 struct SlewSlider : ui::Slider {
-  SlewSlider(T* module) {
-    quantity = new SlewQuantity<T>(module);
-    box.size.x = 200.0f;
+  SlewSlider(T *module) {
+    quantity=new SlewQuantity<T>(module);
+    box.size.x=200.0f;
   }
+
   virtual ~SlewSlider() {
     delete quantity;
   }
@@ -615,16 +657,17 @@ struct SlewMenuItem : MenuItem {
   T *module;
 
   SlewMenuItem(T *m) : module(m) {
-    this->text = "Level Input";
-    this->rightText = "▸";
+    this->text="Level Input";
+    this->rightText="▸";
   }
 
-  Menu* createChildMenu() override {
-    Menu* menu = new Menu;
+  Menu *createChildMenu() override {
+    Menu *menu=new Menu;
     menu->addChild(new SlewSlider<T>(module));
     return menu;
   }
 };
+
 struct IntSelectItem : MenuItem {
   int *value;
   int min;
@@ -645,16 +688,18 @@ struct IntSelectItem : MenuItem {
     return menu;
   }
 };
+
 struct MinMaxRange {
   float min;
   float max;
 };
+
 template<typename M>
 struct RangeSelectItem : MenuItem {
   M *module;
-  std::vector <MinMaxRange> ranges;
+  std::vector<MinMaxRange> ranges;
 
-  RangeSelectItem(M *_module,std::vector <MinMaxRange> _ranges) : module(_module),ranges(std::move(_ranges)) {
+  RangeSelectItem(M *_module,std::vector<MinMaxRange> _ranges) : module(_module),ranges(std::move(_ranges)) {
   }
 
   Menu *createChildMenu() override {
@@ -834,8 +879,9 @@ struct LSegDisplay : OpaqueWidget {
 struct LSeg {
   std::vector<float> params;
   uint32_t len;
+
   LSeg(std::vector<float> _params) : params(std::move(_params)) {
-    len = params.size();
+    len=params.size();
   }
 
   float process(float in) {
@@ -856,12 +902,12 @@ struct LSeg {
 };
 
 inline void setImmediateValue(ParamQuantity *pq,float value) {
-  if (!pq->module)
+  if(!pq->module)
     return;
-  value = math::clampSafe(value, pq->getMinValue(), pq->getMaxValue());
-  if (pq->snapEnabled)
-    value = std::round(value);
-  APP->engine->setParamValue(pq->module, pq->paramId, value);
+  value=math::clampSafe(value,pq->getMinValue(),pq->getMaxValue());
+  if(pq->snapEnabled)
+    value=std::round(value);
+  APP->engine->setParamValue(pq->module,pq->paramId,value);
 }
 
 
@@ -889,34 +935,52 @@ struct BufferSizeSelectItem : MenuItem {
 
 struct ColorKnobWidget : Widget {
   NVGcolor color=nvgRGB(0,0,0);
-  void setAlpha(float a) {
-    if(a==0.f) {
-      color.r=0.f;
-      color.g=0.f;
-      color.b=0.f;
-      color.a=0.2;
+
+  void setAlpha(float a,bool biPolar=false) {
+    if(biPolar) {
+      if(a<0.5) {
+        color.r=1.0f;
+        color.g=0.3f;
+        color.b=0.5f;
+        color.a=1-(a*2.f);
+      } else {
+        color.r=0.3f;
+        color.g=1.0f;
+        color.b=0.7f;
+        color.a=(a-0.5f)*2.f;
+      }
+
     } else {
-      color.r=0.3f;
-      color.g=1.0f;
-      color.b=0.7f;
-      color.a=a;
+      if(a==0.f) {
+        color.r=0.f;
+        color.g=0.f;
+        color.b=0.f;
+        color.a=0.2;
+      } else {
+        color.r=0.3f;
+        color.g=1.0f;
+        color.b=0.7f;
+        color.a=a;
+      }
+
     }
   }
-  void draw(const DrawArgs& args) override {
-    float c = box.size.x * 0.5f;
+
+  void draw(const DrawArgs &args) override {
+    float c=box.size.x*0.5f;
 
     nvgBeginPath(args.vg);
-    nvgCircle(args.vg, c, c, c);
-    nvgFillColor(args.vg, nvgRGB(0xbe,0xb5,0xd5));
+    nvgCircle(args.vg,c,c,c);
+    nvgFillColor(args.vg,nvgRGB(0xbe,0xb5,0xd5));
     nvgFill(args.vg);
 
     nvgBeginPath(args.vg);
-    nvgCircle(args.vg, c, c, c-2);
+    nvgCircle(args.vg,c,c,c-2);
     nvgFillColor(args.vg,nvgRGB(0xd8,0xd8,0xd8));
     nvgFill(args.vg);
     nvgBeginPath(args.vg);
-    nvgCircle(args.vg, c, c, c-2);
-    nvgFillColor(args.vg, color);
+    nvgCircle(args.vg,c,c,c-2);
+    nvgFillColor(args.vg,color);
     nvgFill(args.vg);
 
     nvgBeginPath(args.vg);
@@ -929,57 +993,56 @@ struct ColorKnobWidget : Widget {
 };
 
 struct ColorKnob : Knob {
-  FramebufferWidget* fb;
-  CircularShadow* shadow;
-  TransformWidget* tw;
+  FramebufferWidget *fb;
+  CircularShadow *shadow;
+  TransformWidget *tw;
   ColorKnobWidget *w;
+
   ColorKnob() {
-    fb = new widget::FramebufferWidget;
+    fb=new widget::FramebufferWidget;
     addChild(fb);
     box.size=mm2px(Vec(6.23f,6.23f));
-    fb->box.size = box.size;
-    shadow = new CircularShadow;
+    fb->box.size=box.size;
+    shadow=new CircularShadow;
     fb->addChild(shadow);
-    shadow->box.size = box.size;
-    shadow->box.pos = math::Vec(0, box.size.y * 0.1f);
-    tw = new TransformWidget;
-    tw->box.size = box.size;
+    shadow->box.size=box.size;
+    shadow->box.pos=math::Vec(0,box.size.y*0.1f);
+    tw=new TransformWidget;
+    tw->box.size=box.size;
     fb->addChild(tw);
 
-    w = new ColorKnobWidget;
+    w=new ColorKnobWidget;
     w->box.size=box.size;
     tw->addChild(w);
-    minAngle=-0.83f * M_PI;
-    maxAngle=0.83f * M_PI;
+    minAngle=-0.83f*M_PI;
+    maxAngle=0.83f*M_PI;
   }
 
-  void onChange(const ChangeEvent& e) override {
+  void onChange(const ChangeEvent &e) override {
     // Re-transform the widget::TransformWidget
-    engine::ParamQuantity* pq = getParamQuantity();
-    if (pq) {
-      float value = pq->getSmoothValue();
+    engine::ParamQuantity *pq=getParamQuantity();
+    if(pq) {
+      float value=pq->getSmoothValue();
       float angle;
-      if (!pq->isBounded()) {
+      if(!pq->isBounded()) {
         // Number of rotations equals value for unbounded range
-        angle = value * (2 * M_PI);
-      }
-      else if (pq->getRange() == 0.f) {
+        angle=value*(2*M_PI);
+      } else if(pq->getRange()==0.f) {
         // Center angle for zero range
-        angle = (minAngle + maxAngle) / 2.f;
-      }
-      else {
+        angle=(minAngle+maxAngle)/2.f;
+      } else {
         // Proportional angle for finite range
-        angle = math::rescale(value, pq->getMinValue(), pq->getMaxValue(), minAngle, maxAngle);
+        angle=math::rescale(value,pq->getMinValue(),pq->getMaxValue(),minAngle,maxAngle);
       }
-      angle = std::fmod(angle, 2 * M_PI);
-      w->setAlpha(math::rescale(value, pq->getMinValue(), pq->getMaxValue(), 0,1));
+      angle=std::fmod(angle,2*M_PI);
+      w->setAlpha(math::rescale(value,pq->getMinValue(),pq->getMaxValue(),0,1),pq->getMinValue()<0);
       tw->identity();
       // Rotate SVG
-      math::Vec center = w->box.getCenter();
+      math::Vec center=w->box.getCenter();
       tw->translate(center);
       tw->rotate(angle);
       tw->translate(center.neg());
-      fb->dirty = true;
+      fb->dirty=true;
     }
     Knob::onChange(e);
   }

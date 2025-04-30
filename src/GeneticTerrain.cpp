@@ -38,18 +38,18 @@ struct GeneticTerrainOSC {
     }
   }
 
-  T process(int *genParam,int len,int curve,T curveParam,T cx,T cy,T rx,T ry,T rot) {
+  T process(int *genParam,int len,int curve,T curveParam,T cx,T cy,T rx,T ry,T rot, bool dc=true) {
     T xc,yc;
     computer->crv(curve,phase,cx,cy,rx,ry,curveParam,xc,yc);
     computer->rotate_point(cx,cy,rot,xc,yc);
-    return dcBlock.process(computer->genomFunc(genParam,4,xc,yc));
+    return dc?dcBlock.process(computer->genomFunc(genParam,4,xc,yc)):computer->genomFunc(genParam,4,xc,yc);
   }
 
-  T process(int *genParam,int len,T cx,T cy,T rx,T ry,T rot,T y,T z,T n1,T n2,T n3,T a,T b) {
+  T process(int *genParam,int len,T cx,T cy,T rx,T ry,T rot,T y,T z,T n1,T n2,T n3,T a,T b, bool dc=true) {
     T xc,yc;
     computer->superformula(phase,cx,cy,rx,ry,y,z,n1,n2,n3,a,b,xc,yc);
     computer->rotate_point(cx,cy,rot,xc,yc);
-    return dcBlock.process(computer->genomFunc(genParam,4,xc,yc));
+    return dc?dcBlock.process(computer->genomFunc(genParam,4,xc,yc)):computer->genomFunc(genParam,4,xc,yc);
   }
 };
 
@@ -84,7 +84,7 @@ struct GeneticTerrain : Module {
   float_4 voct,cpIn,xIn,yIn,rxIn,ryIn,rotIn;
   float voctf,cpInf,xInf,yInf,rxInf,ryInf,rotInf;
   int curve;
-
+  bool dc=true;
   bool state=false;
   bool center=false;
   bool reset;
@@ -240,7 +240,7 @@ struct GeneticTerrain : Module {
           oscil->setPitch(voct);
           oscil->updatePhase(args.sampleTime,false);
         }
-        float_4 outL=oscil->process(genParam,4,curve,cpIn,xIn,yIn,rxIn,ryIn,rotIn);
+        float_4 outL=oscil->process(genParam,4,curve,cpIn,xIn,yIn,rxIn,ryIn,rotIn,dc);
         outputs[LEFT_OUTPUT].setVoltageSimd(outL*5.f,c);
 
         if(outputs[RIGHT_OUTPUT].isConnected()) {
@@ -251,7 +251,7 @@ struct GeneticTerrain : Module {
             oscilBw->setPitch(voct);
             oscilBw->updatePhase(args.sampleTime,true);
           }
-          float_4 outR=oscilBw->process(genParam,4,curve,cpIn,xIn,yIn,rxIn,ryIn,rotIn);
+          float_4 outR=oscilBw->process(genParam,4,curve,cpIn,xIn,yIn,rxIn,ryIn,rotIn,dc);
           outputs[RIGHT_OUTPUT].setVoltageSimd(outR*5.f,c);
         }
       } else {
@@ -263,6 +263,17 @@ struct GeneticTerrain : Module {
     if(outputs[RIGHT_OUTPUT].isConnected()) {
       outputs[RIGHT_OUTPUT].setChannels(channels);
     }
+  }
+
+  json_t *dataToJson() override {
+    json_t *data=json_object();
+    json_object_set_new(data,"dc",json_boolean(dc));
+    return data;
+  }
+
+  void dataFromJson(json_t *rootJ) override {
+    json_t *jDcBlock=json_object_get(rootJ,"dc");
+    if(jDcBlock!=nullptr) dc=json_boolean_value(jDcBlock);
   }
 };
 
@@ -625,6 +636,12 @@ struct GeneticTerrainWidget : ModuleWidget {
     addInput(createInputCentered<SmallPort>(mm2px(Vec(8,MHEIGHT-14)),module,GeneticTerrain::VOCT_INPUT));
     //addParam(createParam<SmallRoundButton>(mm2px(Vec(166,MHEIGHT-25.65f-3.2f)),module,GeneticTerrain::SIMD_PARAM));
 
+  }
+  void appendContextMenu(Menu *menu) override {
+    GeneticTerrain *module=dynamic_cast<GeneticTerrain *>(this->module);
+    assert(module);
+    menu->addChild(new MenuSeparator);
+    menu->addChild(createBoolPtrMenuItem("Block DC","",&module->dc));
   }
 };
 

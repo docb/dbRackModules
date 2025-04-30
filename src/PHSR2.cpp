@@ -60,26 +60,43 @@ struct PHSR2 : Module {
   enum LightId {
     LIGHTS_LEN
   };
+  float samples[16][16]={};
   float py[16]={-5,-2.5,0,2.5,5};
   float px[16]={0,0.25,0.5,0.75,1};
   int len=5;
   bool changed=false;
   bool random=false;
   LSegOsc lsegOsc[16];
-  std::vector<LPoint> points={{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0}};
+  std::vector<LPoint> points={{0,0},
+                              {0,0},
+                              {0,0},
+                              {0,0},
+                              {0,0},
+                              {0,0},
+                              {0,0},
+                              {0,0},
+                              {0,0},
+                              {0,0},
+                              {0,0},
+                              {0,0},
+                              {0,0},
+                              {0,0},
+                              {0,0},
+                              {0,0}};
   RND rnd;
   dsp::SchmittTrigger rstTrigger;
+
   PHSR2() {
     config(PARAMS_LEN,INPUTS_LEN,OUTPUTS_LEN,LIGHTS_LEN);
     configParam(FREQ_PARAM,-14.f,4.f,0.f,"Frequency"," Hz",2,dsp::FREQ_C4);
     configParam(NODES_PARAM,3,16,5,"Length");
     configButton(LIN_PARAM,"Linear");
-    configParam(FM_PARAM,0,1,0,"FM Amount","%",0,100);
+    configParam(FM_PARAM,0,3,0,"FM Amount","%",0,100);
     configInput(FM_INPUT,"FM");
     getParamQuantity(NODES_PARAM)->snapEnabled=true;
     for(int k=0;k<14;k++) {
-      configInput(Y_INPUT+k,"Y " + std::to_string(k+2));
-      configInput(X_INPUT+k,"X " + std::to_string(k+2));
+      configInput(Y_INPUT+k,"Y "+std::to_string(k+2));
+      configInput(X_INPUT+k,"X "+std::to_string(k+2));
     }
     configInput(VOCT_INPUT,"V/Oct");
     configInput(RST_INPUT,"Reset/Sync");
@@ -114,11 +131,11 @@ struct PHSR2 : Module {
 
   void process(const ProcessArgs &args) override {
     int _len=params[NODES_PARAM].getValue();
-    if(_len<len && !changed) {
+    if(_len<len&&!changed) {
       px[_len-1]=1;
       py[_len-1]=py[len-1];
       changed=true;
-    } else if(_len>len && !changed) {
+    } else if(_len>len&&!changed) {
       for(int k=0;k<_len;k++) {
         px[k]=float(k)/float(_len-1);
         py[k]=float(k)*10.f/float(_len-1)-5;

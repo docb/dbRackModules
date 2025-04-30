@@ -1,19 +1,24 @@
 #include "dcb.h"
 #include <thread>
+
 using simd::float_4;
 #define NUM_VOICES 4
+
 #include "buffer.hpp"
+
 template<typename T>
 struct SinPOsc {
   T phs=0.f;
   T freq=261.636f;
+
   T sin2pi_pade_05_5_4(T x) {
     x-=0.5f;
     T x2=x*x;
     T x3=x2*x;
     T x4=x2*x2;
     T x5=x2*x3;
-    return (T(-6.283185307)*x+T(33.19863968)*x3-T(32.44191367)*x5)/(1+T(1.296008659)*x2+T(0.7028072946)*x4);
+    return (T(-6.283185307)*x+T(33.19863968)*x3-T(32.44191367)*x5)/
+           (1+T(1.296008659)*x2+T(0.7028072946)*x4);
   }
 
   void updatePhs(float sampleTime) {
@@ -31,7 +36,7 @@ struct SinPOsc {
   }
 };
 
-template<typename T, size_t P>
+template<typename T,size_t P>
 struct ParaSinOscBank {
   SinPOsc<T> partials[P];
   T decay=1.f;
@@ -47,10 +52,14 @@ struct ParaSinOscBank {
   unsigned numPartials=256;
 
   float cutoff=24000.f;
-  int offset = 0;
-  float powf_fast_ub(float a, float b) {
-    union { float d; int x; } u = { a };
-    u.x = (int)(b * (u.x - 1064631197) + 1065353217);
+  int offset=0;
+
+  float powf_fast_ub(float a,float b) {
+    union {
+      float d;
+      int x;
+    } u={a};
+    u.x=(int)(b*(u.x-1064631197)+1065353217);
     return u.d;
   }
 
@@ -61,9 +70,11 @@ struct ParaSinOscBank {
     }
     return {r[0],r[1],r[2],r[3]};
   }
+
   float fastPow(float a,float b) {
     return powf_fast_ub(a,b);
   }
+
   T ampCurve(int partialNr) {
     T dmp=1.f/fastPow(partialNr+1,decay);
     if(partialNr==0) {
@@ -75,12 +86,15 @@ struct ParaSinOscBank {
       dmp*=simd::ifelse(oddEven<0.f,1.0f+oddEven,1.f);
     }
     if(combAmt>0.01f) {
-      dmp*=powf_fast_ub(1+combAmt*cosf(combFreq*powf_fast_ub(TWOPIF*float(partialNr)/256.f,combWarp)+combPhs),combPeek);
+      dmp*=powf_fast_ub(
+        1+combAmt*cosf(combFreq*powf_fast_ub(TWOPIF*float(partialNr)/256.f,combWarp)+combPhs),
+        combPeek);
       //dmp*=simd::pow(1+combAmt*cosf(combFreq*simd::pow(TWOPIF*float(partialNr)/256.f,combWarp)+combPhs),combPeek);
       //dmp*=sqrtf(1+combAmt*cosf(combFreq*TWOPIF*float(partialNr)/256.f+combPhs));
     }
     return dmp;
   }
+
   T process(float sampleTime) {
     T ret=0.f;
     for(unsigned int k=0;k<numPartials;k++) {
@@ -97,6 +111,7 @@ struct ParaSinOscBank {
     }
     return ret;
   }
+
   void reset() {
     for(unsigned k=0;k<P;k++) {
       partials[k].phs=0;
@@ -114,6 +129,7 @@ struct OscA1Proc {
   bool linear=true;
   std::thread *thread=nullptr;
   RBufferMgr<T> bufMgr;
+
   //rack::dsp::RingBuffer<T,S> buffer={};
   //rack::dsp::RingBuffer<T,S> inBuffer={};
   void processThread(float sampleTime) {
@@ -138,23 +154,27 @@ struct OscA1Proc {
       }
     }
   }
+
   void stopThread() {
     run=false;
   }
+
   void checkThread(float sampleTime) {
     if(!run) {
       run=true;
       thread=new std::thread(&OscA1Proc::processThread,this,sampleTime);
 #ifdef ARCH_LIN
-      std::string threadName = "OSC10";
+      std::string threadName="OSC10";
       pthread_setname_np(thread->native_handle(),threadName.c_str());
 #endif
       thread->detach();
     }
   }
+
   T getOutput() {
     return bufMgr.buffer->out_empty()?0.f:bufMgr.buffer->out_shift();
   }
+
   void pushFM(T sample) {
     if(!bufMgr.buffer->in_full()) {
       bufMgr.buffer->in_push(sample);
@@ -165,16 +185,29 @@ struct OscA1Proc {
 
 struct OscA1 : Module {
   enum ParamId {
-    FREQ_PARAM, CUTOFF_PARAM, DECAY_PARAM,ODD_EVEN_PARAM,
+    FREQ_PARAM,CUTOFF_PARAM,DECAY_PARAM,ODD_EVEN_PARAM,
     OFFSET_PARAM,STRETCH_PARAM,DECAY_CV_PARAM,ODD_EVEN_CV_PARAM,STRETCH_CV_PARAM,
-    AMP_PARAM, AMP_CV_PARAM, COMB_PHS_PARAM, COMB_FREQ_PARAM, COMB_AMT_PARAM, NUM_PARTIALS_PARAM,
-    COMB_PHS_CV_PARAM, COMB_FREQ_CV_PARAM, COMB_AMT_CV_PARAM,COMB_WARP_PARAM,COMB_WARP_CV_PARAM,
+    AMP_PARAM,AMP_CV_PARAM,COMB_PHS_PARAM,COMB_FREQ_PARAM,COMB_AMT_PARAM,NUM_PARTIALS_PARAM,
+    COMB_PHS_CV_PARAM,COMB_FREQ_CV_PARAM,COMB_AMT_CV_PARAM,COMB_WARP_PARAM,COMB_WARP_CV_PARAM,
     COMB_PEEK_PARAM,COMB_PEEK_CV_PARAM,FM_PARAM,LINEAR_FM_PARAM,FA_PARAM,RST_PARAM,
     PARAMS_LEN
   };
   enum InputId {
-    VOCT_INPUT, CUTOFF_INPUT,DECAY_INPUT,ODD_EVEN_INPUT,STRETCH_INPUT,OFFSET_INPUT,AMP_INPUT,
-    NUM_PARTIALS_INPUT,COMB_AMT_INPUT,COMB_PEEK_INPUT,COMB_FREQ_INPUT,COMB_WARP_INPUT,COMB_PHS_INPUT,FM_INPUT,INPUTS_LEN
+    VOCT_INPUT,
+    CUTOFF_INPUT,
+    DECAY_INPUT,
+    ODD_EVEN_INPUT,
+    STRETCH_INPUT,
+    OFFSET_INPUT,
+    AMP_INPUT,
+    NUM_PARTIALS_INPUT,
+    COMB_AMT_INPUT,
+    COMB_PEEK_INPUT,
+    COMB_FREQ_INPUT,
+    COMB_WARP_INPUT,
+    COMB_PHS_INPUT,
+    FM_INPUT,
+    INPUTS_LEN
   };
   enum OutputId {
     V_OUTPUT,OUTPUTS_LEN
@@ -185,11 +218,11 @@ struct OscA1 : Module {
 
   OscA1Proc<ParaSinOscBank<float_4,256>,float_4> sineBankOsc[NUM_VOICES];
 
-  int bufferType = 0;
+  int bufferType=0;
   dsp::SchmittTrigger rstTrig;
 
-	OscA1() {
-		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
+  OscA1() {
+    config(PARAMS_LEN,INPUTS_LEN,OUTPUTS_LEN,LIGHTS_LEN);
     configParam(FREQ_PARAM,-14.f,4.f,0.f,"Frequency"," Hz",2,dsp::FREQ_C4);
     configParam(CUTOFF_PARAM,-11.f,6.3f,6.3,"Cutoff"," Hz",2,dsp::FREQ_C4);
     configParam(NUM_PARTIALS_PARAM,1,256,128,"Num Partials");
@@ -210,7 +243,7 @@ struct OscA1 : Module {
     configInput(COMB_WARP_INPUT,"Comb Warp");
     configInput(COMB_PHS_INPUT,"Comb Phs");
     configInput(NUM_PARTIALS_INPUT,"Num Partials");
-    configParam(FM_PARAM,0,1,0,"FM Amt"," %",0,100);
+    configParam(FM_PARAM,0,3,0,"FM Amt"," %",0,100);
     configButton(LINEAR_FM_PARAM,"Linear FM");
     configInput(FM_INPUT,"FM_INPUT");
     configButton(RST_PARAM,"Reset");
@@ -239,7 +272,8 @@ struct OscA1 : Module {
 
     configInput(VOCT_INPUT,"V/Oct");
     configOutput(V_OUTPUT,"CV");
-	}
+  }
+
   void setBufferSize(int s) {
     for(int k=0;k<NUM_VOICES;k++) {
       sineBankOsc[k].bufMgr.setBufferSize(s);
@@ -270,24 +304,35 @@ struct OscA1 : Module {
       sineBankOsc[k].osc.reset();
     }
   }
-	void process(const ProcessArgs& args) override {
+
+  void process(const ProcessArgs &args) override {
     if(rstTrig.process(params[RST_PARAM].getValue())) {
       for(int k=0;k<NUM_VOICES;k++) {
         sineBankOsc[k].osc.reset();
       }
     }
     if(inputs[NUM_PARTIALS_INPUT].isConnected()) {
-      setImmediateValue(getParamQuantity(NUM_PARTIALS_PARAM),clamp(inputs[NUM_PARTIALS_INPUT].getVoltage()*25.6f,1.f,256.f));
+      setImmediateValue(getParamQuantity(NUM_PARTIALS_PARAM),
+                        clamp(inputs[NUM_PARTIALS_INPUT].getVoltage()*25.6f,1.f,256.f));
     }
     if(inputs[OFFSET_INPUT].isConnected()) {
-      setImmediateValue(getParamQuantity(OFFSET_PARAM),clamp(inputs[OFFSET_INPUT].getVoltage()*12.8f,1.f,128.f));
+      setImmediateValue(getParamQuantity(OFFSET_PARAM),
+                        clamp(inputs[OFFSET_INPUT].getVoltage()*12.8f,1.f,128.f));
     }
 
-    float combAmt=clamp(params[COMB_AMT_PARAM].getValue()+inputs[COMB_AMT_INPUT].getVoltage()*0.1f*params[COMB_AMT_CV_PARAM].getValue());
-    float combFreq=clamp(params[COMB_FREQ_PARAM].getValue()+inputs[COMB_FREQ_INPUT].getVoltage()*10.f*params[COMB_FREQ_CV_PARAM].getValue(),1.f,100.f);
-    float combPhs=clamp(params[COMB_PHS_PARAM].getValue()+inputs[COMB_PHS_INPUT].getVoltage()*params[COMB_PHS_CV_PARAM].getValue(),0.f,TWOPIF);
-    float combPeek=clamp(params[COMB_PEEK_PARAM].getValue()+inputs[COMB_PEEK_INPUT].getVoltage()*0.5f*params[COMB_PEEK_CV_PARAM].getValue(),0.1f,4.f);
-    float combWarp=clamp(params[COMB_WARP_PARAM].getValue()+inputs[COMB_WARP_INPUT].getVoltage()*0.1f*params[COMB_WARP_CV_PARAM].getValue(),0.2f,1.f);
+    float combAmt=clamp(params[COMB_AMT_PARAM].getValue()+
+                        inputs[COMB_AMT_INPUT].getVoltage()*0.1f*params[COMB_AMT_CV_PARAM].getValue());
+    float combFreq=clamp(params[COMB_FREQ_PARAM].getValue()+
+                         inputs[COMB_FREQ_INPUT].getVoltage()*10.f*params[COMB_FREQ_CV_PARAM].getValue(),1.f,
+                         100.f);
+    float combPhs=clamp(params[COMB_PHS_PARAM].getValue()+
+                        inputs[COMB_PHS_INPUT].getVoltage()*params[COMB_PHS_CV_PARAM].getValue(),0.f,TWOPIF);
+    float combPeek=clamp(params[COMB_PEEK_PARAM].getValue()+
+                         inputs[COMB_PEEK_INPUT].getVoltage()*0.5f*params[COMB_PEEK_CV_PARAM].getValue(),
+                         0.1f,4.f);
+    float combWarp=clamp(params[COMB_WARP_PARAM].getValue()+
+                         inputs[COMB_WARP_INPUT].getVoltage()*0.1f*params[COMB_WARP_CV_PARAM].getValue(),
+                         0.2f,1.f);
     int numPartials=params[NUM_PARTIALS_PARAM].getValue();
     int offset=params[OFFSET_PARAM].getValue();
     float decay=params[DECAY_PARAM].getValue();
@@ -301,7 +346,7 @@ struct OscA1 : Module {
     int channels=std::max(inputs[VOCT_INPUT].getChannels(),1);
     int c=0;
     for(;c<channels;c+=4) {
-      auto *osc = &sineBankOsc[c/4];
+      auto *osc=&sineBankOsc[c/4];
       osc->voct=inputs[VOCT_INPUT].getVoltageSimd<float_4>(c);
       osc->freq=freq;
       osc->linear=params[LINEAR_FM_PARAM].getValue()>0;
@@ -311,9 +356,12 @@ struct OscA1 : Module {
       }
       osc->osc.cutoff=cutoff;
       osc->osc.faParam=params[FA_PARAM].getValue();
-      osc->osc.decay=simd::clamp(decay+inputs[DECAY_INPUT].getPolyVoltageSimd<float_4>(c)*decayCV,0.1f,3.f);
-      osc->osc.oddEven=simd::clamp(oddEven+inputs[ODD_EVEN_INPUT].getPolyVoltageSimd<float_4>(c)*oddEvenCV*0.1,-1.f,1.f);
-      osc->osc.stretch=simd::clamp(stretch+inputs[STRETCH_INPUT].getPolyVoltageSimd<float_4>(c)*stretchCV*0.1f,-1.25f,1.25f);
+      osc->osc.decay=simd::clamp(decay+inputs[DECAY_INPUT].getPolyVoltageSimd<float_4>(c)*decayCV,0.1f,
+                                 3.f);
+      osc->osc.oddEven=simd::clamp(
+        oddEven+inputs[ODD_EVEN_INPUT].getPolyVoltageSimd<float_4>(c)*oddEvenCV*0.1,-1.f,1.f);
+      osc->osc.stretch=simd::clamp(
+        stretch+inputs[STRETCH_INPUT].getPolyVoltageSimd<float_4>(c)*stretchCV*0.1f,-1.25f,1.25f);
       osc->osc.offset=offset;
       osc->osc.combAmt=combAmt;
       osc->osc.combFreq=combFreq;
@@ -322,11 +370,13 @@ struct OscA1 : Module {
       osc->osc.combWarp=combWarp;
       osc->osc.numPartials=numPartials;
       osc->checkThread(args.sampleTime);
-      float_4 out = osc->getOutput()*(params[AMP_PARAM].getValue()+inputs[AMP_INPUT].getPolyVoltageSimd<float_4>(c)*params[AMP_CV_PARAM].getValue());
+      float_4 out=osc->getOutput()*(params[AMP_PARAM].getValue()+
+                                    inputs[AMP_INPUT].getPolyVoltageSimd<float_4>(c)*
+                                    params[AMP_CV_PARAM].getValue());
       outputs[V_OUTPUT].setVoltageSimd(out,c);
     }
     outputs[V_OUTPUT].setChannels(channels);
-	}
+  }
 
   json_t *dataToJson() override {
     json_t *data=json_object();
@@ -335,7 +385,7 @@ struct OscA1 : Module {
   }
 
   void dataFromJson(json_t *rootJ) override {
-    json_t *jBufferSizeIndex =json_object_get(rootJ,"bufferSizeIndex");
+    json_t *jBufferSizeIndex=json_object_get(rootJ,"bufferSizeIndex");
     if(jBufferSizeIndex!=nullptr)
       setBufferSize(json_integer_value(jBufferSizeIndex));
   }
@@ -343,9 +393,9 @@ struct OscA1 : Module {
 
 struct OscA1Widget : ModuleWidget {
 
-  OscA1Widget(OscA1* module) {
-		setModule(module);
-		setPanel(createPanel(asset::plugin(pluginInstance, "res/OscA1.svg")));
+  OscA1Widget(OscA1 *module) {
+    setModule(module);
+    setPanel(createPanel(asset::plugin(pluginInstance,"res/OscA1.svg")));
     float x=3;
     float x2=33;
     float y=14;
@@ -425,4 +475,4 @@ struct OscA1Widget : ModuleWidget {
 };
 
 
-Model* modelOscA1 = createModel<OscA1, OscA1Widget>("OscA1");
+Model *modelOscA1=createModel<OscA1,OscA1Widget>("OscA1");

@@ -87,12 +87,13 @@ struct Osc1 : Module {
   DCBlocker<float_4> dcBlockerPD[4];
   bool cosWave=false;
 
+
   Osc1() {
     config(PARAMS_LEN,INPUTS_LEN,OUTPUTS_LEN,LIGHTS_LEN);
     configParam(FREQ_PARAM,-4.f,4.f,0.f,"Frequency"," Hz",2,dsp::FREQ_C4);
     configParam(NODES_PARAM,3,16,9,"Length");
     configButton(LIN_PARAM,"Linear");
-    configParam(FM_PARAM,0,1,0,"FM Amount","%",0,100);
+    configParam(FM_PARAM,0,3,0,"FM Amount","%",0,100);
     configInput(FM_INPUT,"FM");
     getParamQuantity(NODES_PARAM)->snapEnabled=true;
     for(int k=0;k<16;k++) {
@@ -152,7 +153,7 @@ struct Osc1 : Module {
       setImmediateValue(getParamQuantity(NODES_PARAM),_len);
       bool disc=false;
       for(int k=0;k<_len;k++) {
-        if(rnd.nextCoin(0.6f) && k>2 && !disc && k<_len-1) {
+        if(rnd.nextCoin(0.6f)&&k>2&&!disc&&k<_len-1) {
           px[k]=float(k-1)/float(_len-1);
           disc=true;
         } else {
@@ -336,7 +337,8 @@ struct Osc1Widget : ModuleWidget {
     addOutput(createOutput<SmallPort>(mm2px(Vec(90,y)),module,Osc1::PD_OUTPUT));
     addOutput(createOutput<SmallPort>(mm2px(Vec(101,y)),module,Osc1::CV_OUTPUT));
   }
-  void appendContextMenu(Menu* menu) override {
+
+  void appendContextMenu(Menu *menu) override {
     Osc1 *module=dynamic_cast<Osc1 *>(this->module);
     assert(module);
 

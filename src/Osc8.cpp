@@ -8,18 +8,20 @@ struct SinPOsc {
   T phs=0.f;
   float g1=TWOPIF-5.f;
   float g2=M_PI-3;
+
   T sin2pi_pade_05_5_4(T x) {
     x-=0.5f;
     T x2=x*x;
     T x3=x2*x;
     T x4=x2*x2;
     T x5=x2*x3;
-    return (T(-6.283185307)*x+T(33.19863968)*x3-T(32.44191367)*x5)/(1+T(1.296008659)*x2+T(0.7028072946)*x4);
+    return (T(-6.283185307)*x+T(33.19863968)*x3-T(32.44191367)*x5)/
+           (1+T(1.296008659)*x2+T(0.7028072946)*x4);
   }
 
   T process5P() {
-    T po = phs*4.f;
-    T mask = phs<0.5f;
+    T po=phs*4.f;
+    T mask=phs<0.5f;
     T x=simd::ifelse(mask,po,po-2.f)-1.f;
     T x2=x*x;
     T y=0.5f*(x*(M_PI-x2*(g1-x2*g2)));
@@ -43,12 +45,17 @@ struct SinPOsc {
 };
 
 #define MAXPARTIALS 16
+
 template<typename T>
 struct ParaSinOscBank {
   SinPOsc<T> partials[MAXPARTIALS];
-  float powf_fast_ub(float a, float b) {
-    union { float d; int x; } u = { a };
-    u.x = (int)(b * (u.x - 1064631197) + 1065353217);
+
+  float powf_fast_ub(float a,float b) {
+    union {
+      float d;
+      int x;
+    } u={a};
+    u.x=(int)(b*(u.x-1064631197)+1065353217);
     return u.d;
   }
 
@@ -59,8 +66,9 @@ struct ParaSinOscBank {
     }
     return {r[0],r[1],r[2],r[3]};
   }
+
   float fastPow(float a,float b) {
-     return powf_fast_ub(a,b);
+    return powf_fast_ub(a,b);
   }
 
   T process(float sampleRate,T baseFreq,int numPartials,T decay,T oddEven,int offset,T stretch) {
@@ -75,34 +83,69 @@ struct ParaSinOscBank {
       }
       T freq=baseFreq*float((k+1)+offset);
       if(k>0) {
-          freq*=simd::ifelse(stretch!=0.f,fastPow(float(k),stretch),1.f);
+        freq*=simd::ifelse(stretch!=0.f,fastPow(float(k),stretch),1.f);
       }
-      ret += simd::ifelse(freq*3<sampleRate,partials[k].process(sampleTime,freq),0.f)*dmp;
+      ret+=simd::ifelse(freq*3<sampleRate,partials[k].process(sampleTime,freq),0.f)*dmp;
     }
     return ret;
   }
 };
 
 struct Osc8 : Module {
-	enum ParamId {
-    FM_PARAM,FM_2_PARAM,NUM_PARTIALS_PARAM,NUM_PARTIALS_2_PARAM,DECAY_PARAM,DECAY_2_PARAM,
-    ODD_EVEN_PARAM,ODD_EVEN_2_PARAM,OFFSET_PARAM,OFFSET_2_PARAM,STRETCH_PARAM,STRETCH_2_PARAM,RATIO_PARAM,RATIO_2_PARAM,FINE_PARAM,FINE_2_PARAM,
-    FM_CV_PARAM,FM_CV_2_PARAM,DECAY_CV_PARAM,DECAY_CV_2_PARAM,
-    ODD_EVEN_CV_PARAM,ODD_EVEN_CV_2_PARAM,STRETCH_CV_PARAM,STRETCH_CV_2_PARAM,FREQ_PARAM,
+  enum ParamId {
+    FM_PARAM,
+    FM_2_PARAM,
+    NUM_PARTIALS_PARAM,
+    NUM_PARTIALS_2_PARAM,
+    DECAY_PARAM,
+    DECAY_2_PARAM,
+    ODD_EVEN_PARAM,
+    ODD_EVEN_2_PARAM,
+    OFFSET_PARAM,
+    OFFSET_2_PARAM,
+    STRETCH_PARAM,
+    STRETCH_2_PARAM,
+    RATIO_PARAM,
+    RATIO_2_PARAM,
+    FINE_PARAM,
+    FINE_2_PARAM,
+    FM_CV_PARAM,
+    FM_CV_2_PARAM,
+    DECAY_CV_PARAM,
+    DECAY_CV_2_PARAM,
+    ODD_EVEN_CV_PARAM,
+    ODD_EVEN_CV_2_PARAM,
+    STRETCH_CV_PARAM,
+    STRETCH_CV_2_PARAM,
+    FREQ_PARAM,
     PARAMS_LEN
-	};
-	enum InputId {
-		FM_INPUT,FM_2_INPUT,DECAY_INPUT,DECAY_2_INPUT,ODD_EVEN_INPUT,ODD_EVEN_2_INPUT,STRETCH_INPUT,STRETCH_2_INPUT,RATIO_INPUT,RATIO_2_INPUT,
-    FINE_INPUT,FINE_2_INPUT,NUM_INPUT,NUM_2_INPUT,OFFSET_INPUT,OFFSET_2_INPUT,
+  };
+  enum InputId {
+    FM_INPUT,
+    FM_2_INPUT,
+    DECAY_INPUT,
+    DECAY_2_INPUT,
+    ODD_EVEN_INPUT,
+    ODD_EVEN_2_INPUT,
+    STRETCH_INPUT,
+    STRETCH_2_INPUT,
+    RATIO_INPUT,
+    RATIO_2_INPUT,
+    FINE_INPUT,
+    FINE_2_INPUT,
+    NUM_INPUT,
+    NUM_2_INPUT,
+    OFFSET_INPUT,
+    OFFSET_2_INPUT,
     VOCT_INPUT,
     INPUTS_LEN
-	};
-	enum OutputId {
-		OUTPUT,OUTPUT_2,OUTPUTS_LEN
-	};
-	enum LightId {
-		LIGHTS_LEN
-	};
+  };
+  enum OutputId {
+    OUTPUT,OUTPUT_2,OUTPUTS_LEN
+  };
+  enum LightId {
+    LIGHTS_LEN
+  };
 
   ParaSinOscBank<float_4> oscBank1[4];
   ParaSinOscBank<float_4> oscBank2[4];
@@ -110,8 +153,9 @@ struct Osc8 : Module {
   DCBlocker<float_4> dcb[4];
   DCBlocker<float_4> dcb2[4];
   dsp::ClockDivider divider;
-	Osc8() {
-		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
+
+  Osc8() {
+    config(PARAMS_LEN,INPUTS_LEN,OUTPUTS_LEN,LIGHTS_LEN);
     configInput(VOCT_INPUT,"V/Oct");
     for(int k=0;k<2;k++) {
       std::string strNr=std::to_string(k+1);
@@ -137,7 +181,7 @@ struct Osc8 : Module {
       configParam(STRETCH_CV_PARAM+k,0,1,0,"Stretch CV "+strNr,"%",0,100);
 
       configParam(FM_CV_PARAM+k,0,1,0,"FM CV "+strNr,"%",0,100);
-      configParam(FM_PARAM+k,0,1,0,"FM Amount "+strNr,"%",0,100);
+      configParam(FM_PARAM+k,0,3,0,"FM Amount "+strNr,"%",0,100);
       configInput(FM_INPUT+k,"FM CV "+strNr);
 
       configParam(RATIO_PARAM+k,-32,32,1,"Ratio "+strNr);
@@ -166,7 +210,7 @@ struct Osc8 : Module {
     return ratio;
   }
 
-	void process(const ProcessArgs& args) override {
+  void process(const ProcessArgs &args) override {
     if(divider.process()) {
       for(int k=0;k<2;k++) {
         if(inputs[RATIO_INPUT+k].isConnected()) {
@@ -176,7 +220,8 @@ struct Osc8 : Module {
           setImmediateValue(getParamQuantity(FINE_PARAM+k),inputs[FINE_INPUT+k].getVoltage()*0.1);
         }
         if(inputs[NUM_INPUT+k].isConnected()) {
-          setImmediateValue(getParamQuantity(NUM_PARTIALS_PARAM+k),inputs[NUM_INPUT+k].getVoltage()*1.6f);
+          setImmediateValue(getParamQuantity(NUM_PARTIALS_PARAM+k),
+                            inputs[NUM_INPUT+k].getVoltage()*1.6f);
         }
         if(inputs[OFFSET_INPUT+k].isConnected()) {
           setImmediateValue(getParamQuantity(OFFSET_PARAM+k),inputs[OFFSET_INPUT+k].getVoltage()*1.6f);
@@ -221,11 +266,15 @@ struct Osc8 : Module {
       freq1=dsp::FREQ_C4*dsp::approxExp2_taylor5(pitch1+30.f)/std::pow(2.f,30.f);
       freq1+=dsp::FREQ_C4*out2[c/4]*fmAmount1;
       freq1=simd::fmin(freq1,args.sampleRate/2);
-      float_4 decay4=simd::clamp(decay1+inputs[DECAY_INPUT].getPolyVoltageSimd<float_4>(c)*decayCV1,0.1f,3.f);
-      float_4 oddEven4=simd::clamp(oddEven1+inputs[ODD_EVEN_INPUT].getPolyVoltageSimd<float_4>(c)*oddEvenCV1*0.1,-1.f,1.f);
-      float_4 stretch4=simd::clamp(stretch1+inputs[STRETCH_INPUT].getPolyVoltageSimd<float_4>(c)*stretchCV1*0.1f,-1.25f,1.25f);
+      float_4 decay4=simd::clamp(decay1+inputs[DECAY_INPUT].getPolyVoltageSimd<float_4>(c)*decayCV1,0.1f,
+                                 3.f);
+      float_4 oddEven4=simd::clamp(
+        oddEven1+inputs[ODD_EVEN_INPUT].getPolyVoltageSimd<float_4>(c)*oddEvenCV1*0.1,-1.f,1.f);
+      float_4 stretch4=simd::clamp(
+        stretch1+inputs[STRETCH_INPUT].getPolyVoltageSimd<float_4>(c)*stretchCV1*0.1f,-1.25f,1.25f);
 
-      float_4 out=oscil1->process(args.sampleRate,freq1,numPartials1,1.f/decay4,oddEven4,offset1,stretch4);
+      float_4 out=oscil1->process(args.sampleRate,freq1,numPartials1,1.f/decay4,oddEven4,offset1,
+                                  stretch4);
       out=dcb[c/4].process(out*3.f);
       outputs[OUTPUT].setVoltageSimd(out,c);
 
@@ -235,11 +284,16 @@ struct Osc8 : Module {
       freq2=dsp::FREQ_C4*dsp::approxExp2_taylor5(pitch2+30.f)/std::pow(2.f,30.f);
       freq2+=dsp::FREQ_C4*out*fmAmount2;
       freq2=simd::fmin(freq2,args.sampleRate/2);
-      float_4 decay42=simd::clamp(decay2+inputs[DECAY_2_INPUT].getPolyVoltageSimd<float_4>(c)*decayCV2,0.1f,3.f);
-      float_4 oddEven42=simd::clamp(oddEven2+inputs[ODD_EVEN_2_INPUT].getPolyVoltageSimd<float_4>(c)*oddEvenCV2*0.1,-1.f,1.f);
-      float_4 stretch42=simd::clamp(stretch2+inputs[STRETCH_2_INPUT].getPolyVoltageSimd<float_4>(c)*stretchCV2*0.1f,-1.25f,1.25f);
+      float_4 decay42=simd::clamp(decay2+inputs[DECAY_2_INPUT].getPolyVoltageSimd<float_4>(c)*decayCV2,
+                                  0.1f,3.f);
+      float_4 oddEven42=simd::clamp(
+        oddEven2+inputs[ODD_EVEN_2_INPUT].getPolyVoltageSimd<float_4>(c)*oddEvenCV2*0.1,-1.f,1.f);
+      float_4 stretch42=simd::clamp(
+        stretch2+inputs[STRETCH_2_INPUT].getPolyVoltageSimd<float_4>(c)*stretchCV2*0.1f,-1.25f,
+        1.25f);
 
-      out2[c/4]=oscil2->process(args.sampleRate,freq2,numPartials2,1.f/decay42,oddEven42,offset2,stretch42);
+      out2[c/4]=oscil2->process(args.sampleRate,freq2,numPartials2,1.f/decay42,oddEven42,offset2,
+                                stretch42);
       out2[c/4]=dcb2[c/4].process(out2[c/4]*3.f);
       outputs[OUTPUT_2].setVoltageSimd(out2[c/4],c);
 
@@ -252,9 +306,9 @@ struct Osc8 : Module {
 
 
 struct Osc8Widget : ModuleWidget {
-	Osc8Widget(Osc8* module) {
-		setModule(module);
-		setPanel(createPanel(asset::plugin(pluginInstance, "res/Osc8.svg")));
+  Osc8Widget(Osc8 *module) {
+    setModule(module);
+    setPanel(createPanel(asset::plugin(pluginInstance,"res/Osc8.svg")));
 
     float x=6;
     float x2=16;
@@ -295,8 +349,8 @@ struct Osc8Widget : ModuleWidget {
     addOutput(createOutput<SmallPort>(mm2px(Vec(x,116)),module,Osc8::OUTPUT));
     addOutput(createOutput<SmallPort>(mm2px(Vec(x4,116)),module,Osc8::OUTPUT_2));
     addInput(createInput<SmallPort>(mm2px(Vec(22.5,116)),module,Osc8::VOCT_INPUT));
-	}
+  }
 };
 
 
-Model* modelOsc8 = createModel<Osc8, Osc8Widget>("Osc8");
+Model *modelOsc8=createModel<Osc8,Osc8Widget>("Osc8");

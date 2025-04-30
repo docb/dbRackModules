@@ -102,7 +102,7 @@ struct PHSR : Module {
   PHSR() {
     config(PARAMS_LEN,INPUTS_LEN,OUTPUTS_LEN,LIGHTS_LEN);
     configParam(FREQ_PARAM,-14.f,4.f,0.f,"Frequency"," Hz",2,dsp::FREQ_C4);
-    configParam(FM_PARAM,0,1,0,"FM Amount","%",0,100);
+    configParam(FM_PARAM,0,3,0,"FM Amount","%",0,100);
     configParam(FINE_PARAM,-100,100,0,"Fine tune"," cents");
     configInput(FM_INPUT,"FM");
     configButton(LIN_PARAM,"Linear");

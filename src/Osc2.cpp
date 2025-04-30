@@ -1,6 +1,8 @@
 #include "dcb.h"
 #include "filter.hpp"
+
 using simd::float_4;
+
 template<typename T>
 struct SinOscP {
   T phs=0.f;
@@ -11,6 +13,7 @@ struct SinOscP {
     phs+=simd::fmin(fms,0.5f);
     phs-=simd::floor(phs);
   }
+
   T firstHalf(T po) {
     T x=po*TWOPIF-pih;
     return (-fdp2*x*x+1);
@@ -22,7 +25,7 @@ struct SinOscP {
   }
 
   T process(T ofs) {
-    T po=(phs+ofs) - simd::floor(phs+ofs);
+    T po=(phs+ofs)-simd::floor(phs+ofs);
     return simd::ifelse(po<0.5f,firstHalf(po),secondHalf(po));
   }
 
@@ -67,7 +70,7 @@ struct Osc2 : Module {
     configOutput(MAX_OUTPUT,"Max");
     configOutput(CLIP_OUTPUT,"Clip");
     configButton(LIN_PARAM,"Linear");
-    configParam(FM_PARAM,0,1,0,"FM Amount","%",0,100);
+    configParam(FM_PARAM,0,3,0,"FM Amount","%",0,100);
     configInput(FM_INPUT,"FM");
     configButton(RST_PARAM,"RST");
   }
@@ -89,7 +92,9 @@ struct Osc2 : Module {
       auto *dcb2=&dcBlock2[c/4];
       float_4 pitch1=freqParam+inputs[VOCT_INPUT].getVoltageSimd<float_4>(c);
       float_4 pitch2=pitch1;
-      if(inputs[VOCT2_INPUT].isConnected()) pitch2=freqParam+inputs[VOCT2_INPUT].getPolyVoltageSimd<float_4>(c);
+      if(inputs[VOCT2_INPUT].isConnected())
+        pitch2=freqParam+
+               inputs[VOCT2_INPUT].getPolyVoltageSimd<float_4>(c);
 
       float_4 freq1;
       if(linear) {
@@ -110,14 +115,17 @@ struct Osc2 : Module {
       }
       freq2=simd::fmin(freq2,args.sampleRate/2);
 
-      float_4 rst = inputs[RST_INPUT].getPolyVoltageSimd<float_4>(c);
-      float_4 resetTriggered = rstTriggers[c/4].process(rst, 0.1f, 2.f) | manualRst.process(params[RST_PARAM].getValue());
+      float_4 rst=inputs[RST_INPUT].getPolyVoltageSimd<float_4>(c);
+      float_4 resetTriggered=
+        rstTriggers[c/4].process(rst,0.1f,2.f)|manualRst.process(params[RST_PARAM].getValue());
       osc1p[c/4].reset(resetTriggered);
       osc2p[c/4].reset(resetTriggered);
 
       float_4 phsOffset=phsParam;
       if(inputs[PHS_INPUT].isConnected()) {
-        phsOffset=phsParam+(simd::clamp(inputs[PHS_INPUT].getPolyVoltageSimd<float_4>(c),-5.f,5.f)*0.1f+0.5f)*phsCV;
+        phsOffset=phsParam+
+                  (simd::clamp(inputs[PHS_INPUT].getPolyVoltageSimd<float_4>(c),-5.f,5.f)*0.1f+0.5f)*
+                  phsCV;
       }
       bool maxConnected=outputs[MAX_OUTPUT].isConnected();
       bool clipConnected=outputs[CLIP_OUTPUT].isConnected();
@@ -178,8 +186,8 @@ struct Osc2 : Module {
   }
 
   void dataFromJson(json_t *rootJ) override {
-    json_t *jOverSample = json_object_get(rootJ,"oversample");
-    if(jOverSample!=nullptr) oversample = json_boolean_value(jOverSample);
+    json_t *jOverSample=json_object_get(rootJ,"oversample");
+    if(jOverSample!=nullptr) oversample=json_boolean_value(jOverSample);
   }
 
 };
@@ -214,7 +222,7 @@ struct Osc2Widget : ModuleWidget {
 
   }
 
-  void appendContextMenu(Menu* menu) override {
+  void appendContextMenu(Menu *menu) override {
     Osc2 *module=dynamic_cast<Osc2 *>(this->module);
     assert(module);
 

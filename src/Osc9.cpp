@@ -1,6 +1,7 @@
 #include "dcb.h"
 
 #include "filter.hpp"
+
 using simd::float_4;
 
 template<typename T>
@@ -8,12 +9,17 @@ struct BOsc {
   T phs=0.f;
   float fdp;
   float pih=M_PI/2;
+
   BOsc() {
     fdp=4/powf(float(M_PI),2);
   }
-  float powf_fast_ub(float a, float b) {
-    union { float d; int x; } u = { a };
-    u.x = (int)(b * (u.x - 1064631197) + 1065353217);
+
+  float powf_fast_ub(float a,float b) {
+    union {
+      float d;
+      int x;
+    } u={a};
+    u.x=(int)(b*(u.x-1064631197)+1065353217);
     return u.d;
   }
 
@@ -24,10 +30,12 @@ struct BOsc {
     }
     return {r[0],r[1],r[2],r[3]};
   }
+
   void updatePhs(T fms) {
     phs+=fms;
     phs-=simd::floor(phs);
   }
+
   T firstHalf(T po) {
     T x=po*TWOPIF-pih;
     return (-fdp*simd::fabs(x*x)+1)*.5f+.5f;
@@ -41,13 +49,15 @@ struct BOsc {
   T sinp(T ps) {
     return simd::ifelse(ps<0.5f,firstHalf(ps),secondHalf(ps));
   }
+
   T sin2pi_pade_05_5_4(T x) {
     x-=0.5f;
     T x2=x*x;
     T x3=x2*x;
     T x4=x2*x2;
     T x5=x2*x3;
-    return (T(-6.283185307)*x+T(33.19863968)*x3-T(32.44191367)*x5)/(1+T(1.296008659)*x2+T(0.7028072946)*x4);
+    return (T(-6.283185307)*x+T(33.19863968)*x3-T(32.44191367)*x5)/
+           (1+T(1.296008659)*x2+T(0.7028072946)*x4);
   }
 
   T process(T p1,T p2) {
@@ -79,6 +89,7 @@ struct Osc9 : Module {
   BOsc<float_4> bosc[4];
   DCBlocker<float_4> dcb[4];
   Cheby1_32_BandFilter<float_4> filters[4];
+
   Osc9() {
     config(PARAMS_LEN,INPUTS_LEN,OUTPUTS_LEN,LIGHTS_LEN);
     configParam(P1_PARAM,0,1,0.5,"P1");
@@ -90,7 +101,7 @@ struct Osc9 : Module {
     configParam(FREQ_PARAM,-4.f,4.f,0.f,"Frequency"," Hz",2,dsp::FREQ_C4);
     configInput(VOCT_INPUT,"V/Oct 1");
     configButton(LIN_PARAM,"Linear");
-    configParam(FM_PARAM,0,1,0,"FM Amount","%",0,100);
+    configParam(FM_PARAM,0,3,0,"FM Amount","%",0,100);
     configInput(FM_INPUT,"FM");
     configOutput(OUTPUT,"CV");
   }
@@ -117,7 +128,8 @@ struct Osc9 : Module {
       freq=simd::fmin(freq,args.sampleRate/2);
       float_4 out=0.f;
       float_4 fms=args.sampleTime*freq/16.f;
-      float_4 p1=simd::clamp(p1Param+inputs[P1_INPUT].getPolyVoltageSimd<float_4>(c)*0.1f*p1ParamCV,0.f,1.f);
+      float_4 p1=simd::clamp(p1Param+inputs[P1_INPUT].getPolyVoltageSimd<float_4>(c)*0.1f*p1ParamCV,0.f,
+                             1.f);
       float_4 p2=simd::clamp(p2Param+inputs[P2_INPUT].getPolyVoltageSimd<float_4>(c)*p2ParamCV,0.f,5.f);
       for(int k=0;k<16;k++) {
         bosc[c/4].updatePhs(fms);

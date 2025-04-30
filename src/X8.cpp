@@ -21,6 +21,31 @@ struct X8 : Module {
   bool outputConnected[MSIZE]={};
   bool modInputsConnected[MSIZE*MSIZE]={};
   dsp::ClockDivider conDivider;
+  int dirty = 0;
+  bool biPolar=false;
+  void setBiPolar(bool b) {
+    if(b) {
+      for(int k=0;k<MSIZE;k++) {
+        for(int j=0;j<MSIZE;j++) {
+          float value = getParamQuantity(k*MSIZE+j)->getValue();
+          configParam(k*MSIZE+j,-1,1,0,rack::string::f("CV %d %d",k+1,j+1));
+          setImmediateValue(getParamQuantity(k*MSIZE+j),value);
+        }
+      }
+    } else {
+      for(int k=0;k<MSIZE;k++) {
+        for(int j=0;j<MSIZE;j++) {
+          float value = getParamQuantity(k*MSIZE+j)->getValue();
+          configParam(k*MSIZE+j,0,1,0,rack::string::f("CV %d %d",k+1,j+1));
+          if(value>=0) {
+            setImmediateValue(getParamQuantity(k*MSIZE+j),value);
+          }
+        }
+      }
+    }
+    biPolar=b;
+    dirty=64;
+  }
 
 	X8() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
@@ -82,8 +107,30 @@ struct X8 : Module {
       if(outputConnected[j]) outputs[CV_OUTPUTS+j].setChannels(channels);
     }
 	}
+  json_t *dataToJson() override {
+    json_t *data=json_object();
+    json_object_set_new(data,"biPolar",json_boolean(biPolar));
+    return data;
+  }
+
+  void dataFromJson(json_t *rootJ) override {
+    json_t *jbiPolar=json_object_get(rootJ,"biPolar");
+    if(jbiPolar!=nullptr) setBiPolar(json_boolean_value(jbiPolar));
+  }
 };
 
+struct X8Knob : ColorKnob {
+  X8 *m;
+  void step() override {
+    if(m && m->dirty) {
+      ChangeEvent c;
+      ColorKnob::onChange(c);
+      INFO("dirty %d",m->dirty);
+      m->dirty--;
+    }
+    ColorKnob::step();
+  }
+};
 
 struct X8Widget : ModuleWidget {
 	X8Widget(X8* module) {
@@ -99,7 +146,9 @@ struct X8Widget : ModuleWidget {
     for(int k=0;k<MSIZE;k++) {
       x=10;
       for(int j=0;j<MSIZE;j++) {
-        addParam(createParam<ColorKnob>(mm2px(Vec(x,y)),module,X8::MPARAM+k*MSIZE+j));
+        auto x8Param=createParam<X8Knob>(mm2px(Vec(x,y)),module,X8::MPARAM+k*MSIZE+j);
+        x8Param->m=module;
+        addParam(x8Param);
         addInput(createInput<SmallPort>(mm2px(Vec(x,y+7)),module,X8::MOD_INPUTS+k*MSIZE+j));
         x+=7;
       }
@@ -111,6 +160,17 @@ struct X8Widget : ModuleWidget {
       x+=7;
     }
 	}
+
+  void appendContextMenu(Menu *menu) override {
+    X8 *module=dynamic_cast<X8 *>(this->module);
+    assert(module);
+    menu->addChild(new MenuSeparator);
+    menu->addChild(createCheckMenuItem("biPolar","",[=]() {
+      return module->biPolar;
+    },[=]() {
+      module->setBiPolar(!module->biPolar);
+    }));
+  }
 };
 
 
