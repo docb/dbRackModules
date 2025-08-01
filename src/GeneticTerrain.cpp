@@ -67,8 +67,8 @@ struct GeneticTerrain : Module {
   enum LightIds {
     NUM_LIGHTS
   };
-  int genParam[4];
-  int lastParam[4];
+  int genParam[4]={};
+  int lastParam[4]={};
   Computer<float_4> computer;
   GeneticTerrainOSC<float_4> osc[4];
   GeneticTerrainOSC<float_4> oscBw[4];
@@ -646,8 +646,8 @@ struct GeneticSuperTerrain : Module {
   enum LightIds {
     NUM_LIGHTS
   };
-  int genParam[4];
-  int lastParam[4];
+  int genParam[4]={};
+  int lastParam[4]={};
   float m0=4;
   float m1=4;
   float n1=1;
