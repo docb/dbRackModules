@@ -21,6 +21,7 @@ struct PLC : Module {
   int dirty=0;
   dsp::ClockDivider divider;
   Module *fadersModule=nullptr;
+  Module *sinkModule=nullptr;
 
   PLC() {
     config(PARAMS_LEN,INPUTS_LEN,OUTPUTS_LEN,LIGHTS_LEN);
@@ -39,14 +40,28 @@ struct PLC : Module {
     }
   }
 
+  void copyFromSink() {
+    if(sinkModule) {
+      for(int k=0;k<16;k++) {
+        setImmediateValue(getParamQuantity(k),sinkModule->params[k].getValue());
+      }
+    }
+  }
+
   void process(const ProcessArgs &args) override {
     if(leftExpander.module) {
       if(leftExpander.module->model==modelFaders) {
         fadersModule=leftExpander.module;
       } else {
         fadersModule=nullptr;
+        if(leftExpander.module->model->slug=="Sink") {
+          sinkModule=leftExpander.module;
+        } else {
+          sinkModule=nullptr;
+        }
       }
     }
+
     if(divider.process()) {
       for(int k=0;k<16;k++) {
         outputs[CV_OUTPUT].setVoltage(k<maxChannels?params[k].getValue():0.f,k);
@@ -132,11 +147,13 @@ struct PLCWidget : ModuleWidget {
     menu->addChild(rangeSelectItem);
   }
   void onHoverKey(const event::HoverKey &e) override {
+    auto *plcModule=dynamic_cast<PLC *>(this->module);
     if(e.action==GLFW_PRESS) {
       int k=e.key-48;
       if(k>=1 && k<4) {
-        auto *plcModule=dynamic_cast<PLC *>(this->module);
         plcModule->copyFromFaders(k-1);
+      } else if(e.key==GLFW_KEY_S) {
+        plcModule->copyFromSink();
       }
     }
     ModuleWidget::onHoverKey(e);

@@ -20,6 +20,19 @@ struct SinPOsc {
     return (T(-6.283185307)*x+T(33.19863968)*x3-T(32.44191367)*x5)/
            (1+T(1.296008659)*x2+T(0.7028072946)*x4);
   }
+  T firstHalfBI(T po) {
+    T z=po*(.5f-po);
+    return 4.f*z/(.3125f-z);
+  }
+
+  T secondHalfBI(T po) {
+    T z=(po-0.5f)*(po-1.f);
+    return 4.f*z/(.3125f+z);
+  }
+
+  T processBI() {
+    return simd::ifelse(phs<0.5f,firstHalfBI(phs),secondHalfBI(phs));
+  }
 
   void updatePhs(float sampleTime) {
     phs+=simd::fmin(freq*sampleTime,0.5f);
@@ -28,7 +41,8 @@ struct SinPOsc {
 
   T process(float sampleTime) {
     updatePhs(sampleTime);
-    return sin2pi_pade_05_5_4(phs);
+    //return sin2pi_pade_05_5_4(phs);
+    return processBI();
   }
 
   void reset(T trigger) {
@@ -75,6 +89,15 @@ struct ParaSinOscBank {
     return powf_fast_ub(a,b);
   }
 
+  float fastCos(float t) {
+    t+=0.25f;
+    t-=floor(t);
+    float x=t*4.f-2.f;
+    float x2=x*x;
+    float x4=x2*x2;
+    return 0.125*x4-x2+1.f;
+  }
+
   T ampCurve(int partialNr) {
     T dmp=1.f/fastPow(partialNr+1,decay);
     if(partialNr==0) {
@@ -87,7 +110,7 @@ struct ParaSinOscBank {
     }
     if(combAmt>0.01f) {
       dmp*=powf_fast_ub(
-        1+combAmt*cosf(combFreq*powf_fast_ub(TWOPIF*float(partialNr)/256.f,combWarp)+combPhs),
+        1+combAmt*fastCos(combFreq*powf_fast_ub(float(partialNr)/256.f,combWarp)+combPhs),
         combPeek);
       //dmp*=simd::pow(1+combAmt*cosf(combFreq*simd::pow(TWOPIF*float(partialNr)/256.f,combWarp)+combPhs),combPeek);
       //dmp*=sqrtf(1+combAmt*cosf(combFreq*TWOPIF*float(partialNr)/256.f+combPhs));

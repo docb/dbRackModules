@@ -162,6 +162,11 @@ struct MVerb : Module {
     }
   }
 
+  void onReset(const ResetEvent& e) override {
+    gam::sampleRate(APP->engine->getSampleRate());
+    initializeER();
+  }
+
   void initializeER() {
     int er=params[ER_PRESET_PARAM].getValue();
     INFO("init ER %d",er);

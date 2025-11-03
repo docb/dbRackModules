@@ -40,6 +40,7 @@ struct DRM : Module {
   DCBlocker<float_4> dcbMin[4];
   DCBlocker<float_4> dcbMax[4];
   DCBlocker<float_4> dcbRing[4];
+  bool blockDC=true;
 
   DRM() {
     config(PARAMS_LEN,INPUTS_LEN,OUTPUTS_LEN,LIGHTS_LEN);
@@ -107,19 +108,19 @@ struct DRM : Module {
 
       float_4 sum=diode.process(ci,VB,VL_VB,G);
       if(outputs[SUM_OUTPUT].isConnected()) {
-        outputs[SUM_OUTPUT].setVoltageSimd(dcbSum[c/4].process(sum),c);
+        outputs[SUM_OUTPUT].setVoltageSimd(blockDC?dcbSum[c/4].process(sum):sum,c);
       }
       float_4 diff=diode.process(cmi,VB,VL_VB,G);
       if(outputs[DIFF_OUTPUT].isConnected())
-        outputs[DIFF_OUTPUT].setVoltageSimd(dcbDiff[c/4].process(diff),c);
+        outputs[DIFF_OUTPUT].setVoltageSimd(blockDC?dcbDiff[c/4].process(diff):diff,c);
 
       if(outputs[MIN_OUTPUT].isConnected())
-        outputs[MIN_OUTPUT].setVoltageSimd(dcbMin[c/4].process(simd::ifelse(sum<diff,sum,diff)),c);
+        outputs[MIN_OUTPUT].setVoltageSimd(blockDC?dcbMin[c/4].process(simd::ifelse(sum<diff,sum,diff)):simd::ifelse(sum<diff,sum,diff),c);
       if(outputs[MAX_OUTPUT].isConnected())
-        outputs[MAX_OUTPUT].setVoltageSimd(dcbMax[c/4].process(simd::ifelse(sum>diff,sum,diff)),c);
+        outputs[MAX_OUTPUT].setVoltageSimd(blockDC?dcbMax[c/4].process(simd::ifelse(sum>diff,sum,diff)):simd::ifelse(sum>diff,sum,diff),c);
 
       float_4 out=sum-diff;
-      outputs[RING_OUTPUT].setVoltageSimd(dcbRing[c/4].process(out),c);
+      outputs[RING_OUTPUT].setVoltageSimd(blockDC?dcbRing[c/4].process(out):out,c);
 
     }
     outputs[SUM_OUTPUT].setChannels(channels);
@@ -127,6 +128,17 @@ struct DRM : Module {
     outputs[MIN_OUTPUT].setChannels(channels);
     outputs[MAX_OUTPUT].setChannels(channels);
     outputs[RING_OUTPUT].setChannels(channels);
+  }
+
+  json_t *dataToJson() override {
+    json_t *data=json_object();
+    json_object_set_new(data,"dc",json_boolean(blockDC));
+    return data;
+  }
+
+  void dataFromJson(json_t *rootJ) override {
+    json_t *jDcBlock=json_object_get(rootJ,"dc");
+    if(jDcBlock!=nullptr) blockDC=json_boolean_value(jDcBlock);
   }
 };
 
@@ -183,6 +195,13 @@ struct DRMWidget : ModuleWidget {
     addOutput(createOutput<SmallPort>(mm2px(Vec(x2,y)),module,DRM::MAX_OUTPUT));
 
 
+  }
+
+  void appendContextMenu(Menu *menu) override {
+    DRM *module=dynamic_cast<DRM *>(this->module);
+    assert(module);
+    menu->addChild(new MenuSeparator);
+    menu->addChild(createBoolPtrMenuItem("Block DC","",&module->blockDC));
   }
 };
 
