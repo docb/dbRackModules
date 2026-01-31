@@ -734,6 +734,23 @@
         "Utility",
         "Polyphonic"
       ]
+    },
+    {
+      "slug": "Osc22",
+      "name": "Osc22",
+      "description": "Dual Oscillator with Chaos",
+      "tags": [
+        "Oscillator",
+        "Polyphonic"
+      ]
+    },
+    {
+      "slug": "FadersOne",
+      "name": "FadersOne",
+      "description": "Programmable faders with modulation",
+      "tags": [
+        "Utility"
+      ]
     }
   ]
 }

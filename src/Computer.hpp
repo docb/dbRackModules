@@ -5,7 +5,7 @@
 #ifndef DOCB_VCV_COMPUTER_HPP
 #define DOCB_VCV_COMPUTER_HPP
 
-#include "rnd.h"
+#include "dcb.h"
 
 using simd::float_4;
 

@@ -38,7 +38,7 @@ struct SVFilter {
     }
   }
    */
-  FilterOut<T> process(T in,T freq,T res,T drive,float piosr,int mode=0) {
+  FilterOut<T> process(T in,T freq,T res,T drive,float piosr,unsigned mode=0) {
     FilterOut<T> y={};
     T w=simd::tan(freq*piosr);
     T R=1.f/res;
@@ -74,7 +74,7 @@ struct USVF : Module {
     LIGHTS_LEN
   };
   SVFilter<float_4> filter[4];
-  int mode=0;
+  unsigned mode=0;
   DCBlocker<float_4> dcbH[4];
   DCBlocker<float_4> dcbB[4];
   DCBlocker<float_4> dcbL[4];
@@ -103,22 +103,22 @@ struct USVF : Module {
   }
 
   void process(const ProcessArgs &args) override {
-    float piosr=M_PI/args.sampleRate;
-    float r=params[R_PARAM].getValue();
-    float rCvParam=params[R_CV_PARAM].getValue();
-    float drive=params[D_PARAM].getValue();
-    float driveCvParam=params[D_CV_PARAM].getValue();
-    float freqParam=params[FREQ_PARAM].getValue();
-    float freqCvParam=params[FREQ_CV_PARAM].getValue();
+    const float piosr=M_PI/args.sampleRate;
+    const float r=params[R_PARAM].getValue();
+    const float rCvParam=params[R_CV_PARAM].getValue();
+    const float drive=params[D_PARAM].getValue();
+    const float driveCvParam=params[D_CV_PARAM].getValue();
+    const float freqParam=params[FREQ_PARAM].getValue();
+    const float freqCvParam=params[FREQ_CV_PARAM].getValue();
     int channels=inputs[CV_INPUT].getChannels();
     if(outputs[HP_OUTPUT].isConnected()||outputs[BP_OUTPUT].isConnected()||outputs[LP_OUTPUT].isConnected()) {
       for(int c=0;c<channels;c+=4) {
-        float_4 pitch=freqParam+inputs[FREQ_INPUT].getPolyVoltageSimd<float_4>(c)*freqCvParam;
-        float_4 cutoff=simd::clamp(simd::pow(2.f,pitch),2.f,args.sampleRate*0.4f);
-        float_4 R=simd::clamp(r+inputs[R_INPUT].getPolyVoltageSimd<float_4>(c)*rCvParam*0.1f,0.5f,20.f);
-        float_4 D=simd::clamp(drive+inputs[D_INPUT].getPolyVoltageSimd<float_4>(c)*driveCvParam*0.1f,0.0f,1.f);
-        float_4 in=inputs[CV_INPUT].getVoltageSimd<float_4>(c);
-        FilterOut<float_4> out=filter[c/4].process(in,cutoff,R,D,piosr,mode);
+        const float_4 pitch=freqParam+inputs[FREQ_INPUT].getPolyVoltageSimd<float_4>(c)*freqCvParam;
+        const float_4 cutoff=simd::clamp(simd::pow(2.f,pitch),2.f,args.sampleRate*0.4f);
+        const float_4 R=simd::clamp(r+inputs[R_INPUT].getPolyVoltageSimd<float_4>(c)*rCvParam*0.1f,0.5f,20.f);
+        const float_4 D=simd::clamp(drive+inputs[D_INPUT].getPolyVoltageSimd<float_4>(c)*driveCvParam*0.1f,0.0f,1.f);
+        const float_4 in=inputs[CV_INPUT].getVoltageSimd<float_4>(c);
+        const FilterOut<float_4> out=filter[c/4].process(in,cutoff,R,D,piosr,mode);
         if(outputs[HP_OUTPUT].isConnected()) outputs[HP_OUTPUT].setVoltageSimd(dcbH[c/4].process(out.HP),c);
         if(outputs[BP_OUTPUT].isConnected()) outputs[BP_OUTPUT].setVoltageSimd(dcbB[c/4].process(out.BP),c);
         if(outputs[LP_OUTPUT].isConnected()) outputs[LP_OUTPUT].setVoltageSimd(dcbL[c/4].process(out.LP),c);

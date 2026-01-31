@@ -274,10 +274,10 @@ struct MLEDM : public SvgSwitch {
 };
 
 struct LabelIntSelectItem : MenuItem {
-  int *value;
+  unsigned *value;
   std::vector<std::string> labels;
 
-  LabelIntSelectItem(int *val,std::vector<std::string> _labels) : value(val),labels(std::move(_labels)) {
+  LabelIntSelectItem(unsigned *val,std::vector<std::string> _labels) : value(val),labels(std::move(_labels)) {
   }
 
   Menu *createChildMenu() override {
@@ -1045,6 +1045,80 @@ struct ColorKnob : Knob {
       fb->dirty=true;
     }
     Knob::onChange(e);
+  }
+};
+
+
+
+template<typename T>
+struct PhasorOsc {
+  T phs=0.f;
+
+  void updatePhs(float sampleTime,T freq) {
+    phs+=freq*sampleTime;
+    phs-=simd::floor(phs);
+  }
+
+  T process(T ofs=0.f) {
+    return phs+ofs;
+  }
+
+  void reset(T trigger) {
+    phs=simd::ifelse(trigger,0.f,phs);
+  }
+};
+
+template<typename T>
+struct SinOsc {
+  T phs=0.f;
+
+  void updatePhs(float sampleTime,T freq) {
+    phs+=simd::fmin(freq*sampleTime,0.5f);
+    phs-=simd::floor(phs);
+  }
+
+  T process(T ofs=0.f) {
+    return simd::sin((phs+ofs)*2*M_PI)*0.5f+0.5f;
+  }
+
+  void reset(T trigger) {
+    phs=simd::ifelse(trigger,0.f,phs);
+  }
+};
+
+template<typename T>
+struct TriOsc {
+  T phs=0.f;
+
+  void updatePhs(float sampleTime,T freq) {
+    phs+=simd::fmin(freq*sampleTime,0.5f);
+    phs-=simd::floor(phs);
+  }
+
+  T process(T ofs=0.f) {
+    return 4.f*simd::fabs((phs+ofs)-simd::round(phs+ofs))-1.f;
+  }
+
+  void reset(T trigger) {
+    phs=simd::ifelse(trigger,0.f,phs);
+  }
+};
+
+template<typename T>
+struct SquareOsc {
+  T phs=0.f;
+
+  void updatePhs(float sampleTime,T freq) {
+    phs+=simd::fmin(freq*sampleTime,0.5f);
+    phs-=simd::floor(phs);
+  }
+
+  T process(T ofs=0.f) {
+    return simd::ifelse(simd::fmod(phs+ofs,1)<0.5f,0.f,1.f);
+  }
+
+  void reset(T trigger) {
+    phs=simd::ifelse(trigger,0.f,phs);
   }
 };
 

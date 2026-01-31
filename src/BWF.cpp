@@ -34,7 +34,7 @@ struct BWF : Module {
   enum FFTLEN {
     FL1024,FL2048,FL4096
   };
-  int fftLen=1;
+  unsigned fftLen=1;
   BrickWall bw;
   FDProcessor<BrickWall,256,gam::HAMMING,gam::COMPLEX,0> fd256[16];
   FDProcessor<BrickWall,512,gam::HAMMING,gam::COMPLEX,0> fd512[16];
