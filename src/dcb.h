@@ -284,7 +284,7 @@ struct LabelIntSelectItem : MenuItem {
     Menu *menu=new Menu;
     for(unsigned k=0;k<labels.size();k++) {
       menu->addChild(createCheckMenuItem(labels[k],"",[=]() {
-        return *value==int(k);
+        return *value==k;
       },[=]() {
         *value=k;
       }));
@@ -1022,7 +1022,7 @@ struct ColorKnob : Knob {
     // Re-transform the widget::TransformWidget
     engine::ParamQuantity *pq=getParamQuantity();
     if(pq) {
-      float value=pq->getSmoothValue();
+      float value=pq->getValue();
       float angle;
       if(!pq->isBounded()) {
         // Number of rotations equals value for unbounded range

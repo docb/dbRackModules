@@ -60,7 +60,7 @@ struct DelayLine {
     readPosFrac = int(lround(_readPos));
     nextLineSeg(sampleRate,pitchMod);
     filterState = 0;
-    memset(buf,0,S);
+    memset(buf,0,S*sizeof(float));
   }
   float process(float in, float fb, float dmp,float pm,float sampleRate) {
     buf[writePos] = in - filterState;

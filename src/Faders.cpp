@@ -306,9 +306,11 @@ struct Faders : Module {
 
   int getSnap(int nr) {
     int pat = params[PAT_PARAM].getValue();
-    return presets[pat].snaps[nr];
+    return (int)presets[pat].snaps[nr];
   }
-
+  int getProgChannels() {
+    return 0;
+  }
   void setMin(int nr, float value) {
     int pat = params[PAT_PARAM].getValue();
     presets[pat].min[nr] = value;
@@ -666,6 +668,10 @@ struct FadersOne : Module {
     return presets[pat].snap;
   }
 
+  int getProgChannels() {
+    return inputs[PROG_INPUT].getChannels();
+  }
+
   void setMin(int dummy, float value) {
     int pat = params[PAT_PARAM].getValue();
     presets[pat].min = value;
@@ -735,7 +741,11 @@ struct FadersOne : Module {
     if(inputs[PROG_INPUT].isConnected()) {
       int channels=inputs[PROG_INPUT].getChannels();
       for(int k=0;k<channels;k++) {
-        if(enabled[k]) getParamQuantity(k)->setImmediateValue(inputs[PROG_INPUT].getVoltage(k));
+        if(enabled[k]) {
+          float v= inputs[PROG_INPUT].getVoltage(k);
+          getParamQuantity(k)->setImmediateValue(v);
+          presets[pat].faderValues[k] = v; // ensure saving in preset
+        }
       }
       if(params[CHAN_PARAM].getValue()>0.f) {
         presets[pat].maxChannels=channels;
@@ -855,7 +865,7 @@ struct Fader : SliderKnob {
     nvgBeginPath(args.vg);
     nvgRect(args.vg, 0, 0, box.size.x, box.size.y);
     if(id >= 0 && module && c < module->getMaxChannels(row)) {
-      if(module && module->enabled[c])
+      if(module && module->enabled[c] && c < module->getProgChannels())
         nvgFillColor(args.vg, nvgRGB(0x33, 0x55, 0x88));
       else
         nvgFillColor(args.vg, nvgRGB(0x33, 0x33, 0x33));
@@ -1218,13 +1228,9 @@ struct FadersOneWidget : ModuleWidget {
   FadersOneWidget(FadersOne *module) {
     setModule(module);
     setPanel(createPanel(asset::plugin(pluginInstance, "res/FadersOne.svg")));
-    addChild(createWidget<ScrewSilver>(Vec(0, 0)));
-    addChild(createWidget<ScrewSilver>(Vec(box.size.x - 15, 0)));
-    addChild(createWidget<ScrewSilver>(Vec(0, 365)));
-    addChild(createWidget<ScrewSilver>(Vec(box.size.x - 15, 365)));
 
     for(int k = 0;k < 16;k++) {
-      auto faderParam = createParam<Fader<FadersOne> >(mm2px(Vec(4.f + k * 5.5f, 22)), module, k);
+      auto faderParam = createParam<Fader<FadersOne> >(mm2px(Vec(4.f + k * 5.5f, 19)), module, k);
       faderParam->box.size = mm2px(Vec(5.5f, 74.f));
       faderParam->module = module;
       addParam(faderParam);
