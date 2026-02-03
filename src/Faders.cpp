@@ -548,11 +548,11 @@ struct FadersOne : Module {
   };
 
   enum InputId {
-    MOD_INPUT, PAT_INPUT, PROG_INPUT, ENABLE_INPUT,INPUTS_LEN
+    MOD_INPUT, PAT_INPUT, PROG_INPUT, ENABLE_INPUT, CV_PAT_INPUT, INPUTS_LEN
   };
 
   enum OutputId {
-    CV_OUTPUT, OUTPUTS_LEN
+    CV_OUTPUT, CV_PAT_OUTPUT, OUTPUTS_LEN
   };
 
   enum LightId {
@@ -582,6 +582,8 @@ struct FadersOne : Module {
     configParam(MOD_CV, 0, 1, 0, "Mod CV Amount");
     configOutput(CV_OUTPUT, "CV ");
     configInput(MOD_INPUT, "Mod CV ");
+    configOutput(CV_PAT_OUTPUT, "Pattern CV");
+    configInput(CV_PAT_INPUT, "Pattern Adr ");
     configButton(ENABLE_PARAM, "Enable");
     configButton(CHAN_PARAM, "Channels from Prg");
     configButton(COPY_PARAM, "Copy Pattern");
@@ -596,6 +598,7 @@ struct FadersOne : Module {
 
   void setValue(int dummy, int nr, float value) {
     int pat = params[PAT_PARAM].getValue();
+    //INFO("pat %d set value %d = %f",pat, nr,value);
     presets[pat].setValue(nr, value);
   }
 
@@ -629,7 +632,7 @@ struct FadersOne : Module {
 
   void setCurrentPattern() {
     int pat = params[PAT_PARAM].getValue();
-
+    //INFO("set current pattern %d",pat);
     for(int k = 0;k < 16;k++) {
       configParam(k, presets[pat].min, presets[pat].max, 0, " chn " + std::to_string(k + 1));
     }
@@ -637,12 +640,17 @@ struct FadersOne : Module {
     for(int k = 0;k < 16;k++) {
       setImmediateValue(getParamQuantity(k), presets[pat].faderValues[k]);
     }
+    //INFO("end set current pattern %d",pat);
   }
 
   float getSnapped(float value, int c) {
-    int pat = params[PAT_PARAM].getValue();
-    if(presets[pat].snap > 0) {
-      float snapInv = 1.f / snaps[presets[pat].snap];
+    int pat = (int)params[PAT_PARAM].getValue();
+    return getSnapped(value,presets[pat].snap,c);
+  }
+
+  static float getSnapped(float value, unsigned snap, int c) {
+    if(snap > 0) {
+      float snapInv = 1.f / (float)snap;
       return roundf(value * snapInv) / snapInv;
     }
     return value;
@@ -757,6 +765,16 @@ struct FadersOne : Module {
       faderSlews[k].setParams(args.sampleTime, glide / 32.f, presets[pat].faderValues[k]);
     }
 
+    if(outputs[CV_PAT_OUTPUT].isConnected()) {
+      int cv_pat=(int)(clamp(inputs[CV_PAT_INPUT].getVoltage(),0.f,9.99f)*float(MAX_PATS) / 10.f);
+      for(int c = 0;c < presets[cv_pat].maxChannels;c++) {
+        float v = clamp(presets[cv_pat].faderValues[c] + inputs[MOD_INPUT].getVoltage(c) * params[MOD_CV].getValue(),
+                                   presets[cv_pat].min, presets[cv_pat].max);
+        v = getSnapped(v,presets[cv_pat].snap, c);
+        outputs[CV_PAT_OUTPUT].setVoltage(v, c);
+      }
+      outputs[CV_PAT_OUTPUT].setChannels(presets[cv_pat].maxChannels);
+    }
 
     if(outputs[CV_OUTPUT].isConnected()) {
       for(int c = 0;c < presets[pat].maxChannels;c++) {
@@ -1025,6 +1043,7 @@ struct FadersPresetSelect : SpinParamWidget {
 
   void onChange(const ChangeEvent &e) override {
     if(module) {
+      INFO("on Change");
       module->setCurrentPattern();
     }
   }
@@ -1235,11 +1254,18 @@ struct FadersOneWidget : ModuleWidget {
       faderParam->module = module;
       addParam(faderParam);
     }
-    addParam(createParam<TrimbotWhite>(mm2px(Vec(68, 116)), module, FadersOne::MOD_CV));
+
     addInput(createInput<SmallPort>(mm2px(Vec(33, 104)), module, FadersOne::PROG_INPUT));
     addInput(createInput<SmallPort>(mm2px(Vec(45, 104)), module, FadersOne::ENABLE_INPUT));
 
-    addInput(createInput<SmallPort>(mm2px(Vec(68, 104)), module, FadersOne::MOD_INPUT));
+
+    addParam(createParam<TrimbotWhite>(mm2px(Vec(60, 116)), module, FadersOne::MOD_CV));
+    addInput(createInput<SmallPort>(mm2px(Vec(60, 104)), module, FadersOne::MOD_INPUT));
+
+    addInput(createInput<SmallPort>(mm2px(Vec(72, 104)), module, FadersOne::CV_PAT_INPUT));
+    addOutput(createOutput<SmallPort>(mm2px(Vec(72, 116)), module, FadersOne::CV_PAT_OUTPUT));
+
+
     addOutput(createOutput<SmallPort>(mm2px(Vec(84, 116)), module, FadersOne::CV_OUTPUT));
     addParam(createParam<MLED>(mm2px(Vec(45,116)), module, FadersOne::ENABLE_PARAM));
     addParam(createParam<MLED>(mm2px(Vec(33,116)), module, FadersOne::CHAN_PARAM));
