@@ -191,6 +191,7 @@ struct Faders : Module {
   SlewLimiter faderSlews[48] = {};
   SlewLimiter knobSlews[MAX_KNOBS] = {};
   bool enabled[16]={}; // dummy used in FadersOne
+  bool use_cv_pad_input_for_prog=false; // dummy
   Faders() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
     divider.setDivision(32);
@@ -214,7 +215,8 @@ struct Faders : Module {
       configOutput(KNOB_OUTPUTS + k, "Knob " + std::to_string(k + 1));
     }
   }
-
+  int getAdr() { return 0;} //dummy,not used
+  bool progEnabled(int k) { return false;}
   void setValue(int row, int nr, float value) {
     int pat = params[PAT_PARAM].getValue();
     presets[pat].setValue(row, nr, value);
@@ -570,11 +572,11 @@ struct FadersOne : Module {
   Module *padModule = nullptr;
   SlewLimiter faderSlews[16] = {};
   bool enabled[16]={};
+  bool use_cv_pad_input_for_prog=false;
 
   FadersOne() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
     divider.setDivision(32);
-
 
     for(int k = 0;k < 16;k++) {
       configParam(k, -10, 10, 0, " chn " + std::to_string(k + 1));
@@ -645,10 +647,10 @@ struct FadersOne : Module {
 
   float getSnapped(float value, int c) {
     int pat = (int)params[PAT_PARAM].getValue();
-    return getSnapped(value,presets[pat].snap,c);
+    return getSnapped(value,snaps[presets[pat].snap],c);
   }
 
-  static float getSnapped(float value, unsigned snap, int c) {
+  static float getSnapped(float value, float snap, int c) {
     if(snap > 0) {
       float snapInv = 1.f / (float)snap;
       return roundf(value * snapInv) / snapInv;
@@ -704,6 +706,14 @@ struct FadersOne : Module {
     return faderSlews[nr].process();
   }
 
+  int getAdr() {
+    return (int)(clamp(inputs[CV_PAT_INPUT].getVoltage(),0.f,9.99f)*float(MAX_PATS) / 10.f);
+  }
+
+  bool progEnabled(int k) {
+    return inputs[PROG_INPUT].isConnected() && enabled[k] && getAdr()==(int)params[PAT_PARAM].getValue();
+  }
+
   void process(const ProcessArgs &args) override {
     if(leftExpander.module) {
       if(leftExpander.module->model == modelPad2) {
@@ -747,12 +757,14 @@ struct FadersOne : Module {
     }
     int pat = params[PAT_PARAM].getValue();
     if(inputs[PROG_INPUT].isConnected()) {
+      int cv_pat=(int)(clamp(inputs[CV_PAT_INPUT].getVoltage(),0.f,9.99f)*float(MAX_PATS) / 10.f);
+      int prog_adr=use_cv_pad_input_for_prog?cv_pat:pat;
       int channels=inputs[PROG_INPUT].getChannels();
       for(int k=0;k<channels;k++) {
         if(enabled[k]) {
           float v= inputs[PROG_INPUT].getVoltage(k);
-          getParamQuantity(k)->setImmediateValue(v);
-          presets[pat].faderValues[k] = v; // ensure saving in preset
+          if(!use_cv_pad_input_for_prog) getParamQuantity(k)->setImmediateValue(v);
+          presets[prog_adr].faderValues[k] = v; // ensure saving in preset
         }
       }
       if(params[CHAN_PARAM].getValue()>0.f) {
@@ -807,6 +819,7 @@ struct FadersOne : Module {
 
   json_t *dataToJson() override {
     json_t *data = json_object();
+    json_object_set_new(data, "use_cv_pad_input_for_prog", json_boolean(use_cv_pad_input_for_prog));
     json_t *presetList = json_array();
     for(int k = 0;k < MAX_PATS;k++) {
       json_array_append_new(presetList, presets[k].toJson());
@@ -816,6 +829,10 @@ struct FadersOne : Module {
   }
 
   void dataFromJson(json_t *root) override {
+    json_t *j=json_object_get(root,"use_cv_pad_input_for_prog");
+    if(j) {
+      use_cv_pad_input_for_prog = json_boolean_value(j);
+    }
     json_t *data = json_object_get(root, "presets");
     if(data) {
       for(int k = 0;k < MAX_PATS;k++) {
@@ -856,11 +873,20 @@ template<typename M>
 struct Fader : SliderKnob {
   M *module = nullptr;
   float pos = 0;
-
+  int nr=0;
   Fader() : SliderKnob() {
     box.size = mm2px(Vec(4.5f, 33.f));
     forceLinear = true;
     speed = 2.0;
+  }
+
+  void step() override {
+    if(module && module->use_cv_pad_input_for_prog && module->progEnabled(nr)) {
+      int pat=(int)module->params[M::PAT_PARAM].getValue();
+      if(module->getAdr()==pat)
+        getParamQuantity()->setImmediateValue(module->presets[pat].faderValues[nr]);
+    }
+    SliderKnob::step();
   }
 
   void drawLayer(const DrawArgs &args, int layer) override {
@@ -871,6 +897,7 @@ struct Fader : SliderKnob {
   }
 
   void _draw(const DrawArgs &args) {
+
     int c = 0;
     int id = -1;
     int row = 0;
@@ -880,16 +907,19 @@ struct Fader : SliderKnob {
       c = id % 16;
       row = id / 16;
     }
-    nvgBeginPath(args.vg);
-    nvgRect(args.vg, 0, 0, box.size.x, box.size.y);
-    if(id >= 0 && module && c < module->getMaxChannels(row)) {
-      if(module && module->enabled[c] && c < module->getProgChannels())
-        nvgFillColor(args.vg, nvgRGB(0x33, 0x55, 0x88));
-      else
-        nvgFillColor(args.vg, nvgRGB(0x33, 0x33, 0x33));
-    } else {
+    if(module) {
+      int pat=(int)module->params[M::PAT_PARAM].getValue();
+      nvgBeginPath(args.vg);
+      nvgRect(args.vg, 0, 0, box.size.x, box.size.y);
+      if(id >= 0 &&  c < module->getMaxChannels(row)) {
+        if(module->enabled[c] && c < module->getProgChannels() && (!module->use_cv_pad_input_for_prog || module->getAdr()==pat))
+          nvgFillColor(args.vg, nvgRGB(0x33, 0x55, 0x88));
+        else
+          nvgFillColor(args.vg, nvgRGB(0x33, 0x33, 0x33));
+      } else {
         nvgFillColor(args.vg, nvgRGB(0x55, 0x55, 0x55));
 
+      }
     }
     nvgStrokeColor(args.vg, nvgRGB(0x88, 0x88, 0x88));
     nvgFill(args.vg);
@@ -1252,6 +1282,7 @@ struct FadersOneWidget : ModuleWidget {
       auto faderParam = createParam<Fader<FadersOne> >(mm2px(Vec(4.f + k * 5.5f, 19)), module, k);
       faderParam->box.size = mm2px(Vec(5.5f, 74.f));
       faderParam->module = module;
+      faderParam->nr=k;
       addParam(faderParam);
     }
 
@@ -1355,6 +1386,7 @@ struct FadersOneWidget : ModuleWidget {
       auto rpMenu = new RandomizeRow(module, 0);
       rpMenu->text = "Randomize";
       menu->addChild(rpMenu);
+      menu->addChild(createBoolPtrMenuItem("Use Adr for Prog","",&module->use_cv_pad_input_for_prog));
 
   }
 
