@@ -782,7 +782,7 @@ struct FadersOne : Module {
       for(int c = 0;c < presets[cv_pat].maxChannels;c++) {
         float v = clamp(presets[cv_pat].faderValues[c] + inputs[MOD_INPUT].getVoltage(c) * params[MOD_CV].getValue(),
                                    presets[cv_pat].min, presets[cv_pat].max);
-        v = getSnapped(v,presets[cv_pat].snap, c);
+        v = getSnapped(v,snaps[presets[pat].snap], c);
         outputs[CV_PAT_OUTPUT].setVoltage(v, c);
       }
       outputs[CV_PAT_OUTPUT].setChannels(presets[cv_pat].maxChannels);
