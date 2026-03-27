@@ -6,6 +6,8 @@
 #define DBRACKMODULES_BUFFER_HPP
 template<typename T>
 struct RBufferBase {
+  virtual ~RBufferBase() = default;
+
   virtual bool in_empty()=0;
   virtual bool in_full()=0;
   virtual T in_shift()=0;

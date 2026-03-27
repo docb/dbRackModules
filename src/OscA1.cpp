@@ -1,38 +1,13 @@
 #include "dcb.h"
 #include <thread>
-
+#include "worker.h"
 using simd::float_4;
 #define NUM_VOICES 4
-
-#include "buffer.hpp"
 
 template<typename T>
 struct SinPOsc {
   T phs=0.f;
   T freq=261.636f;
-
-  T sin2pi_pade_05_5_4(T x) {
-    x-=0.5f;
-    T x2=x*x;
-    T x3=x2*x;
-    T x4=x2*x2;
-    T x5=x2*x3;
-    return (T(-6.283185307)*x+T(33.19863968)*x3-T(32.44191367)*x5)/
-           (1+T(1.296008659)*x2+T(0.7028072946)*x4);
-  }
-  T firstHalfBI(T po) {
-    T z=po*(.5f-po);
-    return 4.f*z/(.3125f-z);
-  }
-
-  T secondHalfBI(T po) {
-    T z=(po-0.5f)*(po-1.f);
-    return 4.f*z/(.3125f+z);
-  }
-
-  T processBI() {
-    return simd::ifelse(phs<0.5f,firstHalfBI(phs),secondHalfBI(phs));
-  }
 
   void updatePhs(float sampleTime) {
     phs+=simd::fmin(freq*sampleTime,0.5f);
@@ -41,12 +16,19 @@ struct SinPOsc {
 
   T process(float sampleTime) {
     updatePhs(sampleTime);
-    //return sin2pi_pade_05_5_4(phs);
-    return processBI();
+    //return simd::sin(phs*M_PI*2.f);
+    return fast_sine_simd(2.f*phs-1.f);
   }
 
   void reset(T trigger) {
     phs=simd::ifelse(trigger,0.f,phs);
+  }
+
+  T fast_sine_simd(T p) {
+    T abs_p = simd::abs(p);
+    T y = 4.f * p - 4.f * p * abs_p;
+    T abs_y = simd::abs(y);
+    return 0.225f * (y * abs_y - y) + y;
   }
 };
 
@@ -64,9 +46,22 @@ struct ParaSinOscBank {
   float combPeek=1;
   float faParam=1;
   unsigned numPartials=256;
-
+  float combCurve[256]={};
+  T stretchCurve[256]={};
+  T decayCurve[256]={};
   float cutoff=24000.f;
   int offset=0;
+  float ln_LUT[256]={};
+  dsp::ClockDivider divider;
+  ParaSinOscBank() {
+    updateCombCurve();
+    for (int i = 0; i < 256; i++) {
+      // Prevent log(0) from generating -Infinity
+      float base = (i == 0) ? 1.0f : float(i);
+      ln_LUT[i] = std::log(base); // std::log computes the natural logarithm (base e)
+    }
+    divider.setDivision(32);
+  }
 
   float powf_fast_ub(float a,float b) {
     union {
@@ -76,7 +71,13 @@ struct ParaSinOscBank {
     u.x=(int)(b*(u.x-1064631197)+1065353217);
     return u.d;
   }
-
+  float_4 fastPow(float_4 a,float_4 b) {
+    float r[4]={};
+    for(int k=0;k<4;k++) {
+      r[k]=powf_fast_ub(a[k],b[k]);
+    }
+    return {r[0],r[1],r[2],r[3]};
+  }
   float_4 fastPow(float a,float_4 b) {
     float r[4]={};
     for(int k=0;k<4;k++) {
@@ -88,18 +89,60 @@ struct ParaSinOscBank {
   float fastPow(float a,float b) {
     return powf_fast_ub(a,b);
   }
+  template<typename F>
+  F fastCos(F t) {
+    t += 0.25f;
+    t -= simd::floor(t);
+    F x = t * 4.f - 2.f;
+    F x2 = x * x;
+    return x2 * (x2 * 0.125f - 1.f) + 1.f;
+  }
+  void updateCombCurve() {
+    if (combAmt <= 0.01f) {
+      std::fill(combCurve, combCurve + numPartials, 1.0f);
+      return;
+    }
 
-  float fastCos(float t) {
-    t+=0.25f;
-    t-=floor(t);
-    float x=t*4.f-2.f;
-    float x2=x*x;
-    float x4=x2*x2;
-    return 0.125*x4-x2+1.f;
+    for (int p = 0; p < numPartials; ++p) {
+      float norm_p = p / 256.f;
+      float warp = powf_fast_ub(norm_p, combWarp);
+      float phase = combFreq * warp + combPhs;
+      float comb_base = 1.f + combAmt * fastCos(phase);
+      combCurve[p] = powf_fast_ub(comb_base, combPeek);
+    }
   }
 
+
+  void updateStretchCurve() {
+    // If stretch is 0, fill with 1.0f to skip math later
+    if (simd::movemask(stretch == 0.f)) { // Assuming scalar stretch check for simplicity
+      for (unsigned k = 0; k < numPartials; k++) {
+        stretchCurve[k] = 1.0f; // float_4 broadcast
+      }
+      return;
+    }
+
+    stretchCurve[0] = 1.0f; // k=0 is the fundamental
+    for (int k = 1; k < numPartials; k++) {
+      stretchCurve[k] = simd::pow(float(k), stretch);
+    }
+  }
+  void updateDecayCurve() {
+    if (simd::movemask(decay == 1.f)) {
+      for (unsigned k = 0; k < numPartials; k++) {
+        decayCurve[k] = 1.f/static_cast<float>(k+1);
+      }
+      return;
+    }
+    for (int k = 0; k < numPartials; k++) {
+      //decayCurve[k] = simd::exp(-decay * ln_LUT[k + 1]);
+      decayCurve[k] = simd::pow(k+1,-decay);
+    }
+  }
+
+
   T ampCurve(int partialNr) {
-    T dmp=1.f/fastPow(partialNr+1,decay);
+    T dmp=decayCurve[partialNr];
     if(partialNr==0) {
       dmp*=faParam;
     }
@@ -108,23 +151,23 @@ struct ParaSinOscBank {
     } else {
       dmp*=simd::ifelse(oddEven<0.f,1.0f+oddEven,1.f);
     }
-    if(combAmt>0.01f) {
-      dmp*=powf_fast_ub(
-        1+combAmt*fastCos(combFreq*powf_fast_ub(float(partialNr)/256.f,combWarp)+combPhs),
-        combPeek);
-      //dmp*=simd::pow(1+combAmt*cosf(combFreq*simd::pow(TWOPIF*float(partialNr)/256.f,combWarp)+combPhs),combPeek);
-      //dmp*=sqrtf(1+combAmt*cosf(combFreq*TWOPIF*float(partialNr)/256.f+combPhs));
-    }
+    dmp *= combCurve[partialNr];
     return dmp;
   }
 
+
   T process(float sampleTime) {
     T ret=0.f;
-    for(unsigned int k=0;k<numPartials;k++) {
+    if(divider.process()) {
+      updateDecayCurve();
+      updateStretchCurve();
+      updateCombCurve();
+    }
 
+    for(unsigned int k=0;k<numPartials;k++) {
       T freq=baseFreq*float((k+1)+offset);
       if(k>0) {
-        freq*=simd::ifelse(stretch!=0.f,fastPow(float(k),stretch),1.f);
+        freq*=stretchCurve[k];
       }
       partials[k].freq=freq;
       if(simd::movemask(freq<cutoff)) {
@@ -142,68 +185,6 @@ struct ParaSinOscBank {
   }
 };
 
-template<typename O,typename T>
-struct OscA1Proc {
-  O osc;
-  T voct=0.f;
-  float freq=261.636f;
-  float fmParam=0.f;
-  bool run=false;
-  bool linear=true;
-  std::thread *thread=nullptr;
-  RBufferMgr<T> bufMgr;
-
-  //rack::dsp::RingBuffer<T,S> buffer={};
-  //rack::dsp::RingBuffer<T,S> inBuffer={};
-  void processThread(float sampleTime) {
-    while(run) {
-      if(!bufMgr.buffer->out_full()) {
-        T pitch=freq+voct;
-        if(linear) {
-          osc.baseFreq=dsp::FREQ_C4*dsp::approxExp2_taylor5(pitch+30.f)/std::pow(2.f,30.f);
-          if(!bufMgr.buffer->in_empty()) {
-            osc.baseFreq+=dsp::FREQ_C4*bufMgr.buffer->in_shift()*fmParam;
-          }
-        } else {
-          if(!bufMgr.buffer->in_empty()) {
-            pitch+=bufMgr.buffer->in_shift()*fmParam;
-          }
-          osc.baseFreq=dsp::FREQ_C4*dsp::approxExp2_taylor5(pitch+30.f)/std::pow(2.f,30.f);
-        }
-        //osc.baseFreq=261.626f*simd::pow(2.0f,pitch);
-        bufMgr.buffer->out_push(osc.process(sampleTime)*5.f);
-      } else {
-        std::this_thread::sleep_for(std::chrono::duration<double>(sampleTime*2));
-      }
-    }
-  }
-
-  void stopThread() {
-    run=false;
-  }
-
-  void checkThread(float sampleTime) {
-    if(!run) {
-      run=true;
-      thread=new std::thread(&OscA1Proc::processThread,this,sampleTime);
-#ifdef ARCH_LIN
-      std::string threadName="OSC10";
-      pthread_setname_np(thread->native_handle(),threadName.c_str());
-#endif
-      thread->detach();
-    }
-  }
-
-  T getOutput() {
-    return bufMgr.buffer->out_empty()?0.f:bufMgr.buffer->out_shift();
-  }
-
-  void pushFM(T sample) {
-    if(!bufMgr.buffer->in_full()) {
-      bufMgr.buffer->in_push(sample);
-    }
-  }
-};
 
 
 struct OscA1 : Module {
@@ -239,10 +220,11 @@ struct OscA1 : Module {
     LIGHTS_LEN
   };
 
-  OscA1Proc<ParaSinOscBank<float_4,256>,float_4> sineBankOsc[NUM_VOICES];
-
-  int bufferType=0;
+  OscWorker<ParaSinOscBank<float_4,256>,float_4> sineBankOsc[NUM_VOICES];
+  ParaSinOscBank<float_4,256> paraSineBankOsc[NUM_VOICES];
   dsp::SchmittTrigger rstTrig;
+  dsp::ClockDivider divider;
+  bool useThread=false;
 
   OscA1() {
     config(PARAMS_LEN,INPUTS_LEN,OUTPUTS_LEN,LIGHTS_LEN);
@@ -295,16 +277,17 @@ struct OscA1 : Module {
 
     configInput(VOCT_INPUT,"V/Oct");
     configOutput(V_OUTPUT,"CV");
+    divider.setDivision(64);
   }
 
   void setBufferSize(int s) {
     for(int k=0;k<NUM_VOICES;k++) {
-      sineBankOsc[k].bufMgr.setBufferSize(s);
+      sineBankOsc[k].setChunkSizeIndex(s);
     }
   }
 
-  int getBufferSize() {
-    return sineBankOsc[0].bufMgr.bufferSizeIndex;
+  size_t getBufferSize() {
+    return sineBankOsc[0].getChunkSizeIndex();
   }
 
   void stopAllThreads() {
@@ -313,7 +296,7 @@ struct OscA1 : Module {
     }
   }
 
-  ~OscA1() {
+  ~OscA1() override {
     stopAllThreads();
   }
 
@@ -327,8 +310,105 @@ struct OscA1 : Module {
       sineBankOsc[k].osc.reset();
     }
   }
-
   void process(const ProcessArgs &args) override {
+    if(useThread) {
+      processT(args);
+    } else {
+      process1(args);
+    }
+  }
+
+  void process1(const ProcessArgs &args) {
+    static constexpr float pow2_30_inv = 1.0f / 1073741824.f;
+    static const float freq_c4_scaled = dsp::FREQ_C4 * pow2_30_inv;
+    bool fm_connected=inputs[FM_INPUT].isConnected();
+    if(rstTrig.process(params[RST_PARAM].getValue())) {
+      for(int k=0;k<NUM_VOICES;k++) {
+        sineBankOsc[k].osc.reset();
+      }
+    }
+    if(inputs[NUM_PARTIALS_INPUT].isConnected()) {
+      setImmediateValue(getParamQuantity(NUM_PARTIALS_PARAM),
+                        clamp(inputs[NUM_PARTIALS_INPUT].getVoltage()*25.6f,1.f,256.f));
+    }
+    if(inputs[OFFSET_INPUT].isConnected()) {
+      setImmediateValue(getParamQuantity(OFFSET_PARAM),
+                        clamp(inputs[OFFSET_INPUT].getVoltage()*12.8f,1.f,128.f));
+    }
+
+    float combAmt=clamp(params[COMB_AMT_PARAM].getValue()+
+                        inputs[COMB_AMT_INPUT].getVoltage()*0.1f*params[COMB_AMT_CV_PARAM].getValue());
+    float combFreq=clamp(params[COMB_FREQ_PARAM].getValue()+
+                         inputs[COMB_FREQ_INPUT].getVoltage()*10.f*params[COMB_FREQ_CV_PARAM].getValue(),1.f,
+                         100.f);
+    float combPhs=clamp(params[COMB_PHS_PARAM].getValue()+
+                        inputs[COMB_PHS_INPUT].getVoltage()*params[COMB_PHS_CV_PARAM].getValue(),0.f,TWOPIF);
+    float combPeek=clamp(params[COMB_PEEK_PARAM].getValue()+
+                         inputs[COMB_PEEK_INPUT].getVoltage()*0.5f*params[COMB_PEEK_CV_PARAM].getValue(),
+                         0.1f,4.f);
+    float combWarp=clamp(params[COMB_WARP_PARAM].getValue()+
+                         inputs[COMB_WARP_INPUT].getVoltage()*0.1f*params[COMB_WARP_CV_PARAM].getValue(),
+                         0.2f,1.f);
+    int numPartials=params[NUM_PARTIALS_PARAM].getValue();
+    int offset=params[OFFSET_PARAM].getValue();
+    float decay=params[DECAY_PARAM].getValue();
+    float decayCV=params[DECAY_CV_PARAM].getValue();
+    float stretch=params[STRETCH_PARAM].getValue();
+    float stretchCV=params[STRETCH_CV_PARAM].getValue();
+    float oddEven=params[ODD_EVEN_PARAM].getValue();
+    float oddEvenCV=params[ODD_EVEN_CV_PARAM].getValue();
+    float cutoff=261.626f*simd::pow(2.0f,params[CUTOFF_PARAM].getValue());
+    float freq=params[FREQ_PARAM].getValue();
+    int channels=std::max(inputs[VOCT_INPUT].getChannels(),1);
+    int c=0;
+    for(;c<channels;c+=4) {
+      auto *osc=&paraSineBankOsc[c/4];
+      float_4 voct=inputs[VOCT_INPUT].getVoltageSimd<float_4>(c);
+      float_4 pitch = freq + voct;
+      if(fm_connected) {
+        bool linear=params[LINEAR_FM_PARAM].getValue()>0;
+        if(linear) {
+          osc->baseFreq = freq_c4_scaled * dsp::approxExp2_taylor5(pitch + 30.f);
+          osc->baseFreq += dsp::FREQ_C4 * inputs[FM_INPUT].getVoltageSimd<float_4>(c) * params[FM_PARAM].getValue();
+        } else {
+          pitch += inputs[FM_INPUT].getVoltageSimd<float_4>(c) * params[FM_PARAM].getValue();
+          osc->baseFreq = freq_c4_scaled * dsp::approxExp2_taylor5(pitch + 30.f);
+        }
+      } else {
+        osc->baseFreq = freq_c4_scaled * dsp::approxExp2_taylor5(pitch + 30.f);
+      }
+
+      osc->cutoff=cutoff;
+      osc->faParam=params[FA_PARAM].getValue();
+      osc->decay=simd::clamp(decay+inputs[DECAY_INPUT].getPolyVoltageSimd<float_4>(c)*decayCV,0.1f,
+                                 3.f);
+      osc->oddEven=simd::clamp(
+        oddEven+inputs[ODD_EVEN_INPUT].getPolyVoltageSimd<float_4>(c)*oddEvenCV*0.1,-1.f,1.f);
+      osc->stretch=simd::clamp(
+        stretch+inputs[STRETCH_INPUT].getPolyVoltageSimd<float_4>(c)*stretchCV*0.1f,-1.25f,1.25f);
+      osc->offset=offset;
+      osc->combAmt=combAmt;
+      osc->combFreq=combFreq;
+      osc->combPhs=combPhs;
+      osc->combPeek=combPeek;
+      osc->combWarp=combWarp;
+      osc->numPartials=numPartials;
+      float_4 out=5.f*osc->process(args.sampleTime)*(params[AMP_PARAM].getValue()+
+                                    inputs[AMP_INPUT].getPolyVoltageSimd<float_4>(c)*
+                                    params[AMP_CV_PARAM].getValue());
+      outputs[V_OUTPUT].setVoltageSimd(out,c);
+    }
+    outputs[V_OUTPUT].setChannels(channels);
+
+  }
+
+  void processT(const ProcessArgs &args) {
+    bool fm_connected=inputs[FM_INPUT].isConnected();
+    if(divider.process()) {
+      for(int k=0;k<NUM_VOICES;k++) {
+        sineBankOsc[k].atomic_fm_connected.store(fm_connected);
+      }
+    }
     if(rstTrig.process(params[RST_PARAM].getValue())) {
       for(int k=0;k<NUM_VOICES;k++) {
         sineBankOsc[k].osc.reset();
@@ -404,13 +484,17 @@ struct OscA1 : Module {
   json_t *dataToJson() override {
     json_t *data=json_object();
     json_object_set_new(data,"bufferSizeIndex",json_integer(getBufferSize()));
+    json_object_set_new(data,"useThread",json_boolean(useThread));
     return data;
   }
 
   void dataFromJson(json_t *rootJ) override {
-    json_t *jBufferSizeIndex=json_object_get(rootJ,"bufferSizeIndex");
+    json_t *jBufferSizeIndex =json_object_get(rootJ,"bufferSizeIndex");
     if(jBufferSizeIndex!=nullptr)
       setBufferSize(json_integer_value(jBufferSizeIndex));
+    json_t *jUseThread =json_object_get(rootJ,"useThread");
+    if(jUseThread!=nullptr)
+      useThread=json_boolean_value(jUseThread);
   }
 };
 
@@ -491,9 +575,10 @@ struct OscA1Widget : ModuleWidget {
     menu->addChild(new MenuSeparator);
 
     auto bufSizeSelect=new BufferSizeSelectItem<OscA1>(module);
-    bufSizeSelect->text="Thread buffer size";
+    bufSizeSelect->text="buffer size";
     bufSizeSelect->rightText=bufSizeSelect->labels[module->getBufferSize()]+"  "+RIGHT_ARROW;
     menu->addChild(bufSizeSelect);
+    menu->addChild(createBoolPtrMenuItem("use thread","",&module->useThread));
   }
 };
 

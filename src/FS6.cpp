@@ -81,6 +81,14 @@ struct SineOsc {
     return simd::ifelse(phs<0.5f,firstHalfBI(phs),secondHalfBI(phs));
   }
 
+  T fast_sine_simd() {
+    T ps=phs*2.f-1.f;
+    T abs_p = simd::abs(ps);
+    T y = 4.f * ps - 4.f * ps * abs_p;
+    T abs_y = simd::abs(y);
+    return 0.225f * (y * abs_y - y) + y;
+  }
+
   T process(int type) {
     switch(type) {
       case 0:
@@ -97,6 +105,8 @@ struct SineOsc {
         return process554();
       case 6:
         return processBI();
+      case 7:
+        return fast_sine_simd();
       default:
         return 0.f;
     }
@@ -156,7 +166,7 @@ struct FS6 : Module {
     configParam(FREQ_PARAM,-14.f,4.f,0.f,"Frequency"," Hz",2,dsp::FREQ_C4);
     configParam(FM_PARAM,0,3,0,"FM Amount","%",0,100);
     configParam(FINE_PARAM,-100,100,0,"Fine tune"," cents");
-    configSwitch(OSC_PARAM,0,6,4,"Osc",{"P4","P5","P6","P4P","P5P","Pad554","BI"});
+    configSwitch(OSC_PARAM,0,7,6,"Osc",{"P4","P5","P6","P4P","P5P","Pad554","BI","FP"});
     getParamQuantity(OSC_PARAM)->snapEnabled=true;
     configInput(FM_INPUT,"FM");
     configButton(LIN_PARAM,"Linear");

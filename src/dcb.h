@@ -914,7 +914,7 @@ inline void setImmediateValue(ParamQuantity *pq,float value) {
 template<typename M>
 struct BufferSizeSelectItem : MenuItem {
   M *module;
-  std::vector<std::string> labels={"32","64","128","256","512","1024"};
+  std::vector<std::string> labels={"32","64","128","256",  "512","1024"};
 
   BufferSizeSelectItem(M *m) : module(m) {
   }

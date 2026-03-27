@@ -642,7 +642,7 @@ struct FadersOne : Module {
     for(int k = 0;k < 16;k++) {
       setImmediateValue(getParamQuantity(k), presets[pat].faderValues[k]);
     }
-    //INFO("end set current pattern %d",pat);
+    ///INFO("end set current pattern %d",pat);
   }
 
   float getSnapped(float value, int c) {
@@ -840,6 +840,8 @@ struct FadersOne : Module {
         presets[k].fromJson(jPreset);
       }
       setCurrentPattern();
+    } else {
+      INFO("no data in faders one");
     }
   }
 

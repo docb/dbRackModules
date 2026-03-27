@@ -93,7 +93,7 @@ struct Osc22 : Module {
     configParam(WIN_PARAM, 0, 1, 0.01, "Window");
     configParam(PHS_PARAM, 0, 1, 0., "Phs");
     configParam(PHS_CV_PARAM, 0, 1, 0., "Phs CV");
-    configParam(MIX_PARAM, 0, 1, 0.0, "Mix");
+    configParam(MIX_PARAM, 0, 1, 0.5, "Mix");
 
     configButton(RST_PARAM, "Rst");
     configInput(RST_INPUT, "RST");

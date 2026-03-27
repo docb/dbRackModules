@@ -16,7 +16,7 @@ struct GenScale : Module {
   };
 
   int maxChannels=16;
-
+  dsp::ClockDivider divider;
   GenScale() {
     config(NUM_PARAMS,NUM_INPUTS,NUM_OUTPUTS,NUM_LIGHTS);
 
@@ -36,36 +36,38 @@ struct GenScale : Module {
     configParam(SCALE_PARAM+11,0.f,1.f,0.f,"Major Seventh");
     configInput(SCL_INPUT,"Scale");
     configOutput(VOCT_OUTPUT,"V/Oct");
+    divider.setDivision(32);
   }
 
   void process(const ProcessArgs &args) override {
-    if(inputs[SCL_INPUT].isConnected()) {
-      for(int k=0;k<12;k++) {
-        setImmediateValue(getParamQuantity(SCALE_PARAM+k),inputs[SCL_INPUT].getVoltage(k)>1.f);
+    if(divider.process()) {
+      if(inputs[SCL_INPUT].isConnected()) {
+        for(int k=0;k<12;k++) {
+          setImmediateValue(getParamQuantity(SCALE_PARAM+k),inputs[SCL_INPUT].getVoltage(k)>1.f);
+        }
       }
-    }
-    float start=params[OCT_PARAM].getValue()+params[NOTE_PARAM].getValue()/12.f;
-    int pos=0;
-    float sum=0;
-    for(int k=SCALE_PARAM;k<NUM_PARAMS;k++) {
-      sum+=params[k].getValue();
-    }
-    if(sum==0)
-      return;
+      float start=params[OCT_PARAM].getValue()+params[NOTE_PARAM].getValue()/12.f;
+      int pos=0;
+      float sum=0;
+      for(int k=SCALE_PARAM;k<NUM_PARAMS;k++) {
+        sum+=params[k].getValue();
+      }
+      if(sum==0)
+        return;
 
-    for(int k=0;k<maxChannels;k++) {
-      while(params[SCALE_PARAM+pos%12].getValue()==0.f) {
+      for(int k=0;k<maxChannels;k++) {
+        while(params[SCALE_PARAM+pos%12].getValue()==0.f) {
+          pos++;
+        };
+        int oct=pos/12;
+        float out=start+(float)oct+(float)(pos%12)/12.f;
+        if(out>10.f)
+          break;
+        outputs[VOCT_OUTPUT].setVoltage(out,k);
         pos++;
-      };
-      int oct=pos/12;
-      float out=start+(float)oct+(float)(pos%12)/12.f;
-      if(out>10.f)
-        break;
-      outputs[VOCT_OUTPUT].setVoltage(out,k);
-      pos++;
+      }
+      outputs[VOCT_OUTPUT].setChannels(maxChannels);
     }
-    outputs[VOCT_OUTPUT].setChannels(maxChannels);
-
   }
 
   json_t *dataToJson() override {

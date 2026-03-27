@@ -1,69 +1,97 @@
 #include "dcb.h"
 #include <thread>
+
+#include "worker.h"
 using simd::float_4;
 #define NUM_VOICES 4
 #include "buffer.hpp"
-
-template<typename T,size_t P>
+template<typename T, size_t P>
 struct SawOsc {
-  T phs=0.f;
-  T currentFreq=261.636f;
-  T cutoffFreq=22500.f;
-  void updatePhs(float sampleTime,T freq) {
-    phs+=simd::fmin(freq*sampleTime,0.5f);
-    phs-=simd::floor(phs);
-    currentFreq=freq;
+  T phs = 0.f;
+  T baseFreq = 261.636f;
+  T cutoffFreq = 22500.f;
+  float inv_s[P]={};
+  SawOsc()
+  {
+    for(unsigned i=0; i<P; i++) inv_s[i] = 1.0f / static_cast<float>(i + 1);
   }
-  T process() {
+
+  void updatePhs(float sampleTime) {
+    phs += simd::fmin(baseFreq * sampleTime, 0.5f);
+    phs -= simd::floor(phs); // phs is strictly [0.0, 1.0)
+  }
+
+  // The blazing fast SIMD Sine Approximation
+  // Expects 'x' to be in the range [-1.0, 1.0]
+  inline T fast_sin(T x) {
+    T y = 4.f * x - 4.f * x * simd::fabs(x);
+    return 0.225f * (y * simd::fabs(y) - y) + y;
+  }
+
+  T process(float sampleTime) {
+    updatePhs(sampleTime);
+    T out = 0.f;
+
+    for (unsigned int i = 0; i < P; i++) {
+      T s = T(i + 1);
+      T current_freq = baseFreq * s;
+
+      // The essential early exit
+      if (simd::movemask(current_freq < cutoffFreq) == 0) {
+        break; // Stop computing high partials instantly!
+      }
+
+      // 1. Calculate phase for THIS partial
+      T p = phs * s;
+
+      // 2. Wrap the phase to [0.0, 1.0)
+      p -= simd::floor(p);
+
+      // 3. Shift phase to [-1.0, 1.0) for the fast sine math
+      p = p * 2.f - 1.f;
+
+      // 4. Compute the sine and scale by 1/s (Inverse Harmonic)
+      T sine_val = fast_sin(p) * inv_s[i];
+
+      // 5. Add to output only if below Nyquist
+      out += simd::ifelse(current_freq < cutoffFreq, sine_val, 0.f);
+    }
+    return out;
+  }
+};
+template<typename T,size_t P>
+struct SawOsc1 {
+  T phs=0.f;
+  T baseFreq=261.636f;
+  T cutoffFreq=22500.f;
+  float inv_s[P];
+  SawOsc1() {
+    for(unsigned i=0; i<P; i++) inv_s[i] = 1.0f / static_cast<float>(i + 1);
+  }
+  void updatePhs(float sampleTime) {
+    phs+=simd::fmin(baseFreq*sampleTime,0.5f);
+    phs-=simd::floor(phs);
+  }
+  inline T fast_sin(T x) {
+    T y = 4.f * x - 4.f * x * simd::fabs(x);
+    return 0.225f * (y * simd::fabs(y) - y) + y;
+  }
+  T process(float sampleTime) {
+    updatePhs(sampleTime);
     T out=0;
+    T phs_rad = phs * TWOPIF;
     for(unsigned int i=0;i<P;i++) {
       T s=T(i+1);
-      if(simd::movemask(currentFreq*s<cutoffFreq)) {
-        out+=simd::ifelse(currentFreq*s<cutoffFreq,simd::sin(phs*s*TWOPIF)/s,0.f);
+      if(simd::movemask(baseFreq*s<cutoffFreq)) {
+        out+=simd::ifelse(baseFreq*s<cutoffFreq,simd::sin(phs_rad*s)*inv_s[i],0.f);
+      } else {
+        break;
       }
     }
     return out;
   }
 };
 
-template<typename O,typename T>
-struct SawOscProc {
-  O osc;
-  T voct=0.f;
-  float freq=0;
-  bool run=false;
-  std::thread *thread=nullptr;
-  RBufferMgr<float_4> bufMgr;
-  void processThread(float sampleTime) {
-    while(run) {
-      if(!bufMgr.buffer->out_full()) {
-        T pitch=freq+voct;
-        T frq=dsp::FREQ_C4*dsp::approxExp2_taylor5(pitch+30.f)/std::pow(2.f,30.f);
-        osc.updatePhs(sampleTime,frq);
-        bufMgr.buffer->out_push(osc.process()*2.5f);
-      } else {
-        std::this_thread::sleep_for(std::chrono::duration<double>(sampleTime*2));
-      }
-    }
-  }
-  void stopThread() {
-    run=false;
-  }
-  void checkThread(float sampleTime) {
-    if(!run) {
-      run=true;
-      thread=new std::thread(&SawOscProc::processThread,this,sampleTime);
-#ifdef ARCH_LIN
-      std::string threadName = "OSC11";
-      pthread_setname_np(thread->native_handle(),threadName.c_str());
-#endif
-      thread->detach();
-    }
-  }
-  T getOutput() {
-    return bufMgr.buffer->out_empty()?0.f:bufMgr.buffer->out_shift();
-  }
-};
 
 struct OscS : Module {
   enum ParamId {
@@ -79,8 +107,9 @@ struct OscS : Module {
     LIGHTS_LEN
   };
 
-  SawOscProc<SawOsc<float_4,512>,float_4> sawOscProc[4];
-
+  OscWorker<SawOsc<float_4,512>,float_4> sawOscProc[4];
+  SawOsc<float_4,512> sawOsc[4];
+  bool useThread=false;
 	OscS() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
     configParam(FREQ_PARAM,-4.f,4.f,0.f,"Frequency"," Hz",2,dsp::FREQ_C4);
@@ -90,11 +119,11 @@ struct OscS : Module {
 	}
   void setBufferSize(int s) {
     for(int k=0;k<NUM_VOICES;k++) {
-      sawOscProc[k].bufMgr.setBufferSize(s);
+      sawOscProc[k].setChunkSizeIndex(s);
     }
   }
   int getBufferSize() {
-    return sawOscProc[0].bufMgr.bufferSizeIndex;
+    return sawOscProc[0].getChunkSizeIndex();
   }
   void stopAllThreads() {
     for(int k=0;k<NUM_VOICES;k++) {
@@ -109,8 +138,29 @@ struct OscS : Module {
   void onRemove() override {
     stopAllThreads();
   }
+  void process(const ProcessArgs& args) override {
+	  if(useThread) {
+	    processT(args);
+	  } else {
+	    process1(args);
+	  }
+	}
 
-	void process(const ProcessArgs& args) override {
+  void process1(const ProcessArgs& args) {
+	  float freq=params[FREQ_PARAM].getValue();
+	  float fine=params[FINE_PARAM].getValue();
+	  int channels=std::max(inputs[VOCT_INPUT].getChannels(),1);
+	  int c=0;
+	  for(;c<channels;c+=4) {
+	    auto *osc=&sawOsc[c/4];
+	    float_4 pitch=freq+fine+inputs[VOCT_INPUT].getVoltageSimd<float_4>(c);
+	    osc->baseFreq=dsp::FREQ_C4*dsp::approxExp2_taylor5(pitch+30.f)/std::pow(2.f,30.f);
+	    outputs[SAW_OUTPUT].setVoltageSimd(osc->process(args.sampleTime)* 5.f,c);
+	  }
+	  outputs[SAW_OUTPUT].setChannels(channels);
+	}
+
+	void processT(const ProcessArgs& args)  {
     float freq=params[FREQ_PARAM].getValue();
     float fine=params[FINE_PARAM].getValue();
     int channels=std::max(inputs[VOCT_INPUT].getChannels(),1);
@@ -127,7 +177,8 @@ struct OscS : Module {
 
   json_t *dataToJson() override {
     json_t *data=json_object();
-    json_object_set_new(data,"bufferSizeIndex",json_integer(sawOscProc[0].bufMgr.bufferSizeIndex));
+    json_object_set_new(data,"bufferSizeIndex",json_integer(getBufferSize()));
+	  json_object_set_new(data,"useThread",json_boolean(useThread));
     return data;
   }
 
@@ -135,7 +186,10 @@ struct OscS : Module {
     json_t *jBufferSizeIndex =json_object_get(rootJ,"bufferSizeIndex");
     if(jBufferSizeIndex!=nullptr)
       setBufferSize(json_integer_value(jBufferSizeIndex));
-  }
+	  json_t *jUseThread =json_object_get(rootJ,"useThread");
+	  if(jUseThread!=nullptr)
+	    useThread=json_boolean_value(jUseThread);
+	}
 };
 
 
@@ -161,6 +215,7 @@ struct OscSWidget : ModuleWidget {
     bufSizeSelect->text="Thread buffer size";
     bufSizeSelect->rightText=bufSizeSelect->labels[module->getBufferSize()]+"  "+RIGHT_ARROW;
     menu->addChild(bufSizeSelect);
+	  menu->addChild(createBoolPtrMenuItem("use thread","",&module->useThread));
   }
 };
 
