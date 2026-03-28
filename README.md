@@ -14,6 +14,8 @@ New modules in 2.4.0: [FS6](#fs6), [Pulsar](#pulsar), [OscA1](#osca1), [OscS](#o
 
 New modules in 2.5.0: [X16](#x16), [X8](#x8), [X6](#x6), [X4](#x4), [CVS](#cvs), [DTrg](#dtrg)
 
+New modules in 2.6.0: [Osc22](#osc22), [FadersOne](#fadersone)
+
 See also the demo patches on [PatchStorage](https://patchstorage.com/author/docb/) or on [youtube](https://www.youtube.com/@docb7593)
 
 
@@ -32,6 +34,7 @@ See also the demo patches on [PatchStorage](https://patchstorage.com/author/docb
 - [Sound Generators](#sound-generators)
   - [Osc1](#osc1)
   - [Osc2](#osc2)
+  - [Osc22](#osc22)
   - [Osc3](#osc3)
   - [Osc4](#osc4)
   - [Osc5](#osc5)
@@ -96,6 +99,7 @@ See also the demo patches on [PatchStorage](https://patchstorage.com/author/docb
   - [X4](#x4)
 - [Others](#others)
   - [Faders](#faders)
+  - [FadersOne](#fadersone)
   - [PLC](#plc)
   - [OFS and OFS3](#ofs-and-ofs3)
   - [EVA](#eva)
@@ -205,6 +209,23 @@ There are several modules which can be phase driven:
 - The phase can be realigned using the reset input. (if the v/oct inputs differ the phases of the two oscillators will diverge)
 - Osc2 provides exponential FM and linear FM through zero.
 - Aliasing is suppressed via 16 times oversampling but is turned off by default (see menu).
+
+### Osc22
+![](images/Osc22.png?raw=true)
+Osc22 is the same as Osc2 but:
+- each oscillator provides a tri,saw and square wave
+- each oscillator has two FM inputs
+- Osc22 samples and holds the value if the two oscillators are equal (in respect to a window) 
+  and outputs it at the EQ output (thanks Rob!)
+- The LT output provides a high gate if the value of the first oscillator is less than the other. 
+- the mix output (modulatable) is for crossfading the two oscillators.
+- The waveform which is used for the common outputs can be set in the menu.
+
+Here an example:
+![](images/Osc22_2.png?raw=true)
+this shows how to make something like a blippoo box.
+
+
 ### Osc3
 ![](images/Osc3.png?raw=true)
 - Osc3 is a polyphonic  oscillator making complex waveforms for a set of up to 16 given values via the polyphonic Pts input (similar to SPL).
@@ -473,12 +494,11 @@ A tiny sample based drum module with pitch, gain, decay controls.
 ![](images/additive.png?raw=true)
 
 Some alias-free oscillators which generate the wave form via adding 256-512 partials.
-The computation is done in the background and not in the main audio thread.
-Therefore, there is a menu which controls the buffer size used to communicate between the generator
-and audio output. If the oscillator makes noisy sounds the buffer size should be increased.
-The communication via the buffer on higher sizes may introduce a small delay of the audio output 
-which can be compensated via a delay of e.g. 10ms on the trigger gates for vca/env module connected behind
-
+The computation can be done in the background (set via menu) and not in the main audio thread, but this
+is only recommended if the patch already uses a proper amount of CPU e.g. >35%.
+(Otherwise it may crackle when a too low buffer size is set in the menu)
+When computing in background for all buffer sizes < 256 a full CPU is acquired per 4 voices.
+The introduced latency during background computing can be mitigated via delaying the other modules:
 ![](images/OscSwithDelay.png?raw=true)
 
 ### OscA1
@@ -793,6 +813,19 @@ This module is kind of similar to the unless towers module. It provides the foll
 - Snap function: "None","Semi","0.1","Pat 32","0.5","Pat 16","1","Pat 8". If another value than None is selected in the menu,
   the output value is quantized according to the given step value. 'Pat X' denotes 10V/X and is for CV addressing. 
 - Each block can be randomized separately in the menu.
+
+### FadersOne
+
+![](images/FadersOne.png?raw=true)
+
+The same as Faders but:
+- only one row
+- a program input to set the values (independent of the modulation)
+  - is active when the enabled gate is high
+  - it overwrites then the current values with the values from the polyphonic Prg input
+  - if the chn button is on then the channels of the polyphonic input are set int the module.
+- an address cv input to scan fast through the bank, providing the values on the address output, independent of the UI 
+- via menu the mode "use adr for prg" can be set to enable fast recording through the bank.
 
 ### PLC
 This module does the same as PolyCon from Bogaudio but
