@@ -136,7 +136,6 @@ struct RndC : Module {
 
   void process(const ProcessArgs &args) override {
     float bi=params[BI_PARAM].getValue();
-    float pitch=params[FREQ_PARAM].getValue();
     float fmParam=params[FM_PARAM].getValue();
 
     int strength=(int)params[STRENGTH_PARAM].getValue();
@@ -153,7 +152,7 @@ struct RndC : Module {
       }
     }
     for(int k=0;k<channels;k++) {
-      pitch += inputs[FM_INPUT].getPolyVoltage(k) * fmParam;
+      float pitch = params[FREQ_PARAM].getValue() + inputs[FM_INPUT].getPolyVoltage(k) * fmParam;
       float freq = dsp::approxExp2_taylor5(pitch + 30.f) / std::pow(2.f, 30.f);
       float nextMin=processMin(k);
       float nextWeibull=processWeibull(k);
