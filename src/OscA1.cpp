@@ -135,7 +135,6 @@ struct ParaSinOscBank {
       return;
     }
     for (int k = 0; k < numPartials; k++) {
-      //decayCurve[k] = simd::exp(-decay * ln_LUT[k + 1]);
       decayCurve[k] = simd::pow(k+1,-decay);
     }
   }
@@ -156,7 +155,8 @@ struct ParaSinOscBank {
   }
 
 
-  T process(float sampleTime) {
+  T process(float sampleTime,size_t nP=P) {
+    numPartials=nP;
     T ret=0.f;
     if(divider.process()) {
       updateDecayCurve();
@@ -392,8 +392,7 @@ struct OscA1 : Module {
       osc->combPhs=combPhs;
       osc->combPeek=combPeek;
       osc->combWarp=combWarp;
-      osc->numPartials=numPartials;
-      float_4 out=5.f*osc->process(args.sampleTime)*(params[AMP_PARAM].getValue()+
+      float_4 out=5.f*osc->process(args.sampleTime, numPartials)*(params[AMP_PARAM].getValue()+
                                     inputs[AMP_INPUT].getPolyVoltageSimd<float_4>(c)*
                                     params[AMP_CV_PARAM].getValue());
       outputs[V_OUTPUT].setVoltageSimd(out,c);
