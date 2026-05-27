@@ -169,11 +169,10 @@ struct DCBlock : Module {
   };
 
   DelayBuffer delayBuffer;
-  int lastOrder=5;
-
+  DCBlocker<float_4> dcb[2][4];
   DCBlock() {
     config(NUM_PARAMS,NUM_INPUTS,NUM_OUTPUTS,NUM_LIGHTS);
-    configSwitch(ORDER_PARAM,0.f,5.f,5.f,"Order",{"4","8","16","32","64","128"});
+    configSwitch(ORDER_PARAM,0.f,6.f,6.f,"Order",{"4","8","16","32","64","128","256"});
     configBypass(V_INPUT_L,V_OUTPUT_L);
     configBypass(V_INPUT_R,V_OUTPUT_R);
     configOutput(V_OUTPUT_L,"Out L");
@@ -186,6 +185,9 @@ struct DCBlock : Module {
 
     float_4 in=inputs[nr].getVoltageSimd<float_4>(chn);
     int f4chn=chn/4;
+    if(order==6) {
+      outputs[output].setVoltageSimd<float_4>(dcb[output][chn].process(in),chn);
+    }
     float_4 del=delayBuffer.shiftDel(order,nr,f4chn);
     float_4 x1=in;
     delayBuffer.pushDel(order,nr,f4chn,in);

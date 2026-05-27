@@ -6,7 +6,7 @@ using simd::float_4;
 #define CL_LIM 8
 
 template<typename T>
-struct ChebyFilter {
+struct ChebyFilter2 {
   T xn[CL_LIM]={};
   T yn[CL_LIM]={};
   T xnm1[CL_LIM]={};
@@ -74,6 +74,105 @@ struct ChebyFilter {
   }
 };
 
+template<typename T>
+struct ChebyFilter {
+  // We only keep the required state histories
+  T xnm1[CL_LIM] = {};
+  T xnm2[CL_LIM] = {};
+  T ynm1[CL_LIM] = {};
+  T ynm2[CL_LIM] = {};
+
+  // Precomputed Constants
+  float b0[CL_LIM] = {};
+  float b1[CL_LIM] = {};
+  float b2[CL_LIM] = {};
+  float mag2[CL_LIM] = {};   // Replaces alpha^2 + beta^2
+  float alpha2[CL_LIM] = {}; // Replaces 2 * alpha
+
+  int nsec = 4;
+
+  void init(bool highPass = false) {
+    float eps = sqrtf(powf(10.0f, 0.1f) - 1.0f);
+    float aleph = 0.5f / nsec * logf(1.0f / eps + sqrtf(1.0f / eps / eps + 1.0f));
+
+    for(int m = 0; m < nsec; m++) {
+      float bethe = M_PI * ((m + 0.5f) / (2.0f * nsec) + 0.5f);
+      float a = sinhf(aleph) * cosf(bethe);
+      float b = coshf(aleph) * sinf(bethe);
+
+      // Precompute the math that never changes!
+      mag2[m] = (a * a) + (b * b);
+      alpha2[m] = 2.0f * a;
+
+      float denom = (m == 0) ? sqrtf(1.0f + eps * eps) : 1.0f;
+      float mult = (m == 0 && highPass) ? -2.0f : (m == 0 ? 2.0f : (highPass ? -2.0f : 2.0f));
+
+      b0[m] = mag2[m] / denom;
+      b1[m] = (mag2[m] * mult) / denom;
+      b2[m] = mag2[m] / denom;
+    }
+  }
+
+  // Use a template parameter to eliminate the highpass branch at compile time!
+  template<bool hiPass = false>
+  T process(T in, T freq, float piosr) {
+    T out = in; // 'out' cascades through the sections, replacing the xn and yn arrays
+
+    // We compute tan once outside the loop
+    T tanfpi = simd::tan(piosr * freq);
+
+    if(hiPass) {
+      T tanfpi2 = tanfpi * tanfpi;
+
+      for(int m = 0; m < nsec; m++) {
+        // Compute 'a' coefficients locally in registers
+        T a0 = mag2[m] + tanfpi * (tanfpi - alpha2[m]);
+        T a1 = 2.f * (tanfpi2 - mag2[m]);
+        T a2 = mag2[m] + tanfpi * (tanfpi + alpha2[m]);
+
+        // Invert a0 to use multiplication instead of division
+        T inv_a0 = 1.f / a0;
+
+        // Compute the difference equation
+        T yn_val = (b0[m] * out + b1[m] * xnm1[m] + b2[m] * xnm2[m] - a1 * ynm1[m] - a2 * ynm2[m]) * inv_a0;
+
+        // Shift states
+        xnm2[m] = xnm1[m];
+        xnm1[m] = out;
+        ynm2[m] = ynm1[m];
+        ynm1[m] = yn_val;
+
+        out = yn_val; // Cascade to the next section
+      }
+    } else {
+      T cotfpi = 1.f / tanfpi;
+      T cotfpi2 = cotfpi * cotfpi;
+
+      for(int m = 0; m < nsec; m++) {
+        T a0 = mag2[m] + cotfpi * (cotfpi - alpha2[m]);
+        T a1 = 2.f * (mag2[m] - cotfpi2);
+        T a2 = mag2[m] + cotfpi * (cotfpi + alpha2[m]);
+
+        T inv_a0 = 1.f / a0;
+
+        T yn_val = (b0[m] * out + b1[m] * xnm1[m] + b2[m] * xnm2[m] - a1 * ynm1[m] - a2 * ynm2[m]) * inv_a0;
+
+        xnm2[m] = xnm1[m];
+        xnm1[m] = out;
+        ynm2[m] = ynm1[m];
+        ynm1[m] = yn_val;
+
+        out = yn_val;
+      }
+    }
+
+    return out;
+  }
+};
+
+
+
+
 struct CHBY : Module {
   enum ParamId {
     FREQ_PARAM,FREQ_CV_PARAM,PARAMS_LEN
@@ -118,7 +217,7 @@ struct CHBY : Module {
       float_4 cutoff=simd::clamp(simd::pow(2.f,pitch),2.f,args.sampleRate*0.33f);
       float_4 in=inputs[CV_INPUT].getVoltageSimd<float_4>(c);
       if(hpConnected) {
-        float_4 hpOut=hpFilter[c/4].process(in,cutoff,piosr,true);
+        float_4 hpOut=hpFilter[c/4].process<true>(in,cutoff,piosr);
         outputs[HP_OUTPUT].setVoltageSimd(hpOut,c);
       }
       if(lpConnected) {
