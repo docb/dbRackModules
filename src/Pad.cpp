@@ -214,7 +214,7 @@ struct Pad : Module {
   float fund=32.7f;
   std::mutex mutex;
   dsp::SchmittTrigger trigger;
-
+  std::shared_ptr<std::mutex> genLock;
   Pad() {
     config(PARAMS_LEN,INPUTS_LEN,OUTPUTS_LEN,LIGHTS_LEN);
     configParam(BW_PARAM,0.5f,60,10,"Bandwidth");
@@ -227,6 +227,7 @@ struct Pad : Module {
     configInput(VOCT_INPUT,"V/Oct");
     configOutput(L_OUTPUT,"Left");
     configOutput(R_OUTPUT,"Right");
+    genLock = std::make_shared<std::mutex>();
   }
 
   void onAdd(const AddEvent &e) override {
@@ -280,9 +281,16 @@ struct Pad : Module {
 
   void regenerateSave(float bw,float scale,float sr,float fund,float fade) {
     if(mutex.try_lock()) {
+      std::lock_guard<std::mutex> guard(*genLock);
       pt.generate(partials,sr,fund,bw,scale,fade);
       mutex.unlock();
     }
+  }
+
+  ~Pad() {
+      INFO("waiting for generator...");
+      std::lock_guard<std::mutex> guard(*genLock);
+      INFO("generator finished ...");
   }
 
   void generateThreaded() {

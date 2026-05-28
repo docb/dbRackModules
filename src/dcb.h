@@ -518,7 +518,7 @@ struct DCBlocker {
   T y=0.f;
 
   T process(T v) {
-    y=v-x+y*0.99f;
+    y=v-x+y*0.9995f;
     x=v;
     return y;
   }

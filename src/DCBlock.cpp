@@ -186,7 +186,8 @@ struct DCBlock : Module {
     float_4 in=inputs[nr].getVoltageSimd<float_4>(chn);
     int f4chn=chn/4;
     if(order==6) {
-      outputs[output].setVoltageSimd<float_4>(dcb[output][chn].process(in),chn);
+      outputs[output].setVoltageSimd<float_4>(dcb[output][f4chn].process(in),chn);
+      return;
     }
     float_4 del=delayBuffer.shiftDel(order,nr,f4chn);
     float_4 x1=in;

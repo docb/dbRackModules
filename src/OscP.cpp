@@ -28,7 +28,7 @@ struct SqrOsc {
 			auto taperLength = static_cast<float>(maxPartials - taperStart);
 
 			for (int n = 1; n <= maxPartials; ++n) {
-				float amp = 1.0f / (static_cast<float>(n)*M_PIf);
+				float amp = 1.0f / (static_cast<float>((n)*M_PI));
 
 				if (n > taperStart && taperLength > 0.0f) {
 					float phase = static_cast<float>(n - taperStart) / taperLength;
