@@ -862,7 +862,9 @@ This module does the same as PolyCon from Bogaudio but
 - CPU friendly polyphonic modules for offset and scale cv values.
 - OFS has additionally a clock input for sample hold and a Qnt input for quantizing and a Trg output
   firing when the value has changed. If connected, the module sorts the provided channels of the Qnt input by value and uses the
-  first octave for quantizing. Use e.g. GenScale or Chords for the Qnt input.
+  first octave for quantizing. It is quantized always in equal mode, i.e. if the Qnt input provides
+  N values in an octave the octave is splitted equally 1/N Volt in order to select the matching quantized value. 
+  Use e.g. GenScale or Chords for the Qnt input.
 
 ### EVA
 An ADSR with built in VCA. Designed for using with FM Operators.
