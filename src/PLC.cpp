@@ -1,6 +1,6 @@
 #include "dcb.h"
 extern Model *modelFaders;
-
+extern Model *modelFadersOne;
 struct PLC : Module {
   enum ParamId {
     PARAMS_LEN=16
@@ -50,9 +50,10 @@ struct PLC : Module {
 
   void process(const ProcessArgs &args) override {
     if(leftExpander.module) {
-      if(leftExpander.module->model==modelFaders) {
+      if(leftExpander.module->model==modelFaders || leftExpander.module->model==modelFadersOne) {
         fadersModule=leftExpander.module;
-      } else {
+      } else
+        {
         fadersModule=nullptr;
         if(leftExpander.module->model->slug=="Sink") {
           sinkModule=leftExpander.module;
@@ -154,6 +155,8 @@ struct PLCWidget : ModuleWidget {
         plcModule->copyFromFaders(k-1);
       } else if(e.key==GLFW_KEY_S) {
         plcModule->copyFromSink();
+      } else if(e.key==GLFW_KEY_F) {
+        plcModule->copyFromFaders(0);
       }
     }
     ModuleWidget::onHoverKey(e);

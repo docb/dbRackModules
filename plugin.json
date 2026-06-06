@@ -137,7 +137,8 @@
     {
       "slug": "HexSeqP",
       "name": "HexSeqP",
-      "description": "A 16x16x64 Trigger Sequencer",
+      "description": "A 16x16x64 Trigger Sequencer, deprecated - use HexSeqP2 instead",
+      "hidden": true,
       "tags": [
         "Sequencer",
         "Polyphonic"
@@ -766,7 +767,7 @@
     {
       "slug": "C7",
       "name": "C7",
-      "description": "Compressor, Limiter",
+      "description": "Adaptive Limiter, Compressor",
       "tags": [
         "Compressor",
         "Limiter"

@@ -16,10 +16,12 @@ New modules in 2.5.0: [X16](#x16), [X8](#x8), [X6](#x6), [X4](#x4), [CVS](#cvs),
 
 New modules in 2.6.0: [Osc22](#osc22), [FadersOne](#fadersone)
 
+New modules in 2.6.1: [DB16](#db16), [C7](#c7)
+
 See also the demo patches on [PatchStorage](https://patchstorage.com/author/docb/) or on [youtube](https://www.youtube.com/@docb7593)
 
 
-![](images/allmodules.png?raw=true)
+<!--![](images/allmodules.png?raw=true)-->
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
@@ -67,6 +69,7 @@ See also the demo patches on [PatchStorage](https://patchstorage.com/author/docb
   - [USVF](#usvf)
   - [CHBY](#chby)
   - [AP](#ap)
+  - [DB16](#db16)
 - [Some cpu friendly polyphonic Waveshapers](#some-cpu-friendly-polyphonic-waveshapers)
   - [LWF](#lwf)
   - [DRM](#drm)
@@ -82,6 +85,7 @@ See also the demo patches on [PatchStorage](https://patchstorage.com/author/docb
   - [YAC](#yac)
   - [BWF](#bwf)
   - [PPD](#ppd)
+  - [C7](#c7)
 - [Random](#random)
   - [RndH,RndC](#rndhrndc)
   - [RndH2](#rndh2)
@@ -491,7 +495,7 @@ A tiny sample based drum module with pitch, gain, decay controls.
 - Aliasing is suppressed via 16 times oversampling.
 
 ## Additive Oscillators
-![](images/additive.png?raw=true)
+![](images/additive2.png?raw=true)
 
 Some alias-free oscillators which generate the wave form via adding 256-512 partials.
 The computation can be done in the background (set via menu) and not in the main audio thread, but this
@@ -508,11 +512,17 @@ The introduced latency during background computing can be mitigated via delaying
 ![](images/OscA1.png?raw=true)
 
 ### OscS
-- Produces an additive generated alias-free saw wave
+![](images/OscS.png?raw=true)
+- Generate an additive alias-free saw wave
+- Shuffle phases randomly using different distributions (New in 2.6.1)
+- Reduce partials to alter sound or save CPU
 
 ### OscP
-- Produces an additive generated alias-free pulse wave
-- Provides PWM
+![](images/OscP.png?raw=true)
+- Generate an additive alias-free pulse wave
+- Adjust pulse width
+- Shuffle phases randomly using different distributions (New in 2.6.1)
+- Reduce partials to alter sound or save CPU
 
 
 ## Some CPU friendly polyphonic filters
@@ -530,6 +540,12 @@ A fast polyphonic unstable state variable filter with overdrive control
 A fast polyphonic 4 pole Chebyshev type 1 filter
 ### AP
 A polyphonic allpass filter. A building block for phasers and reverbs.
+### DB16
+![](images/DB16.png?raw=true)
+
+A fixed 16 band splitter with additional outputs for 8 Band, 4 Band and High/Low.
+
+Usecases: Multiband Compressors, Spectral Delays, Control Sources
 
 ## Some cpu friendly polyphonic Waveshapers
 ![](images/waveshaper.png?raw=true)
@@ -587,7 +603,7 @@ The randomization of the mesh frequencies can be done by the frequency modulatio
 
 The standard presets are provided in the factory presets of the module. 
 
-New in 2.1.0: The MVerb can now be run in a threaded mode (the default setting in the menu)
+New in 2.1.0: The MVerb can now be run in a threaded mode
 which puts  the heavy computing into a background thread. It should now run  below 1-2% CPU.
 If there are audio glitches the thread buffer size can be increased in the menu.
 
@@ -613,6 +629,14 @@ The fft size which determines the latency can be configured in the menu.
 ![](images/PPD.png?raw=true)
 
 A bpm controlled mono to stereo ping pong delay with sends and returns.
+
+### C7
+![](images/C7.png?raw=true)
+A compressor, limiter and adaptive limiter.
+
+This module provides a fast and a slow AR Envelope (adjustable in the menu).
+The compressor uses the slow AR, the limiter uses the fast AR and the adaptive limiter
+uses the maximum of slow and fast.
 
 
 ## Random

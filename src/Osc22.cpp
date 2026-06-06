@@ -167,7 +167,7 @@ struct Osc22 : Module {
     float ofs = params[PHS_PARAM].getValue();
     float eps = oversample ? params[WIN_PARAM].getValue() * 0.01 / 16 : params[WIN_PARAM].getValue() * 0.01;
     int count = oversample ? 16 : 1;
-    int channels = std::max(std::min(inputs[VO_A_INPUT].getChannels(), inputs[VO_B_INPUT].getChannels()), 1);
+    int channels = std::max(std::max(inputs[VO_A_INPUT].getChannels(), inputs[VO_B_INPUT].getChannels()), 1);
     for(int c = 0;c < channels;c += 4) {
       float_4 rst=inputs[RST_INPUT].getPolyVoltageSimd<float_4>(c);
       float_4 resetTriggered=
