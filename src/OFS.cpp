@@ -41,18 +41,19 @@ struct OFS : Module {
 				bool sample=inputs[CLK_INPUT].isConnected();
 				int channels=inputs[CV_INPUT].getChannels();
 				for(int c=0;c<channels;c+=4) {
+					int c4=c/4;
 					float_4 in=inputs[CV_INPUT].getVoltageSimd<float_4>(c);
 					float_4 offset=params[OFFSET_PARAM].getValue()+inputs[OFFSET_INPUT].getPolyVoltageSimd<float_4>(c)*params[OFFSET_CV_PARAM].getValue();
 					float_4 scale=params[SCALE_PARAM].getValue()+inputs[SCALE_INPUT].getPolyVoltageSimd<float_4>(c)*params[SCALE_CV_PARAM].getValue();
 					if(sample) {
 						float_4 triggered = clkTrigger.process(inputs[CLK_INPUT].getPolyVoltageSimd<float_4>(c));
-						hold[c]=simd::ifelse(triggered,in,hold[c]);
-						offsetHold[c]=simd::ifelse(triggered,offset,offsetHold[c]);
-						scaleHold[c]=simd::ifelse(triggered,scale,scaleHold[c]);
+						hold[c4]=simd::ifelse(triggered,in,hold[c4]);
+						offsetHold[c4]=simd::ifelse(triggered,offset,offsetHold[c4]);
+						scaleHold[c4]=simd::ifelse(triggered,scale,scaleHold[c4]);
 					} else {
-						hold[c]=in;
-						offsetHold[c]=offset;
-						scaleHold[c]=scale;
+						hold[c4]=in;
+						offsetHold[c4]=offset;
+						scaleHold[c4]=scale;
 					}
 					float filteredScale[16];
 					int N = 0;
@@ -79,7 +80,7 @@ struct OFS : Module {
 							}
 						}
 					}
-					float_4 out=offsetThenScale?(hold[c]+offsetHold[c])*scaleHold[c]:hold[c]*scaleHold[c]+offsetHold[c];
+					float_4 out=offsetThenScale?(hold[c4]+offsetHold[c4])*scaleHold[c4]:hold[c4]*scaleHold[c4]+offsetHold[c4];
 					if(N>0) {
 						float_4 octave = simd::floor(out);
 						float_4 fraction = out - octave;
@@ -101,9 +102,9 @@ struct OFS : Module {
 						out = octave + scaleValues;
 					}
 					outputs[CV_OUTPUT].setVoltageSimd(out,c);
-					float_4 mask=out != last[c];
+					float_4 mask=out != last[c4];
 					outputs[TRIG_OUTPUT].setVoltageSimd(simd::ifelse(mask,10.f,0.f),c);
-					last[c]=out;
+					last[c4]=out;
 				}
 				outputs[CV_OUTPUT].setChannels(channels);
 				outputs[TRIG_OUTPUT].setChannels(channels);
