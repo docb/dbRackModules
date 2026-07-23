@@ -18,7 +18,7 @@ New modules in 2.6.0: [Osc22](#osc22), [FadersOne](#fadersone)
 
 New modules in 2.6.1: [DB16](#db16), [C7](#c7)
 
-
+New modules in 2.6.2: [PRJ](#prj)
 
 See also the demo patches on [PatchStorage](https://patchstorage.com/author/docb/) or on [youtube](https://www.youtube.com/@docb7593)
 
@@ -122,6 +122,7 @@ See also the demo patches on [PatchStorage](https://patchstorage.com/author/docb
     - [a scanner](#a-scanner)
     - [a polyphonic scanner](#a-polyphonic-scanner)
   - [DTrg](#dtrg)
+  - [PRJ](#prj)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
