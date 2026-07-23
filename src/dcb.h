@@ -1121,7 +1121,48 @@ struct SquareOsc {
     phs=simd::ifelse(trigger,0.f,phs);
   }
 };
+template<typename M>
+struct ColorBackground : TransparentWidget {
+  M* module=nullptr;
 
+  void draw(const DrawArgs& args) override {
+    NVGcolor color = nvgRGB(0, 0, 0);
+    if (module) {
+      // Read the real-time parameter values
+      float h = module->params[M::HUE_PARAM].getValue();
+      float s = module->params[M::SAT_PARAM].getValue();
+      float v = module->params[M::V_PARAM].getValue();
+      color = nvgHSLA(h, s, v,0xff);
+    }
+
+    nvgBeginPath(args.vg);
+    nvgRect(args.vg, 0, 0, box.size.x, box.size.y);
+    nvgFillColor(args.vg, color);
+    nvgFill(args.vg);
+  }
+};
+struct MenuSlider : Slider {
+
+  MenuSlider(ParamQuantity* pq) {
+    quantity = pq;
+    box.size.x = 160.f; // Standard context menu width
+  }
+
+};
+
+struct SliderMenuItem : MenuItem {
+  ParamQuantity* quantity=nullptr;
+  SliderMenuItem(ParamQuantity *q, const std::string& label) : quantity(q) {
+    this->text=label;
+    this->rightText="▸";
+  }
+
+  Menu *createChildMenu() override {
+    Menu *menu=new Menu;
+    menu->addChild(new MenuSlider(quantity));
+    return menu;
+  }
+};
 #define TWOPIF 6.2831853f
 #define MHEIGHT 128.5f
 #define TY(x) MHEIGHT-(x)-6.237

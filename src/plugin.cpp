@@ -88,11 +88,12 @@ extern Model* modelOsc22;
 extern Model* modelFadersOne;
 extern Model* modelDB16;
 extern Model* modelC7;
+extern Model* modelPRJ;
+
 
 void init(Plugin* p) {
 	pluginInstance = p;
-
-  p->addModel(modelGeneticTerrain);
+	p->addModel(modelGeneticTerrain);
   p->addModel(modelGeneticSuperTerrain);
   p->addModel(modelDCBlock);
   p->addModel(modelRndHvs3);
@@ -177,4 +178,5 @@ void init(Plugin* p) {
 	p->addModel(modelFadersOne);
 	p->addModel(modelC7);
 	p->addModel(modelDB16);
+	p->addModel(modelPRJ);
 }

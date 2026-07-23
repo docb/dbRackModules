@@ -1,9 +1,12 @@
 #include "dcb.h"
 #include "OFS.hpp"
-
+static float clipboardHue = 0.0f;
+static float clipboardSat = 0.65f;
+static float clipboardVal = 0.45f;
+static bool clipboardHasData = false;
 struct OFS : Module {
 	enum ParamId {
-		OFFSET_PARAM,OFFSET_CV_PARAM,SCALE_PARAM,SCALE_CV_PARAM,PARAMS_LEN
+		OFFSET_PARAM,OFFSET_CV_PARAM,SCALE_PARAM,SCALE_CV_PARAM,HUE_PARAM, SAT_PARAM, V_PARAM,PARAMS_LEN
 	};
 	enum InputId {
 		CV_INPUT,OFFSET_INPUT,SCALE_INPUT, CLK_INPUT, SCL_INPUT,INPUTS_LEN
@@ -15,24 +18,28 @@ struct OFS : Module {
 		LIGHTS_LEN
 	};
   bool offsetThenScale=false;
-	float_4 hold[4];
-	float_4 offsetHold[4];
-	float_4 scaleHold[4];
-  float_4 last[4];
+	float_4 hold[4]={};
+	float_4 offsetHold[4]={};
+	float_4 scaleHold[4]={};
+  float_4 last[4]={};
+	bool limit=false;
 	dsp::TSchmittTrigger<float_4> clkTrigger;
 	OFS() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
     configParam(OFFSET_PARAM,-10,10,0,"Offset");
     configParam(SCALE_PARAM,-10,10,1,"Scale");
-    configParam(OFFSET_CV_PARAM,0,1,0,"Offset CV"," %",0,100);
-    configParam(SCALE_CV_PARAM,0,1,0,"Scale CV"," %",0,100);
+    configParam(OFFSET_CV_PARAM,-1,1,0,"Offset CV"," %",0,100);
+    configParam(SCALE_CV_PARAM,-1,1,0,"Scale CV"," %",0,100);
     configInput(CV_INPUT,"CV");
+		configInput(CLK_INPUT,"Clock");
     configInput(SCALE_INPUT,"Scale");
     configInput(OFFSET_INPUT,"Offset");
     configInput(SCL_INPUT,"QNT");
     configOutput(CV_OUTPUT,"CV");
 		configOutput(TRIG_OUTPUT,"Trg");
-
+		configParam(HUE_PARAM, 0.f, 1.f, 0.0f, "Panel Hue");
+		configParam(SAT_PARAM, 0.f, 1.f, 0.0f, "Panel Saturation");
+		configParam(V_PARAM, 0.f, 1.f, 0.0f, "Panel Lightness");
 	}
 
 	void process(const ProcessArgs& args) override {
@@ -101,7 +108,7 @@ struct OFS : Module {
 						float_4 scaleValues = float_4::load(lookup_arr);
 						out = octave + scaleValues;
 					}
-					outputs[CV_OUTPUT].setVoltageSimd(out,c);
+					outputs[CV_OUTPUT].setVoltageSimd(limit?simd::clamp(out,-10,10):out,c);
 					float_4 mask=out != last[c4];
 					outputs[TRIG_OUTPUT].setVoltageSimd(simd::ifelse(mask,10.f,0.f),c);
 					last[c4]=out;
@@ -119,20 +126,62 @@ struct OFS : Module {
     if(jOffsetThenScale) {
       offsetThenScale=json_boolean_value(jOffsetThenScale);
     }
+		json_t *jLimit=json_object_get(root,"limit");
+		if(jLimit) {
+			limit=json_boolean_value(jLimit);
+		}
   }
 
   json_t *dataToJson() override {
     json_t *root=json_object();
     json_object_set_new(root,"offsetThenScale",json_boolean(offsetThenScale));
+    json_object_set_new(root,"limit",json_boolean(limit));
     return root;
   }
 };
 
+struct CopyColorItem : MenuItem {
+	OFS* module;
+
+	explicit CopyColorItem(OFS* module, const std::string& label)
+		: module(module) {
+		text.assign(label);
+	}
+
+	void onAction(const ActionEvent& e) override {
+		clipboardHue = module->params[OFS::HUE_PARAM].getValue();
+		clipboardSat = module->params[OFS::SAT_PARAM].getValue();
+		clipboardVal = module->params[OFS::V_PARAM].getValue();
+		clipboardHasData = true;
+	}
+};
+
+struct PasteColorItem : MenuItem {
+	OFS* module;
+
+	explicit PasteColorItem(OFS* module, const std::string& label)
+		: module(module) {
+		text.assign(label);
+	}
+
+	void onAction(const ActionEvent& e) override {
+		if (clipboardHasData) {
+			module->paramQuantities[OFS::HUE_PARAM]->setValue(clipboardHue);
+			module->paramQuantities[OFS::SAT_PARAM]->setValue(clipboardSat);
+			module->paramQuantities[OFS::V_PARAM]->setValue(clipboardVal);
+		}
+	}
+};
 
 struct OFSWidget : ModuleWidget {
 	OFSWidget(OFS* module) {
 		setModule(module);
 		setPanel(createPanel(asset::plugin(pluginInstance, "res/OFS.svg")));
+		auto bg = new ColorBackground<OFS>();
+		bg->module = module;
+		bg->box.size = box.size;
+		addChildBottom(bg);
+
     float y=10;
     float x=1.9;
     addParam(createParam<TrimbotWhite>(mm2px(Vec(x,y)),module,OFS::OFFSET_PARAM));
@@ -163,6 +212,15 @@ struct OFSWidget : ModuleWidget {
     menu->addChild(new MenuSeparator);
 
     menu->addChild(createBoolPtrMenuItem("Offset Then Scale","",&module->offsetThenScale));
+		menu->addChild(createBoolPtrMenuItem("Limit to 10V","",&module->limit));
+		menu->addChild(new MenuSeparator);
+		menu->addChild(new SliderMenuItem(module->getParamQuantity(OFS::HUE_PARAM),"Hue"));
+		menu->addChild(new SliderMenuItem(module->getParamQuantity(OFS::SAT_PARAM),"Sat"));
+		menu->addChild(new SliderMenuItem(module->getParamQuantity(OFS::V_PARAM),"V"));
+		menu->addChild(new CopyColorItem(module,"Copy Color"));
+		auto pasteItem=new PasteColorItem(module,"Paste Color");
+		pasteItem->disabled = !clipboardHasData;
+		menu->addChild(pasteItem);
   }
 };
 

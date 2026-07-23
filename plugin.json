@@ -772,6 +772,14 @@
         "Compressor",
         "Limiter"
       ]
+    },
+    {
+      "slug": "PRJ",
+      "name": "PRJ",
+      "description": "16 to 4 Channel Projector, Channel Switcher",
+      "tags": [
+        "Utility","Switch"
+      ]
     }
   ]
 }

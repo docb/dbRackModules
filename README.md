@@ -18,6 +18,8 @@ New modules in 2.6.0: [Osc22](#osc22), [FadersOne](#fadersone)
 
 New modules in 2.6.1: [DB16](#db16), [C7](#c7)
 
+
+
 See also the demo patches on [PatchStorage](https://patchstorage.com/author/docb/) or on [youtube](https://www.youtube.com/@docb7593)
 
 
@@ -935,4 +937,10 @@ In this example rndc with 4 channels scans each note of the chord differently.
 ![](images/dtrig.png?raw=true)
 - a simple cv change detector
 - if the window is 0 the output is high if the input changes (compared to the last sample).
-- otherwise the output is high if the current sample is in the interval last-window, last+window. 
+- otherwise the output is high if the current sample is in the interval last-window, last+window.
+
+### PRJ
+![](images/PRJ.png?raw=true)
+
+This module takes a polyphonic input and outputs 4 selected channels of the input.
+The channels can be selected manually or with CV (0-10V 0.625 per channel).

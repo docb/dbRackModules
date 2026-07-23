@@ -49,7 +49,12 @@ struct BOsc {
   T sinp(T ps) {
     return simd::ifelse(ps<0.5f,firstHalf(ps),secondHalf(ps));
   }
-
+  T fast_sine_simd(T p) {
+    T abs_p=simd::abs(p);
+    T y=4.f*p-4.f*p*abs_p;
+    T abs_y=simd::abs(y);
+    return 0.225f*(y*abs_y-y)+y;
+  }
   T sin2pi_pade_05_5_4(T x) {
     x-=0.5f;
     T x2=x*x;
@@ -62,7 +67,8 @@ struct BOsc {
 
   T process(T p1,T p2) {
     T amt=simd::rescale(p1,0.f,1.f,0,0.999f);
-    T s=sin2pi_pade_05_5_4(phs)*0.49f+0.51f;
+    //T s=sin2pi_pade_05_5_4(phs)*0.49f+0.51f;
+    T s=fast_sine_simd(phs*2-1)*0.49f+0.51f;
     T fold=fastPow(2.f,p2);
     //return simd::sin((s*(1-amt)/(amt*(1-s*2)+1))*fold);
     return 2*sinp(simd::fmod((s*(1-amt)/(amt*(1-s*2)+1))*fold,1.f))-1.f;
