@@ -12,7 +12,7 @@ struct SelectButton : Widget {
   int _value;
   std::string _label;
   std::basic_string<char> fontPath;
-
+  int fontSize=-1;
   SelectButton(int value,std::string label) : _value(value),_label(std::move(label)) {
     fontPath=asset::plugin(pluginInstance,"res/FreeMonoBold.ttf");
   }
@@ -36,7 +36,10 @@ struct SelectButton : Widget {
     nvgRoundedRect(args.vg,0,0,box.size.x,box.size.y,3.f);
     nvgFill(args.vg);
     nvgStroke(args.vg);
-    nvgFontSize(args.vg,box.size.y-2);
+    if(fontSize<0)
+      nvgFontSize(args.vg,box.size.y-2);
+    else
+      nvgFontSize(args.vg,fontSize);
     nvgFontFaceId(args.vg,font->handle);
     NVGcolor textColor=nvgRGB(0xff,0xff,0xaa);
     nvgTextAlign(args.vg,NVG_ALIGN_CENTER|NVG_ALIGN_MIDDLE);
@@ -79,6 +82,37 @@ struct SelectParam : ParamWidget {
   }
 };
 
+struct SelectButtonH : SelectButton {
+  SelectButtonH(int nr,std::string label) : SelectButton(nr,label) {
+  }
+
+  void onDragEnter(const event::DragEnter &e) override;
+};
+
+struct SelectParamH : ParamWidget {
+  void init(std::vector<std::string> labels,float margin=0.f) {
+
+    float width=box.size.x-2*margin;
+    unsigned int len=labels.size();
+    for(unsigned int i=0;i<len;i++) {
+      auto selectButton=new SelectButtonH(i,labels[i]);
+      selectButton->fontSize=8;
+      selectButton->box.pos=Vec(width/len*i+margin,0);
+      selectButton->box.size=Vec(width/len-2*margin,box.size.y);
+      addChild(selectButton);
+    }
+  }
+
+  void draw(const DrawArgs &args) override {
+    // Background
+    nvgBeginPath(args.vg);
+    nvgRect(args.vg,0,0,box.size.x,box.size.y);
+    nvgFillColor(args.vg,nvgRGB(0,0,0));
+    nvgFill(args.vg);
+
+    ParamWidget::draw(args);
+  }
+};
 
 struct SmallButton : SvgSwitch {
   SmallButton() {
@@ -517,8 +551,8 @@ struct DCBlocker {
   T x=0.f;
   T y=0.f;
 
-  T process(T v) {
-    y=v-x+y*0.9995f;
+  T process(T v, float R=0.9995f) {
+    y=v-x+y*R;
     x=v;
     return y;
   }

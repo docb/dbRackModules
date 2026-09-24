@@ -2,13 +2,14 @@
 #ifndef DBRACKMODULES_FILTER_HPP
 #define DBRACKMODULES_FILTER_HPP
 
+#include <array>
 #include <cfloat>
 template<typename T>
 struct Generic4Pole {
   T w[4]={};
-  std::vector<float> a;
-  std::vector<float> b;
-  Generic4Pole(const std::vector<float> &_a,const std::vector<float> &_b) : a(_a),b(_b) {
+  std::array<float,5> a;
+  std::array<float,5> b;
+  Generic4Pole(const std::array<float,5> &_a,const std::array<float,5> &_b) : a(_a),b(_b) {
   }
   T process(T in) {
     T y;

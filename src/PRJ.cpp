@@ -17,6 +17,8 @@ struct PRJ : Module {
     LIGHTS_LEN
   };
 
+  bool setCV=true;
+
   PRJ() {
     config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
     configInput(CV_INPUT, "Poly");
@@ -31,19 +33,28 @@ struct PRJ : Module {
 
   void process(const ProcessArgs& args) override {
     for(int k=0; k<4; k++) {
+      float chnIn=inputs[CHN_INPUT+k].getVoltage()*1.6f;
       if(inputs[CHN_INPUT+k].isConnected()) {
-        getParamQuantity(k)->setValue(inputs[CHN_INPUT+k].getVoltage()*1.6f);
+        if(setCV) getParamQuantity(k)->setValue(chnIn);
       }
       if(inputs[CV_INPUT].isConnected()) {
-        int channel=static_cast<int>(params[k].getValue());
         int channels=inputs[CV_INPUT].getChannels();
-        if(channel<channels) {
-          outputs[k].setVoltage(inputs[CV_INPUT].getVoltage(channel));
-        } else {
-          outputs[k].setVoltage(0.f);
-        }
+        int channel=clamp(static_cast<int>(params[k].getValue()+(setCV?0.f:chnIn)),0,channels-1);
+        outputs[k].setVoltage(inputs[CV_INPUT].getVoltage(channel));
       }
     }
+  }
+  void dataFromJson(json_t *root) override {
+    json_t *jSetCV=json_object_get(root,"setCV");
+    if(jSetCV) {
+      setCV=json_boolean_value(jSetCV);
+    }
+  }
+
+  json_t *dataToJson() override {
+    json_t *root=json_object();
+    json_object_set_new(root,"setCV",json_boolean(setCV));
+    return root;
   }
 };
 
@@ -62,6 +73,12 @@ struct PRJWidget : ModuleWidget {
       y2+=7;
     }
     addInput(createInput<SmallPort>(mm2px(Vec(x, 84)), module, PRJ::CV_INPUT));
+  }
+  void appendContextMenu(Menu* menu) override {
+    PRJ *module=dynamic_cast<PRJ *>(this->module);
+    assert(module);
+    menu->addChild(new MenuSeparator);
+    menu->addChild(createBoolPtrMenuItem("Set CV","",&module->setCV));
   }
 };
 

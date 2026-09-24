@@ -23,7 +23,7 @@ struct OFS : Module {
 	float_4 scaleHold[4]={};
   float_4 last[4]={};
 	bool limit=false;
-	dsp::TSchmittTrigger<float_4> clkTrigger;
+	dsp::TSchmittTrigger<float_4> clkTrigger[4];
 	OFS() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
     configParam(OFFSET_PARAM,-10,10,0,"Offset");
@@ -53,7 +53,7 @@ struct OFS : Module {
 					float_4 offset=params[OFFSET_PARAM].getValue()+inputs[OFFSET_INPUT].getPolyVoltageSimd<float_4>(c)*params[OFFSET_CV_PARAM].getValue();
 					float_4 scale=params[SCALE_PARAM].getValue()+inputs[SCALE_INPUT].getPolyVoltageSimd<float_4>(c)*params[SCALE_CV_PARAM].getValue();
 					if(sample) {
-						float_4 triggered = clkTrigger.process(inputs[CLK_INPUT].getPolyVoltageSimd<float_4>(c));
+						float_4 triggered = clkTrigger[c4].process(inputs[CLK_INPUT].getPolyVoltageSimd<float_4>(c));
 						hold[c4]=simd::ifelse(triggered,in,hold[c4]);
 						offsetHold[c4]=simd::ifelse(triggered,offset,offsetHold[c4]);
 						scaleHold[c4]=simd::ifelse(triggered,scale,scaleHold[c4]);

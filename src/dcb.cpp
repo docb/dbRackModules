@@ -27,6 +27,23 @@ void SelectButton::onDragEnter(const event::DragEnter &e) {
   }
   Widget::onDragEnter(e);
 }
+
+void SelectButtonH::onDragEnter(const event::DragEnter &e) {
+  if (e.button == GLFW_MOUSE_BUTTON_LEFT) {
+    auto origin = dynamic_cast<SelectParamH *>(e.origin);
+    if (origin) {
+      auto paramWidget = getAncestorOfType<ParamWidget>();
+      assert(paramWidget);
+      engine::ParamQuantity *pq = paramWidget->getParamQuantity();
+      if (pq) {
+        pq->setValue(_value);
+      }
+    }
+  }
+  Widget::onDragEnter(e);
+}
+
+
 void UpButtonWidget::onButton(const ButtonEvent& e) {
 
   if(e.action == GLFW_PRESS && e.button==GLFW_MOUSE_BUTTON_LEFT) {

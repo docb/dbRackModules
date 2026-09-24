@@ -85,11 +85,11 @@ struct HexSeq : Module {
         unsigned posInChar=spos%4;
         bool on=hex>>(3-posInChar)&0x01;
         if(on) {
-          gatePulseGenerators[k].trigger(0.01f);
+          gatePulseGenerators[k].trigger(0.001f);
           state[k] = true; // used by expander
          } else {
           state[k] = false;
-          gatePulseInvGenerators[k].trigger(0.01f); // process by expander
+          gatePulseInvGenerators[k].trigger(0.001f); // process by expander
         }
       } else {
         state[k]=false;
