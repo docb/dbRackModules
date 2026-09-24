@@ -178,9 +178,9 @@ struct Q3 : Module {
 
   //===================== Sample-Rate FM & TT (16x Oversampled) =====================
   void processAccurate(const ProcessArgs& args) {
-    float R_1x=1.f-(2.f*M_PIf*10.f/args.sampleRate);
+    float R_1x=1.f-(2.f*M_PI*10.f/args.sampleRate);
     float oversampledRate=args.sampleRate*16.f;
-    float R_16x=1.f-(2.f*M_PIf*10.f/oversampledRate);
+    float R_16x=1.f-(2.f*M_PI*10.f/oversampledRate);
 
     float linFmFactor=(dsp::FREQ_C4*args.sampleTime)*inv16;
     float maxNyquistInc=(args.sampleRate*0.5f*args.sampleTime)*inv16;
@@ -280,7 +280,7 @@ struct Q3 : Module {
   //===================== accurate with oversampling and sub sample fm =====================
   void processHIFI(const ProcessArgs& args) {
     float oversampledRate=args.sampleRate*16.f;
-    float R=1.f-(2.f*M_PIf*10.f/oversampledRate);
+    float R=1.f-(2.f*M_PI*10.f/oversampledRate);
     int channels=std::max({
       inputs[V_OCT_INPUT].getChannels(),
       inputs[V_OCT_INPUT+1].getChannels(),
@@ -416,7 +416,7 @@ struct Q3 : Module {
   }
 
   void processDivN(const ProcessArgs& args) {
-    float R=1.f-(2.f*M_PIf*10.f/args.sampleRate);
+    float R=1.f-(2.f*M_PI*10.f/args.sampleRate);
     int channels=std::max(std::max(inputs[V_OCT_INPUT].getChannels(), 1),
                           std::max(inputs[V_OCT_INPUT+1].getChannels(), inputs[V_OCT_INPUT+2].getChannels()));
     for(int c=0; c<channels; c++) {
@@ -449,7 +449,7 @@ struct Q3 : Module {
 
   //===================== PROCESS 3: Native 1x Rate (Aliasing Engine) =====================
   void processAlias(const ProcessArgs& args) {
-    float R=1.f-(2.f*M_PIf*10.f/args.sampleRate);
+    float R=1.f-(2.f*M_PI*10.f/args.sampleRate);
     float linFmFactor=dsp::FREQ_C4*args.sampleTime;
     float maxNyquistInc=args.sampleRate*0.5f*args.sampleTime;
 
