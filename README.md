@@ -20,6 +20,8 @@ New modules in 2.6.1: [DB16](#db16), [C7](#c7)
 
 New modules in 2.6.2: [PRJ](#prj)
 
+New modules in 2.7.0: [Q3](#q3-1),[SL](#sl)
+
 See also the demo patches on [PatchStorage](https://patchstorage.com/author/docb/) or on [youtube](https://www.youtube.com/@docb7593)
 
 
@@ -36,6 +38,19 @@ See also the demo patches on [PatchStorage](https://patchstorage.com/author/docb
   - [PHSR2](#phsr2)
   - [Other modules which can be phase driven](#other-modules-which-can-be-phase-driven)
 - [Sound Generators](#sound-generators)
+  - [Q3](#q3)
+    - [Overview & Core Features](#overview--core-features)
+    - [DSP Engine Modes (Engine Selector)](#dsp-engine-modes-engine-selector)
+    - [Panel Controls](#panel-controls)
+      - [Primary Oscillator Columns (A, B, C)](#primary-oscillator-columns-a-b-c)
+      - [Truth Table (TT) & Global Controls](#truth-table-tt--global-controls)
+    - [Inputs & Outputs](#inputs--outputs)
+    - [Inputs](#inputs)
+    - [FM Mod Input Channel settings](#fm-mod-input-channel-settings)
+      - [Outputs](#outputs)
+    - [Special Synthesis Concepts](#special-synthesis-concepts)
+      - [1. Truth Table Logic Synthesizer](#1-truth-table-logic-synthesizer)
+      - [2. Pseudo-Random Sub-Gate Generator](#2-pseudo-random-sub-gate-generator)
   - [Osc1](#osc1)
   - [Osc2](#osc2)
   - [Osc22](#osc22)
@@ -60,6 +75,20 @@ See also the demo patches on [PatchStorage](https://patchstorage.com/author/docb
   - [Gendy](#gendy)
   - [Drum](#drum)
   - [Pulsar](#pulsar)
+  - [Q3](#q3-1)
+    - [Key Features](#key-features)
+    - [Panel Layout & Parameter Reference](#panel-layout--parameter-reference)
+      - [Per-Oscillator Controls (Oscillators A, B, C)](#per-oscillator-controls-oscillators-a-b-c)
+    - [Global & Truth Table Controls](#global--truth-table-controls)
+    - [Inputs & Outputs](#inputs--outputs-1)
+      - [Inputs](#inputs-1)
+      - [Outputs](#outputs-1)
+    - [Detailed Operation](#detailed-operation)
+      - [1. Pseudo-Random Sub-Gate Engine](#1-pseudo-random-sub-gate-engine)
+      - [2. Truth Table Logic Synthesizer](#2-truth-table-logic-synthesizer)
+      - [3. Cross-FM & Linear/Exponential Operation](#3-cross-fm--linearexponential-operation)
+    - [Context Menu Settings](#context-menu-settings)
+    - [Divide By N Mode](#divide-by-n-mode)
 - [Additive Oscillators](#additive-oscillators)
   - [OscA1](#osca1)
   - [OscS](#oscs)
@@ -123,6 +152,7 @@ See also the demo patches on [PatchStorage](https://patchstorage.com/author/docb
     - [a polyphonic scanner](#a-polyphonic-scanner)
   - [DTrg](#dtrg)
   - [PRJ](#prj)
+  - [SL](#sl)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
