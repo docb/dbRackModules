@@ -20,7 +20,7 @@ New modules in 2.6.1: [DB16](#db16), [C7](#c7)
 
 New modules in 2.6.2: [PRJ](#prj)
 
-New modules in 2.7.0: [Q3](#q3-1),[SL](#sl)
+New modules in 2.7.0: [Q3](#q3),[SL](#sl)
 
 See also the demo patches on [PatchStorage](https://patchstorage.com/author/docb/) or on [youtube](https://www.youtube.com/@docb7593)
 
@@ -652,119 +652,6 @@ A tiny sample based drum module with pitch, gain, decay controls.
 ![](images/pulsar2.png?raw=true)
 - The pulses can be clustered and enveloped via the cluster and window parameters
 - Aliasing is suppressed via 16 times oversampling.
-
-### Q3
-*** AI Generated reviewed/corrected ***
-
-Q3 is a polyphonic triple pulse-wave oscillator and logic synthesizer for VCV Rack. It combines three primary pulse oscillators with an integrated 8-state Truth Table logic channel, comprehensive cross-frequency modulation (FM), and a deterministic pseudo-random sub-gate pattern engine.
-
----
-
-#### Key Features
-
-* **3 Primary Oscillators (A, B, C) + 1 Logic Channel (TT):** Independent octave, tuning, pulse/gate pattern, level, and cross-FM routing.
-* **Truth Table Logic Engine:** Generates a 4th signal derived from boolean logic combinations of Oscillators A, B, and C.
-* **Pseudo-Random Sub-Gate Generator:** Uses `PW` and `RND` parameters to generate deterministic, phase-locked rhythm patterns ($4 \text{ to } 16$ sub-pulses per period) that re-seed at the start of every cycle.
-* **Integrated DC Blockers:** High-pass filtering on combined FM modulation sources eliminates pitch-drift during intense cross-modulation.
-* **Dual DSP Engines:**
-* **Accurate (16x Oversampled):** Anti-aliased generation using a Chebyshev low-pass filter and SIMD vectorization.
-* **Divide-by-N (Clock Divider):** Low CPU mode utilizing discrete integer clock accumulation.
-
----
-
-#### Panel Layout & Parameter Reference
-
-##### Per-Oscillator Controls (Oscillators A, B, C)
-
-Each oscillator channel features identical parameter controls arranged in vertical columns on the panel:
-
-| Control | Range | Description |
-| --- | --- | --- |
-| **OCT** | -4 to +4 | Snapped coarse octave transposition. |
-| **TUNE** | -7 to +7 | Fine tuning in semitones. |
-| **PW / PWM** | 0.0 to 1.0 | PWM factor. If RND > 0: Sets the number of sub-gates produced in a single period (4 to 16 gates). |
-| **LEVEL** | -1.0 to +1.0 | Output level and polarity for the oscillator in the final mix. |
-| **LIN** | Toggle | Switches FM mode between Exponential (Off) and Linear (On). |
-| **FM A** | -3.0 to 3.0 | Cross-FM depth driven by Oscillator A. |
-| **FM B** | -3.0 to 3.0 | Cross-FM depth driven by Oscillator B. |
-| **FM C** | -3.0 to 3.0 | Cross-FM depth driven by Oscillator C. |
-| **FM TT** | -3.0 to 3.0 | FM depth driven by the Truth Table logic channel output. |
-| **RND** | 0 to 1 | Random seed value for the sub-gate generator pattern. If Zero no sub-gate pattern is generated|
-
-#### Global & Truth Table Controls
-
-| Control | Range | Description |
-| --- | --- | --- |
-| **Gate Display (0–7)** | On / Off | Interactive 8-button interface setting the Truth Table logic output state for each binary combination of Oscillators A, B, and C. |
-| **TT LEVEL** | -1.0 to +1.0 | Output level and polarity for the Truth Table signal in the final mix. |
-
----
-
-#### Inputs & Outputs
-
-##### Inputs
-
-| Jack | Type | Description |
-| --- | --- | --- |
-| **V/OCT (A, B, C)** | 1V/Oct CV | Polyphonic pitch control inputs. |
-| **FM MOD (A, B, C)** | CV | External FM depth modulation inputs. Channels 1-4 -> FM_A - FM-TT |
-| **LEVEL (A, B, C)** | CV | External level/VCA modulation inputs (scaled to 10% per Volt). |
-| **PWM (A, B, C)** | CV | External pulse-width / gate-count modulation inputs. |
-| **TT INPUT** | Polyphonic CV | External trigger/gate override for the 8 Truth Table slots (>1.0V sets state to True). |
-| **TT LEVEL IN** | CV | External level control for the Truth Table output. |
-
-##### Outputs
-
-| Jack | Type | Description |
-| --- | --- | --- |
-| **MIX CV** | Audio / CV | Main output jack containing the weighted sum of Oscillators A, B, C, and the TT Channel (scaled to $\pm 5\text{V}$). |
-
----
-
-#### Detailed Operation
-
-##### 1. Pseudo-Random Sub-Gate Engine
-
-Instead of traditional continuous pulse-width modulation, Q3 splits each fundamental oscillator period into a discrete sequence of sub-gates:
-
-* **Gate Density (`PW` Knob / `PWM` Input):** Controls how many sub-divisions occur during a single period, ranging from **4 sub-gates** at minimum up to **16 sub-gates** at maximum.
-* **Pattern Seed (`RND` Knob):** Sets the PRNG seed used to generate the gate pattern. As long as the `RND` seed remains constant, the generated coin-flip pattern repeats identically every cycle, producing a stable timbre. Changing the seed creates entirely new rhythmic pulse shapes.
-
-##### 2. Truth Table Logic Synthesizer
-
-The 4th channel (TT) evaluates the current state of Oscillators A, B, and C to create complex sub-harmonic and additive waveforms. The 3-bit binary lookup index is calculated as:
-
-$$\text{Index} = \text{State}(A) + 2 \cdot \text{State}(B) + 4 \cdot \text{State}(C)$$
-
-* **Buttons 0–7:** Map to binary indices `000` through `111`. Clicking a button toggles whether that state outputs High (`+1`) or Low (`-1`).
-* **External Override:** Patching a polyphonic cable to `TT INPUT` overwrites the panel button states with external gates.
-
-##### 3. Cross-FM & Linear/Exponential Operation
-
-All 3 main oscillators and the Truth Table channel can modulate the frequency of any oscillator.
-
-* **Linear FM:** Preserves harmonic relationships and pitch centers during deep modulation.
-* **Exponential FM:** Yields aggressive, wild pitch sweeps and metallic sidebands.
-* **FM Depth Range (0 to 3.0):** Because high-frequency modulators have a lower modulation index ($\beta = \Delta f / f_m$), set the FM depth parameter higher ($1.8\text{ to }3.0$) when modulating with sources tuned an octave or more above the carrier.
-* **DC Blocking:** Integrated high-pass filtering prevents FM sources from introducing unwanted pitch offsets or DC biases.
-
----
-
-#### Context Menu Settings
-
-Right-click the module panel to access additional DSP configurations:
-
-* **Accurate/Oversample:**
-* **Checked (Default):** Runs 16x oversampling with a Chebyshev anti-aliasing filter. For high-pitch stability and clean audio-rate FM.
-* **Unchecked (Low CPU):** Switches to the clock-divider processing engine. 
-
-#### Divide By N Mode
-Use this mode for alias free unfiltered sounds with low cpu usage. 
-The only used frequencies in this mode divide the samplerate and
-incoming frequencies are adjusted to the nearest divider. 
-So if tuning matters it is only usable for bass sounds.
-However in this mode, for more accurate tunings the base frequency can be adjusted to minimize the error or 
-switch to 96KHZ.
 
 ## Additive Oscillators
 ![](images/additive2.png?raw=true)
